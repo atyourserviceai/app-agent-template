@@ -375,11 +375,22 @@ export class AppAgent extends AIChatAgent<Env> {
   }
 
   /**
-   * Initialize database tables and other setup
+   * Initialize custom database tables and other setup
+   *
+   * NOTE: These tables are EXAMPLE CODE to show how you can create custom tables
+   * for your agent. The template itself doesn't actually use these tables -
+   * it uses the agent's built-in state management and framework tables instead.
+   *
+   * If you want to store custom data in database tables, you can:
+   * 1. Define your table schema here
+   * 2. Use this.sql`INSERT/SELECT/UPDATE` operations in your tools
+   * 3. See src/agent/storage/ for example helper functions
    */
   async initialize() {
-    // Create tables for storing data
+    // EXAMPLE: Create custom tables for storing additional data
+    // These are not used by the template but show how you could add your own tables
     try {
+      // Example: Custom settings table (alternative to agent state)
       await this.sql`
         CREATE TABLE IF NOT EXISTS settings (
           id TEXT PRIMARY KEY,
@@ -389,6 +400,7 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
+      // Example: Custom tasks/work items table
       await this.sql`
         CREATE TABLE IF NOT EXISTS tasks (
           id TEXT PRIMARY KEY,
@@ -398,6 +410,7 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
+      // Example: Custom interaction history table
       await this.sql`
         CREATE TABLE IF NOT EXISTS interaction_history (
           id TEXT PRIMARY KEY,
@@ -409,9 +422,9 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
-      console.log("Database tables initialized successfully");
+      console.log("Example database tables initialized successfully");
     } catch (error) {
-      console.error("Error initializing database tables:", error);
+      console.error("Error initializing example database tables:", error);
     }
   }
 
