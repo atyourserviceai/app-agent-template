@@ -306,7 +306,135 @@
 }
 
 @keyframes refresh {
-  to {
-    transform: rotate(360deg) scale(0.9);
+  0% {
+    transform: rotate(0deg);
   }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Markdown styling */
+.markdown-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-content li {
+  margin: 0.25rem 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-weight: 600;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.25;
+}
+
+.markdown-content h1 {
+  font-size: 1.5rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.125rem;
+}
+
+.markdown-content p {
+  margin: 0.5rem 0;
+}
+
+.markdown-content pre {
+  background-color: oklch(0.922 0 0);
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.dark .markdown-content pre {
+  background-color: oklch(0.269 0 0);
+}
+
+.markdown-content code {
+  background-color: oklch(0.922 0 0);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+
+.dark .markdown-content code {
+  background-color: oklch(0.269 0 0);
+}
+
+.markdown-content a {
+  color: #3b82f6; /* Tailwind blue-500 */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.markdown-content a:hover {
+  color: #2563eb; /* Tailwind blue-600 */
+}
+
+.dark .markdown-content a {
+  color: #60a5fa; /* Tailwind blue-400 */
+}
+
+.dark .markdown-content a:hover {
+  color: #93c5fd; /* Tailwind blue-300 */
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid oklch(0.708 0 0);
+  padding-left: 0.75rem;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.dark .markdown-content blockquote {
+  border-left-color: oklch(0.371 0 0);
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid oklch(0.708 0 0);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.dark .markdown-content th,
+.dark .markdown-content td {
+  border-color: oklch(0.371 0 0);
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid oklch(0.708 0 0);
+  margin: 1rem 0;
+}
+
+.dark .markdown-content hr {
+  border-top-color: oklch(0.371 0 0);
 }

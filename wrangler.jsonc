@@ -1,5 +1,5 @@
 {
-  "name": "my-chat-agent",
+  "name": "foo-agent",
   "main": "src/server.ts",
   "compatibility_date": "2025-05-07",
   "compatibility_flags": [
@@ -12,15 +12,51 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "Chat",
-        "class_name": "Chat",
+        "name": "AppAgent",
+        "class_name": "AppAgent",
       },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["Chat"],
+      "new_sqlite_classes": ["AppAgent"],
     },
   ],
+  "vars": {
+    "GATEWAY_BASE_URL": "https://atyourserviceai-gateway.motin.eu",
+    "SETTINGS_ENVIRONMENT": "dev",
+    "COMPOSIO_API_KEY": "",
+    "BROWSERBASE_API_KEY": "",
+  },
+  "env": {
+    "staging": {
+      "vars": {
+        "GATEWAY_BASE_URL": "https://gateway-staging.atyourservice.ai",
+        "SETTINGS_ENVIRONMENT": "staging",
+        "COMPOSIO_API_KEY": "",
+        "BROWSERBASE_API_KEY": "",
+      },
+      "routes": [
+        {
+          "pattern": "foo-agent-staging.atyourservice.ai",
+          "custom_domain": true,
+        },
+      ],
+    },
+    "production": {
+      "vars": {
+        "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
+        "SETTINGS_ENVIRONMENT": "production",
+        "COMPOSIO_API_KEY": "",
+        "BROWSERBASE_API_KEY": "",
+      },
+      "routes": [
+        {
+          "pattern": "foo-agent.atyourservice.ai",
+          "custom_domain": true,
+        },
+      ],
+    },
+  },
 }

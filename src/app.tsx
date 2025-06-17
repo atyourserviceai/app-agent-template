@@ -1,48 +1,159 @@
-import { useEffect, useState, useRef, useCallback, use } from "react";
-import { useAgent } from "agents/react";
-import { useAgentChat } from "agents/ai-react";
 import type { Message } from "@ai-sdk/react";
-import type { tools } from "./tools";
+import { useAgentChat } from "agents/ai-react";
+import { use, useEffect, useRef, useState } from "react";
+import type { ToolTypes } from "./agent/tools/types";
+import { useAgentState } from "./hooks/useAgentState";
+import { useErrorHandling } from "./hooks/useErrorHandling";
+import { useMessageEditing } from "./hooks/useMessageEditing";
 
-// Component imports
-import { Button } from "@/components/button/Button";
-import { Card } from "@/components/card/Card";
 import { Avatar } from "@/components/avatar/Avatar";
-import { Toggle } from "@/components/toggle/Toggle";
-import { Textarea } from "@/components/textarea/Textarea";
+// Component imports
+import { Card } from "@/components/card/Card";
+import { ChatContainer } from "@/components/chat/ChatContainer";
+import { ChatMessage } from "@/components/chat/ChatMessage";
+import { ChatTabs } from "@/components/chat/ChatTabs";
+import { EmptyChat } from "@/components/chat/EmptyChat";
+import { ErrorMessage } from "@/components/chat/ErrorMessage";
+import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
+import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndicator";
+import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
+import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 
-// Icon imports
-import {
-  Bug,
-  Moon,
-  Robot,
-  Sun,
-  Trash,
-  PaperPlaneTilt,
-  Stop,
-} from "@phosphor-icons/react";
+// Define agent data interface for typing
+interface AgentData {
+  connectionStatus?: "connected" | "disconnected" | "error" | "reconnecting";
+  [key: string]: unknown;
+}
 
 // List of tools that require human confirmation
-// NOTE: this should match the keys in the executions object in tools.ts
-const toolsRequiringConfirmation: (keyof typeof tools)[] = [
+const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
   "getWeatherInformation",
+  // Do not add suggestActions here as we want it to display without confirmation
 ];
 
+// Add this new component to show suggested actions above the chat input
+function SuggestedActions({
+  messages,
+  addToolResult,
+  reload,
+}: {
+  messages: Message[];
+  addToolResult: (args: { toolCallId: string; result: string }) => void;
+  reload: () => void;
+}) {
+  // Find the latest message with suggestActions
+  const lastAssistantMessage = [...messages]
+    .reverse()
+    .find((msg) => msg.role === "assistant");
+
+  if (!lastAssistantMessage) return null;
+
+  // Find the suggestActions tool invocation in the message parts
+  const suggestActionsPart = lastAssistantMessage.parts?.find(
+    (part) =>
+      part.type === "tool-invocation" &&
+      "toolInvocation" in part &&
+      part.toolInvocation.toolName === "suggestActions"
+  );
+
+  if (!suggestActionsPart || !("toolInvocation" in suggestActionsPart))
+    return null;
+
+  const toolInvocation = suggestActionsPart.toolInvocation;
+
+  // Get the actions based on the state - they could be in args or result
+  let actions: Array<{
+    label: string;
+    value: string;
+    primary?: boolean;
+    isOther?: boolean;
+  }> = [];
+
+  if (toolInvocation.state === "call") {
+    // Handle call state - get actions from args
+    actions =
+      (toolInvocation.args.actions as Array<{
+        label: string;
+        value: string;
+        primary?: boolean;
+        isOther?: boolean;
+      }>) || [];
+  } else if (toolInvocation.state === "result" && toolInvocation.result) {
+    // Handle result state - get actions from result
+    // This ensures we can handle both cases where the tool execution may have modified the actions
+    if (typeof toolInvocation.result === "string") {
+      try {
+        const parsedResult = JSON.parse(toolInvocation.result);
+        if (parsedResult.actions) {
+          actions = parsedResult.actions;
+        }
+      } catch (e) {
+        console.error("Failed to parse suggestActions result", e);
+      }
+    } else if (toolInvocation.result && "actions" in toolInvocation.result) {
+      actions = toolInvocation.result.actions as Array<{
+        label: string;
+        value: string;
+        primary?: boolean;
+        isOther?: boolean;
+      }>;
+    }
+  }
+
+  if (actions.length === 0) return null;
+
+  // Added margin-bottom to ensure space between buttons and input
+  return (
+    <div className="w-full mb-16 mt-2 px-2 flex justify-end">
+      <ActionButtons
+        actions={actions}
+        onActionClick={(value, isOther) => {
+          // Complete the tool call only if it's still in call state
+          if (toolInvocation.state === "call") {
+            addToolResult({
+              toolCallId: toolInvocation.toolCallId,
+              result: JSON.stringify({
+                success: true,
+                selectedAction: value,
+                message: "User selected an action",
+                actions,
+              }),
+            });
+          }
+
+          // Then dispatch the event for the app to handle
+          const event = new CustomEvent("action-button-clicked", {
+            detail: {
+              text: value,
+              isOther: isOther,
+            },
+          });
+          window.dispatchEvent(event);
+        }}
+      />
+    </div>
+  );
+}
+
 export default function Chat() {
+  // UI-related state
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     // Check localStorage first, default to dark if not found
     const savedTheme = localStorage.getItem("theme");
     return (savedTheme as "dark" | "light") || "dark";
   });
   const [showDebug, setShowDebug] = useState(false);
-  const [textareaHeight, setTextareaHeight] = useState("auto");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"chat" | "playbook">("chat");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Add temporary loading state for smoother mode transitions
+  const [temporaryLoading, setTemporaryLoading] = useState(false);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+  };
 
   useEffect(() => {
     // Apply theme class on mount and when theme changes
@@ -58,19 +169,20 @@ export default function Chat() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Scroll to bottom on mount
+  // Use the agent state hook instead of implementing the logic directly
+  const { agent, agentState, agentMode, changeAgentMode } =
+    useAgentState("onboarding");
+
+  // Use the error handling hook
+  const { isErrorMessage, parseErrorData, formatErrorForMessage } =
+    useErrorHandling();
+
+  // Debug effect to log dropdown values on every render
   useEffect(() => {
-    scrollToBottom();
-  }, [scrollToBottom]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-  };
-
-  const agent = useAgent({
-    agent: "chat",
-  });
+    console.log(
+      `[UI Debug] Dropdown values - agentMode: ${agentMode}, agentState?.mode: ${agentState?.mode || "none"}`
+    );
+  }, [agentMode, agentState]);
 
   const {
     messages: agentMessages,
@@ -79,17 +191,319 @@ export default function Chat() {
     handleSubmit: handleAgentSubmit,
     addToolResult,
     clearHistory,
+    data: agentData,
+    setInput,
+    setMessages,
+    reload,
     isLoading,
-    stop,
   } = useAgentChat({
     agent,
     maxSteps: 5,
+    onError: (error) => {
+      console.error("Error while streaming:", error);
+      console.log(
+        "[ERROR HANDLER] Error details:",
+        JSON.stringify(error, null, 2)
+      );
+      console.log("[ERROR HANDLER] Error type:", typeof error);
+      console.log(
+        "[ERROR HANDLER] Error keys:",
+        error ? Object.keys(error) : "no keys"
+      );
+      console.log(
+        "[ERROR HANDLER] Error message:",
+        error instanceof Error ? error.message : String(error)
+      );
+      console.log(
+        "[ERROR HANDLER] Error stack:",
+        error instanceof Error ? error.stack : "no stack"
+      );
+
+      // Use values from the editing hook for error handling
+      console.log(
+        `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
+      );
+      console.log(
+        `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
+      );
+
+      // Create a new assistant message with the error
+      const errorMessage = formatErrorForMessage(error);
+
+      // Initialize with current messages
+      let currentMessages = [...agentMessages];
+
+      // If we have an original edit index from a recent edit
+      if (
+        originalEditIndexRef.current !== null &&
+        editedMessageContentRef.current
+      ) {
+        console.log(
+          `[Error] Using original edit context, index: ${originalEditIndexRef.current}`
+        );
+        console.log(
+          `[Error] Using stored edited content: "${editedMessageContentRef.current.substring(0, 30)}..."`
+        );
+
+        // We had an edit in progress - truncate to before the edit using ORIGINAL values
+        const originalLength = currentMessages.length;
+        const editIndex = originalEditIndexRef.current;
+
+        currentMessages =
+          editIndex > 0 ? agentMessages.slice(0, editIndex) : [];
+
+        console.log(
+          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
+        );
+
+        // Add the stored edited message (rather than whatever might be in the input)
+        const editedMessageText = editedMessageContentRef.current;
+        console.log(
+          `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
+        );
+        currentMessages.push({
+          id: crypto.randomUUID(),
+          role: "user" as const,
+          createdAt: new Date(),
+          content: editedMessageText,
+          parts: [
+            {
+              type: "text" as const,
+              text: editedMessageText,
+            },
+          ],
+        });
+
+        // Reset original refs
+        originalEditIndexRef.current = null;
+        originalMessagesLengthRef.current = 0;
+        editedMessageContentRef.current = "";
+      } else if (currentEditIndex !== null) {
+        // Fallback to current edit index (for retry operations)
+        console.log(
+          `[Error] Using current edit context, index: ${currentEditIndex}`
+        );
+
+        // We're in the middle of editing - truncate to before the edit
+        const originalLength = currentMessages.length;
+        currentMessages =
+          currentEditIndex > 0 ? agentMessages.slice(0, currentEditIndex) : [];
+
+        console.log(
+          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
+        );
+
+        // Also add the message being edited (from input)
+        const editedMessageText = agentInput.trim();
+        if (editedMessageText) {
+          console.log(
+            `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
+          );
+          currentMessages.push({
+            id: crypto.randomUUID(),
+            role: "user" as const,
+            createdAt: new Date(),
+            content: editedMessageText,
+            parts: [
+              {
+                type: "text" as const,
+                text: editedMessageText,
+              },
+            ],
+          });
+        }
+
+        // Reset editing state
+        setCurrentEditIndex(null);
+      } else {
+        // For regular messages, make sure the user message is included
+        const lastUserInput = agentInput.trim();
+        const lastMessageIsUser =
+          currentMessages.length > 0 &&
+          currentMessages[currentMessages.length - 1].role === "user";
+
+        if (lastUserInput && !lastMessageIsUser) {
+          console.log(
+            `[Error] Adding user message: "${lastUserInput.substring(0, 30)}..."`
+          );
+          // Add the user message that caused the error
+          currentMessages.push({
+            id: crypto.randomUUID(),
+            role: "user" as const,
+            createdAt: new Date(),
+            content: lastUserInput,
+            parts: [
+              {
+                type: "text" as const,
+                text: lastUserInput,
+              },
+            ],
+          });
+        }
+      }
+
+      // Create a new error message with required format
+      const newErrorMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant" as const,
+        createdAt: new Date(),
+        content: errorMessage,
+        parts: [
+          {
+            type: "text" as const,
+            text: errorMessage,
+          },
+        ],
+      };
+
+      console.log(
+        `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
+      );
+
+      // Add the error message to the messages
+      setMessages([...currentMessages, newErrorMessage]);
+
+      // Reset retry state
+      setIsRetrying(false);
+
+      // Clear any refs
+      originalEditIndexRef.current = null;
+      originalMessagesLengthRef.current = 0;
+      editedMessageContentRef.current = "";
+    },
   });
 
-  // Scroll to bottom when messages change
+  // Use the message editing hook to manage message editing and retry logic
+  const {
+    editingMessageId,
+    editingValue,
+    currentEditIndex,
+    isRetrying,
+    originalMessagesLengthRef,
+    originalEditIndexRef,
+    editedMessageContentRef,
+    setEditingValue,
+    setCurrentEditIndex,
+    setIsRetrying,
+    startEditing,
+    cancelEditing,
+    handleEditMessage,
+    handleRetry,
+    handleRetryLastUserMessage,
+  } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
+  console.log(`[Chat] agentData: ${JSON.stringify(agentData)}`);
+
+  // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
-    agentMessages.length > 0 && scrollToBottom();
-  }, [agentMessages, scrollToBottom]);
+    // Function to set input and switch to chat tab if needed
+    function handleSetChatInput(event: CustomEvent) {
+      if (event.detail) {
+        setInput(event.detail.text || "");
+        // If we're not in chat tab, switch to it
+        if (activeTab !== "chat") {
+          setActiveTab("chat");
+        }
+      }
+    }
+
+    // Add event listener
+    window.addEventListener(
+      "set-chat-input",
+      handleSetChatInput as EventListener
+    );
+
+    // Cleanup
+    return () => {
+      window.removeEventListener(
+        "set-chat-input",
+        handleSetChatInput as EventListener
+      );
+    };
+  }, [setInput, activeTab]);
+
+  // Handle action button clicks from the suggestActions tool
+  useEffect(() => {
+    function handleActionButtonClick(event: CustomEvent) {
+      if (event.detail && event.detail.text !== undefined) {
+        const selectedText = event.detail.text;
+        const isOther = event.detail.isOther === true;
+
+        // If the user selects the "Other" option, just focus the input field
+        if (isOther) {
+          // Focus the input field for custom entry
+          setTimeout(() => {
+            // Find the textarea element directly (more reliable than using ref)
+            const textareas = document.querySelectorAll("textarea");
+            if (textareas.length > 0) {
+              const textarea = textareas[0];
+              textarea.focus();
+              // Optional: Add a slight delay to ensure focus works after UI updates
+              setTimeout(() => {
+                textarea.focus();
+              }, 100);
+            }
+          }, 50);
+          return;
+        }
+
+        // For non-Other options, directly add a user message with the selected text
+        if (selectedText) {
+          // Set the input value first (needed for compatibility with input validation)
+          setInput(selectedText);
+
+          // Then create a synthetic form submit event
+          setTimeout(() => {
+            // Create a new user message
+            const newMessage = {
+              id: crypto.randomUUID(),
+              role: "user" as const,
+              createdAt: new Date(),
+              content: selectedText,
+              parts: [
+                {
+                  type: "text" as const,
+                  text: selectedText,
+                },
+              ],
+            };
+
+            // Add the message to the chat
+            setMessages([...agentMessages, newMessage]);
+
+            // Clear the input field
+            setInput("");
+
+            // Trigger the agent to respond
+            setTimeout(() => {
+              reload();
+            }, 50);
+          }, 10);
+        }
+      }
+    }
+
+    // Add event listener
+    window.addEventListener(
+      "action-button-clicked",
+      handleActionButtonClick as EventListener
+    );
+
+    // Cleanup
+    return () => {
+      window.removeEventListener(
+        "action-button-clicked",
+        handleActionButtonClick as EventListener
+      );
+    };
+  }, [setMessages, agentMessages, setInput, reload]);
+
+  // Reset textarea height when input is empty
+  useEffect(() => {
+    if (agentInput === "" && textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }, [agentInput]);
 
   const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
     m.parts?.some(
@@ -97,7 +511,7 @@ export default function Chat() {
         part.type === "tool-invocation" &&
         part.toolInvocation.state === "call" &&
         toolsRequiringConfirmation.includes(
-          part.toolInvocation.toolName as keyof typeof tools
+          part.toolInvocation.toolName as keyof ToolTypes
         )
     )
   );
@@ -106,270 +520,339 @@ export default function Chat() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Handle message rendering loop
+  const renderMessages = () => {
+    if (agentMessages.length === 0) {
+      return <EmptyChat />;
+    }
+
+    // Render all regular messages
+    const messageElements = agentMessages.map((message: Message, index) => {
+      // Common variable setup
+      const isUser = message.role === "user";
+      const isMessageError = isErrorMessage(message);
+      const isEditing = editingMessageId === message.id;
+      const isSystemMessage = message.role === "system";
+
+      // Special handling for error messages
+      if (isMessageError && !isUser) {
+        const errorData = parseErrorData(message);
+
+        return (
+          <div key={message.id}>
+            <ErrorMessage
+              errorData={errorData}
+              onRetry={() => handleRetry(index)}
+              isLoading={isLoading}
+              formatTime={formatTime}
+              createdAt={message.createdAt}
+            />
+          </div>
+        );
+      }
+
+      // For user messages or system messages, use our ChatMessage component
+      if (isUser || isSystemMessage) {
+        return (
+          <ChatMessage
+            key={message.id}
+            message={message}
+            index={index}
+            isEditing={isEditing}
+            editingValue={editingValue}
+            onStartEditing={startEditing}
+            onCancelEditing={cancelEditing}
+            onSaveEdit={handleEditMessage}
+            onEditingValueChange={setEditingValue}
+            formatTime={formatTime}
+            showDebug={showDebug}
+          />
+        );
+      }
+
+      // For assistant messages with multiple parts
+      return (
+        <div key={message.id} className="mb-4">
+          {showDebug && (
+            <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
+              {JSON.stringify(message, null, 2)}
+            </pre>
+          )}
+
+          <div className="flex justify-start">
+            <div className="flex gap-2 max-w-[85%] flex-row">
+              <Avatar username={"AI"} />
+
+              <div className="space-y-3">
+                {/* Render each part in sequence */}
+                {message.parts?.map((part, i) => {
+                  // For text parts
+                  if (part.type === "text") {
+                    return (
+                      <div
+                        key={`${message.id}-text-${part.text?.substring(0, 10) || i}`}
+                      >
+                        <Card className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 rounded-bl-none border-assistant-border">
+                          <div className="text-base markdown-content">
+                            <MemoizedMarkdown
+                              id={`${message.id}-${i}`}
+                              content={part.text || ""}
+                            />
+                          </div>
+                        </Card>
+                      </div>
+                    );
+                  }
+
+                  // For tool invocation parts
+                  if (part.type === "tool-invocation") {
+                    const toolInvocation = part.toolInvocation;
+                    const toolCallId = toolInvocation.toolCallId;
+                    const needsConfirmation =
+                      toolsRequiringConfirmation.includes(
+                        toolInvocation.toolName as keyof ToolTypes
+                      ) && toolInvocation.state === "call";
+
+                    // Skip suggestActions invocations since they are handled separately
+                    if (toolInvocation.toolName === "suggestActions") {
+                      return null;
+                    }
+
+                    return (
+                      <ToolInvocationCard
+                        key={`${message.id}-tool-${toolCallId}`}
+                        toolInvocation={toolInvocation}
+                        toolCallId={toolCallId}
+                        needsConfirmation={needsConfirmation}
+                        addToolResult={addToolResult}
+                      />
+                    );
+                  }
+
+                  return null;
+                })}
+
+                {/* Timestamp for the entire message */}
+                <p className="text-xs text-muted-foreground mt-1 text-left">
+                  {formatTime(new Date(message.createdAt as unknown as string))}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    });
+
+    // Check if the last message is from the user with no assistant response
+    if (!isLoading && !isRetrying && agentMessages.length > 0) {
+      const lastMessage = agentMessages[agentMessages.length - 1];
+      const isLastMessageFromUser = lastMessage.role === "user";
+
+      if (isLastMessageFromUser) {
+        messageElements.push(
+          <div key="missing-response">
+            <MissingResponseIndicator
+              onTryAgain={handleRetryLastUserMessage}
+              isLoading={isLoading}
+              formatTime={formatTime}
+            />
+          </div>
+        );
+      }
+    }
+
+    // Check if there's an assistant message currently being streamed
+    const isCurrentlyStreaming =
+      agentMessages.length > 0 &&
+      agentMessages[agentMessages.length - 1].role === "assistant" &&
+      (agentMessages[agentMessages.length - 1].parts?.find(
+        (part) => part.type === "text"
+      )?.text?.length || 0) > 0;
+
+    // If we're loading (waiting for a response), show a typing indicator
+    // But only if we're not already streaming an assistant message
+    if ((isLoading || temporaryLoading) && !isCurrentlyStreaming) {
+      // Show loading indicator when isLoading is true or temporaryLoading is set
+      // but not when there's already an assistant message being streamed
+      messageElements.push(
+        <div key="loading-indicator">
+          <LoadingIndicator formatTime={formatTime} />
+        </div>
+      );
+    }
+
+    // Add warning for disconnected state
+    const typedAgentData = agentData as unknown as AgentData;
+    if (
+      typeof typedAgentData?.connectionStatus === "string" &&
+      (typedAgentData.connectionStatus === "disconnected" ||
+        typedAgentData.connectionStatus === "error" ||
+        typedAgentData.connectionStatus === "reconnecting")
+    ) {
+      messageElements.push(
+        <div key="connection-warning" className="flex justify-center my-4">
+          <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm flex items-center gap-2 text-red-800 dark:text-red-300 max-w-md">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="w-6 h-6"
+              role="img"
+              aria-label="Warning icon"
+            >
+              <title>Warning</title>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>
+              {typedAgentData.connectionStatus === "disconnected" &&
+                "Connection lost. Trying to reconnect..."}
+              {typedAgentData.connectionStatus === "error" &&
+                "Connection error. Trying to reconnect..."}
+              {typedAgentData.connectionStatus === "reconnecting" &&
+                "Reconnecting..."}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Add suggested actions at the end of messages
+    messageElements.push(
+      <SuggestedActions
+        key="suggested-actions"
+        messages={agentMessages}
+        addToolResult={addToolResult}
+        reload={reload}
+      />
+    );
+
+    return messageElements;
+  };
+
+  // Update the clearHistory function to properly handle post-clear welcome messages
+  const handleClearHistory = () => {
+    // Clear the history first
+    clearHistory();
+
+    // Reset retrying state
+    setIsRetrying(false);
+
+    // Use a temporary loading indicator for better UX
+    // We need this because clearing history doesn't naturally trigger the isLoading state
+    // This gives visual feedback that something is happening
+    setTemporaryLoading(true);
+    setTimeout(() => setTemporaryLoading(false), 1500);
+
+    // After clearing, force refresh the current mode to generate a welcome message
+    if (changeAgentMode) {
+      console.log("[UI] Refreshing mode after clearing history");
+
+      // Pass true for both force and isAfterClearHistory
+      // The isAfterClearHistory flag is critical to ensure proper behavior:
+      // - On page reload, the agent's onConnect method ensures a welcome message
+      // - When clearing history, we don't trigger onConnect, so we need this flag
+      // - This makes the mode transition create a fresh welcome message
+      // - Without this flag, clearing history would leave an empty chat with no welcome message
+      changeAgentMode(agentMode, true, true);
+    }
+  };
+
+  // Update handleSubmitWithRetry to properly handle options
+  const handleSubmitWithRetry = (e: React.FormEvent) => {
+    setIsRetrying(false); // Clear retrying state when sending a new message
+    handleAgentSubmit(e);
+  };
+
+  // Handle empty chat state with a loading indicator
+  useEffect(() => {
+    // If we have no messages but the agent is connected, show a loading indicator
+    // This helps with the initial loading experience for new chatrooms
+    if (agent && agentMessages.length === 0 && !isLoading) {
+      setTemporaryLoading(true);
+
+      // Set a timeout to clear the loading state if no messages arrive
+      const timeout = setTimeout(() => {
+        setTemporaryLoading(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [agent, agentMessages.length, isLoading]);
+
+  // Single simplified auto-response for system messages (welcome or transition)
+  useEffect(() => {
+    if (agentMessages.length > 0 && !isLoading && !temporaryLoading) {
+      const lastMessage = agentMessages[agentMessages.length - 1];
+
+      // Check if last message is a system message with isModeMessage data
+      if (lastMessage.role === "system") {
+        const messageData = lastMessage.data;
+        const isModeMessage =
+          messageData &&
+          typeof messageData === "object" &&
+          "isModeMessage" in messageData;
+
+        if (isModeMessage) {
+          console.log(
+            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
+          );
+          // Trigger AI response just like a user sent a message
+          reload();
+        }
+      }
+    }
+  }, [agentMessages, isLoading, temporaryLoading, reload]);
+
   return (
     <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
       <HasOpenAIKey />
-      <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-lg flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800">
-        <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center gap-3 sticky top-0 z-10">
-          <div className="flex items-center justify-center h-8 w-8">
-            <svg
-              width="28px"
-              height="28px"
-              className="text-[#F48120]"
-              data-icon="agents"
-            >
-              <title>Cloudflare Agents</title>
-              <symbol id="ai:local:agents" viewBox="0 0 80 79">
-                <path
-                  fill="currentColor"
-                  d="M69.3 39.7c-3.1 0-5.8 2.1-6.7 5H48.3V34h4.6l4.5-2.5c1.1.8 2.5 1.2 3.9 1.2 3.8 0 7-3.1 7-7s-3.1-7-7-7-7 3.1-7 7c0 .9.2 1.8.5 2.6L51.9 30h-3.5V18.8h-.1c-1.3-1-2.9-1.6-4.5-1.9h-.2c-1.9-.3-3.9-.1-5.8.6-.4.1-.8.3-1.2.5h-.1c-.1.1-.2.1-.3.2-1.7 1-3 2.4-4 4 0 .1-.1.2-.1.2l-.3.6c0 .1-.1.1-.1.2v.1h-.6c-2.9 0-5.7 1.2-7.7 3.2-2.1 2-3.2 4.8-3.2 7.7 0 .7.1 1.4.2 2.1-1.3.9-2.4 2.1-3.2 3.5s-1.2 2.9-1.4 4.5c-.1 1.6.1 3.2.7 4.7s1.5 2.9 2.6 4c-.8 1.8-1.2 3.7-1.1 5.6 0 1.9.5 3.8 1.4 5.6s2.1 3.2 3.6 4.4c1.3 1 2.7 1.7 4.3 2.2v-.1q2.25.75 4.8.6h.1c0 .1.1.1.1.1.9 1.7 2.3 3 4 4 .1.1.2.1.3.2h.1c.4.2.8.4 1.2.5 1.4.6 3 .8 4.5.7.4 0 .8-.1 1.3-.1h.1c1.6-.3 3.1-.9 4.5-1.9V62.9h3.5l3.1 1.7c-.3.8-.5 1.7-.5 2.6 0 3.8 3.1 7 7 7s7-3.1 7-7-3.1-7-7-7c-1.5 0-2.8.5-3.9 1.2l-4.6-2.5h-4.6V48.7h14.3c.9 2.9 3.5 5 6.7 5 3.8 0 7-3.1 7-7s-3.1-7-7-7m-7.9-16.9c1.6 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.4-3 3-3m0 41.4c1.6 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.4-3 3-3M44.3 72c-.4.2-.7.3-1.1.3-.2 0-.4.1-.5.1h-.2c-.9.1-1.7 0-2.6-.3-1-.3-1.9-.9-2.7-1.7-.7-.8-1.3-1.7-1.6-2.7l-.3-1.5v-.7q0-.75.3-1.5c.1-.2.1-.4.2-.7s.3-.6.5-.9c0-.1.1-.1.1-.2.1-.1.1-.2.2-.3s.1-.2.2-.3c0 0 0-.1.1-.1l.6-.6-2.7-3.5c-1.3 1.1-2.3 2.4-2.9 3.9-.2.4-.4.9-.5 1.3v.1c-.1.2-.1.4-.1.6-.3 1.1-.4 2.3-.3 3.4-.3 0-.7 0-1-.1-2.2-.4-4.2-1.5-5.5-3.2-1.4-1.7-2-3.9-1.8-6.1q.15-1.2.6-2.4l.3-.6c.1-.2.2-.4.3-.5 0 0 0-.1.1-.1.4-.7.9-1.3 1.5-1.9 1.6-1.5 3.8-2.3 6-2.3q1.05 0 2.1.3v-4.5c-.7-.1-1.4-.2-2.1-.2-1.8 0-3.5.4-5.2 1.1-.7.3-1.3.6-1.9 1s-1.1.8-1.7 1.3c-.3.2-.5.5-.8.8-.6-.8-1-1.6-1.3-2.6-.2-1-.2-2 0-2.9.2-1 .6-1.9 1.3-2.6.6-.8 1.4-1.4 2.3-1.8l1.8-.9-.7-1.9c-.4-1-.5-2.1-.4-3.1s.5-2.1 1.1-2.9q.9-1.35 2.4-2.1c.9-.5 2-.8 3-.7.5 0 1 .1 1.5.2 1 .2 1.8.7 2.6 1.3s1.4 1.4 1.8 2.3l4.1-1.5c-.9-2-2.3-3.7-4.2-4.9q-.6-.3-.9-.6c.4-.7 1-1.4 1.6-1.9.8-.7 1.8-1.1 2.9-1.3.9-.2 1.7-.1 2.6 0 .4.1.7.2 1.1.3V72zm25-22.3c-1.6 0-3-1.3-3-3 0-1.6 1.3-3 3-3s3 1.3 3 3c0 1.6-1.3 3-3 3"
-                />
-              </symbol>
-              <use href="#ai:local:agents" />
-            </svg>
-          </div>
 
-          <div className="flex-1">
-            <h2 className="font-semibold text-base">AI Chat Agent</h2>
-          </div>
-
-          <div className="flex items-center gap-2 mr-2">
-            <Bug size={16} />
-            <Toggle
-              toggled={showDebug}
-              aria-label="Toggle debug mode"
-              onClick={() => setShowDebug((prev) => !prev)}
-            />
-          </div>
-
-          <Button
-            variant="ghost"
-            size="md"
-            shape="square"
-            className="rounded-full h-9 w-9"
-            onClick={toggleTheme}
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="md"
-            shape="square"
-            className="rounded-full h-9 w-9"
-            onClick={clearHistory}
-          >
-            <Trash size={20} />
-          </Button>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 max-h-[calc(100vh-10rem)]">
-          {agentMessages.length === 0 && (
-            <div className="h-full flex items-center justify-center">
-              <Card className="p-6 max-w-md mx-auto bg-neutral-100 dark:bg-neutral-900">
-                <div className="text-center space-y-4">
-                  <div className="bg-[#F48120]/10 text-[#F48120] rounded-full p-3 inline-flex">
-                    <Robot size={24} />
-                  </div>
-                  <h3 className="font-semibold text-lg">Welcome to AI Chat</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Start a conversation with your AI assistant. Try asking
-                    about:
-                  </p>
-                  <ul className="text-sm text-left space-y-2">
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Weather information for any city</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Local time in different locations</span>
-                    </li>
-                  </ul>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {agentMessages.map((m: Message, index) => {
-            const isUser = m.role === "user";
-            const showAvatar =
-              index === 0 || agentMessages[index - 1]?.role !== m.role;
-
-            return (
-              <div key={m.id}>
-                {showDebug && (
-                  <pre className="text-xs text-muted-foreground overflow-scroll">
-                    {JSON.stringify(m, null, 2)}
-                  </pre>
-                )}
-                <div
-                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`flex gap-2 max-w-[85%] ${
-                      isUser ? "flex-row-reverse" : "flex-row"
-                    }`}
-                  >
-                    {showAvatar && !isUser ? (
-                      <Avatar username={"AI"} />
-                    ) : (
-                      !isUser && <div className="w-8" />
-                    )}
-
-                    <div>
-                      <div>
-                        {m.parts?.map((part, i) => {
-                          if (part.type === "text") {
-                            return (
-                              // biome-ignore lint/suspicious/noArrayIndexKey: immutable index
-                              <div key={i}>
-                                <Card
-                                  className={`p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 ${
-                                    isUser
-                                      ? "rounded-br-none"
-                                      : "rounded-bl-none border-assistant-border"
-                                  } ${
-                                    part.text.startsWith("scheduled message")
-                                      ? "border-accent/50"
-                                      : ""
-                                  } relative`}
-                                >
-                                  {part.text.startsWith(
-                                    "scheduled message"
-                                  ) && (
-                                    <span className="absolute -top-3 -left-2 text-base">
-                                      🕒
-                                    </span>
-                                  )}
-                                  <MemoizedMarkdown
-                                    id={`${m.id}-${i}`}
-                                    content={part.text.replace(
-                                      /^scheduled message: /,
-                                      ""
-                                    )}
-                                  />
-                                </Card>
-                                <p
-                                  className={`text-xs text-muted-foreground mt-1 ${
-                                    isUser ? "text-right" : "text-left"
-                                  }`}
-                                >
-                                  {formatTime(
-                                    new Date(m.createdAt as unknown as string)
-                                  )}
-                                </p>
-                              </div>
-                            );
-                          }
-
-                          if (part.type === "tool-invocation") {
-                            const toolInvocation = part.toolInvocation;
-                            const toolCallId = toolInvocation.toolCallId;
-                            const needsConfirmation =
-                              toolsRequiringConfirmation.includes(
-                                toolInvocation.toolName as keyof typeof tools
-                              );
-
-                            // Skip rendering the card in debug mode
-                            if (showDebug) return null;
-
-                            return (
-                              <ToolInvocationCard
-                                // biome-ignore lint/suspicious/noArrayIndexKey: using index is safe here as the array is static
-                                key={`${toolCallId}-${i}`}
-                                toolInvocation={toolInvocation}
-                                toolCallId={toolCallId}
-                                needsConfirmation={needsConfirmation}
-                                addToolResult={addToolResult}
-                              />
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAgentSubmit(e, {
-              data: {
-                annotations: {
-                  hello: "world",
-                },
-              },
-            });
-            setTextareaHeight("auto"); // Reset height after submission
+      {/* Main Container - Responsive layout with chat and playbook */}
+      <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0">
+        {/* Chat UI */}
+        <ChatContainer
+          theme={theme}
+          showDebug={showDebug}
+          agentMode={agentMode}
+          inputValue={agentInput}
+          isLoading={isLoading}
+          pendingConfirmation={pendingToolCallConfirmation}
+          activeTab={activeTab}
+          onToggleTheme={toggleTheme}
+          onToggleDebug={() => setShowDebug((prev) => !prev)}
+          onChangeMode={(newMode) => {
+            // Use a temporary loading indicator for better UX
+            // We need this because mode changes don't naturally trigger the isLoading state
+            // since they don't involve an AI response - they're just UI state changes
+            // This gives visual feedback that something is happening
+            setTemporaryLoading(true);
+            setTimeout(() => setTemporaryLoading(false), 1500);
+            changeAgentMode(newMode);
           }}
-          className="p-3 bg-neutral-50 absolute bottom-0 left-0 right-0 z-10 border-t border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900"
+          onClearHistory={handleClearHistory}
+          onInputChange={handleAgentInputChange}
+          onInputSubmit={(e) => {
+            handleSubmitWithRetry(e);
+          }}
         >
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Textarea
-                disabled={pendingToolCallConfirmation}
-                placeholder={
-                  pendingToolCallConfirmation
-                    ? "Please respond to the tool confirmation above..."
-                    : "Send a message..."
-                }
-                className="flex w-full border border-neutral-200 dark:border-neutral-700 px-3 py-2 text-base ring-offset-background placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base pb-10 dark:bg-neutral-900"
-                value={agentInput}
-                onChange={(e) => {
-                  handleAgentInputChange(e);
-                  // Auto-resize the textarea
-                  e.target.style.height = "auto";
-                  e.target.style.height = `${e.target.scrollHeight}px`;
-                  setTextareaHeight(`${e.target.scrollHeight}px`);
-                }}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !e.nativeEvent.isComposing
-                  ) {
-                    e.preventDefault();
-                    handleAgentSubmit(e as unknown as React.FormEvent);
-                    setTextareaHeight("auto"); // Reset height on Enter submission
-                  }
-                }}
-                rows={2}
-                style={{ height: textareaHeight }}
-              />
-              <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-                {isLoading ? (
-                  <button
-                    type="button"
-                    onClick={stop}
-                    className="inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full p-1.5 h-fit border border-neutral-200 dark:border-neutral-800"
-                    aria-label="Stop generation"
-                  >
-                    <Stop size={16} />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full p-1.5 h-fit border border-neutral-200 dark:border-neutral-800"
-                    disabled={pendingToolCallConfirmation || !agentInput.trim()}
-                    aria-label="Send message"
-                  >
-                    <PaperPlaneTilt size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
+          {renderMessages()}
+        </ChatContainer>
+
+        {/* Playbook Panel */}
+        <PlaybookContainer
+          activeTab={activeTab}
+          agentMode={agentMode}
+          agentState={agentState}
+          showDebug={showDebug}
+        />
       </div>
+
+      {/* Mobile Tabs at the bottom */}
+      <ChatTabs activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
@@ -381,7 +864,7 @@ const hasOpenAiKeyPromise = fetch("/check-open-ai-key").then((res) =>
 function HasOpenAIKey() {
   const hasOpenAiKey = use(hasOpenAiKeyPromise);
 
-  if (!hasOpenAiKey.success) {
+  if (!hasOpenAiKey || !hasOpenAiKey.success) {
     return (
       <div className="fixed top-0 left-0 right-0 z-50 bg-red-500/10 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto p-4">
@@ -389,24 +872,22 @@ function HasOpenAIKey() {
             <div className="flex items-start gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
                 <svg
-                  className="w-5 h-5 text-red-600 dark:text-red-400"
                   xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
                   fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
                   stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  className="w-5 h-5 text-red-600 dark:text-red-400"
                   aria-labelledby="warningIcon"
                 >
                   <title id="warningIcon">Warning Icon</title>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
+                <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
                   OpenAI API Key Not Configured
                 </h3>
                 <p className="text-neutral-600 dark:text-neutral-300 mb-1">

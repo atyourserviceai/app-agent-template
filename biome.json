@@ -7,7 +7,8 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", "dist", "./worker-configuration.d.ts"]
+    "ignore": ["node_modules", "dist", "./worker-configuration.d.ts"],
+    "maxSize": 2097152
   },
   "formatter": {
     "enabled": false,

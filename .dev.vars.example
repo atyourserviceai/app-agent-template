@@ -1,3 +1,4 @@
-OPENAI_API_KEY=sk-proj-1234567890
-# Optional - Cloudflare AI Gateway https://developers.cloudflare.com/ai-gateway/
-# GATEWAY_BASE_URL=https://gateway.ai.cloudflare.com/v1/..
+GATEWAY_API_KEY=foo
+GATEWAY_BASE_URL=https://gateway.atyourservice.ai
+BROWSERBASE_API_KEY=your-browserbase-api-key
+COMPOSIO_API_KEY=your-composio-api-key

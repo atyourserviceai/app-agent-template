@@ -1,7 +1,7 @@
 import "./styles.css";
+import { Providers } from "@/providers";
 import { createRoot } from "react-dom/client";
 import App from "./app";
-import { Providers } from "@/providers";
 
 const root = createRoot(document.getElementById("app")!);
 
