@@ -159,47 +159,46 @@ export async function exportAgentData(
       schemaQuery: agent.sql`PRAGMA table_info(cf_agents_schedules)`,
       dataQuery: agent.sql`SELECT * FROM cf_agents_schedules`,
     },
-    {
-      name: "companies",
-      schemaQuery: agent.sql`PRAGMA table_info(companies)`,
-      dataQuery: agent.sql`SELECT * FROM companies`,
-    },
-    {
-      name: "leads",
-      schemaQuery: agent.sql`PRAGMA table_info(leads)`,
-      dataQuery: agent.sql`SELECT * FROM leads`,
-    },
-    {
-      name: "interaction_history",
-      schemaQuery: agent.sql`PRAGMA table_info(interaction_history)`,
-      dataQuery: agent.sql`SELECT * FROM interaction_history`,
-    },
   ];
 
   // Process each table
   for (const table of tableQueries) {
-    // Schema query returns an array of column info
-    const schema = await table.schemaQuery;
-    const rows = await table.dataQuery;
+    try {
+      // Schema query returns an array of column info
+      const schema = await table.schemaQuery;
+      const rows = await table.dataQuery;
 
-    // Convert schema to SchemaColumn type
-    const schemaColumns: SchemaColumn[] = Array.isArray(schema)
-      ? schema.map((col) => ({
-          name: String(col.name || ""),
-          type: String(col.type || "TEXT"),
-          notnull: Boolean(col.notnull),
-          pk: Boolean(col.pk),
-          dflt_value:
-            col.dflt_value !== undefined ? String(col.dflt_value) : null,
-          cid: typeof col.cid === "number" ? col.cid : 0,
-        }))
-      : [];
+      // Convert schema to SchemaColumn type
+      const schemaColumns: SchemaColumn[] = Array.isArray(schema)
+        ? schema.map((col) => ({
+            name: String(col.name || ""),
+            type: String(col.type || "TEXT"),
+            notnull: Boolean(col.notnull),
+            pk: Boolean(col.pk),
+            dflt_value:
+              col.dflt_value !== undefined ? String(col.dflt_value) : null,
+            cid: typeof col.cid === "number" ? col.cid : 0,
+          }))
+        : [];
 
-    result.tables[table.name] = {
-      schema: schemaColumns,
-      rows,
-      description: getTableDescription(table.name),
-    };
+      result.tables[table.name] = {
+        schema: schemaColumns,
+        rows,
+        description: getTableDescription(table.name),
+      };
+    } catch (error) {
+      // If table doesn't exist or there's an error, record it but continue
+      console.warn(
+        `[export-import] Error exporting table ${table.name}:`,
+        error
+      );
+      result.tables[table.name] = {
+        schema: [],
+        rows: [],
+        description: getTableDescription(table.name),
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   return result;
