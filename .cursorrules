@@ -4,11 +4,15 @@
 
 2. When executing commands:
    - If you don't see expected command output, ask the user what the command output was
-   - IMPORTANT: The server auto-restarts on file changes - NEVER run `pnpm run dev` manually unless specifically asked to!
+   - CRITICAL: The development server automatically reloads/restarts on ANY file changes - NEVER manually restart the server!
+   - ANY code changes (including database schema changes in initialize() methods) are automatically picked up
+   - NEVER suggest restarting the server - file saves trigger automatic reloads that apply all changes
+   - NEVER run `pnpm run dev` manually unless specifically asked to start a new server!
    - Server logs
      - Tail dev.log to check the output from the currently running website process
    - The server runs on port 5173, and if you run `pnpm run dev` and the port is already in use, it means the server is already running. Check dev.log as per above for the output. (tail without -f as logs are very large)
      - The server will automatically restart when you save a file, so you don't need to manually restart it.
+   - Database changes (like new tables in initialize()) are applied automatically on the next request after file save
 
 3. File Operations:
   - Don't add Env / env var types to types.ts and never modify worker-configuration.d.ts manually, use `pnpm run types` instead, then worker-configuration.d.ts will contain types for Env
