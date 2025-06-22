@@ -7,13 +7,16 @@ Implement a clean OAuth flow where AtYourService.ai acts as the **AI fuel provid
 ## Key Architecture Insights
 
 ### 1. **Always Require AtYourService.ai Account**
+
 Even for BYOK users, we require an AtYourService.ai account because:
+
 - **User-specific agent rooms**: Each user needs their own agent instance (can't all use "default")
 - **Consistent auth flow**: Single OAuth regardless of payment method
 - **Better UX**: Users can switch between credits/BYOK in their dashboard
 - **API key management**: BYOK keys stored securely in AtYourService.ai dashboard
 
 ### 2. **Authentication Strategy**
+
 - **Authentication happens BEFORE agent creation** using `onBeforeConnect` hook
 - **No separate API key verification in agent** - the gateway handles this when making LLM requests
 - **User ID determines agent room name**: `/agents/app-agent-template/{user_id}`
@@ -21,6 +24,7 @@ Even for BYOK users, we require an AtYourService.ai account because:
 ## User Experience Flow
 
 ### App Agent Template Landing Page
+
 ```
 ┌─────────────────────────────────────────┐
 │        🤖 App Agent Template            │
@@ -41,6 +45,7 @@ Even for BYOK users, we require an AtYourService.ai account because:
 ```
 
 ### OAuth Flow with Client Secret
+
 1. **Landing** → "Sign in with AtYourService.ai"
 2. **OAuth Redirect** → `https://atyourservice.ai/oauth/authorize?client_id=app-agent-template&redirect_uri=...`
 3. **User Auth** → User signs in/signs up with AtYourService.ai
@@ -50,6 +55,7 @@ Even for BYOK users, we require an AtYourService.ai account because:
 7. **Agent Access** → Connect to user-specific agent: `/agents/app-agent-template/{user_id}`
 
 ### Why AtYourService.ai for All Users?
+
 - **User-specific rooms**: Each user gets their own agent instance (`/{user_id}`)
 - **Easy for AI integrators**: No need to build user management, billing, API key management
 - **Users join integrator's organization**: Simple auth solution for getting started
@@ -61,6 +67,7 @@ Even for BYOK users, we require an AtYourService.ai account because:
 ### 1. Website (SvelteKit) - OAuth Provider
 
 #### OAuth App Configuration
+
 ```typescript
 // website/src/lib/oauth/types.ts
 export interface OAuthApp {
@@ -78,38 +85,39 @@ export interface OAuthApp {
 
 // website/src/lib/oauth/apps.ts
 export const OAUTH_APPS: Record<string, OAuthApp> = {
-  'app-agent-template': {
-    name: 'App Agent Template',
-    description: 'Template for building AI agents with AtYourService.ai',
-    client_id: 'app-agent-template',
+  "app-agent-template": {
+    name: "App Agent Template",
+    description: "Template for building AI agents with AtYourService.ai",
+    client_id: "app-agent-template",
     client_secret: env.APP_AGENT_TEMPLATE_SECRET, // Required for server-side token exchange
     redirect_uris: [
-      'http://localhost:5273/auth/callback', // local dev
-      'https://app-agent-template.atyourservice.ai/auth/callback', // prod
+      "http://localhost:5273/auth/callback", // local dev
+      "https://app-agent-template.atyourservice.ai/auth/callback", // prod
     ],
-    scopes: ['agent-fuel', 'usage-tracking'],
+    scopes: ["agent-fuel", "usage-tracking"],
     promotional_credits: 500, // $5.00 promotional credits
-    auth_url: 'https://atyourservice.ai',
-    token_url: 'https://atyourservice.ai/oauth/token',
+    auth_url: "https://atyourservice.ai",
+    token_url: "https://atyourservice.ai/oauth/token",
   },
   // ... other apps will be added later
 };
 ```
 
 #### OAuth Endpoints (Website)
+
 ```typescript
 // website/src/routes/oauth/authorize/+page.server.ts
 export const load: PageServerLoad = async ({ url, locals }) => {
-  const clientId = url.searchParams.get('client_id');
-  const scope = url.searchParams.get('scope');
-  const redirectUri = url.searchParams.get('redirect_uri');
+  const clientId = url.searchParams.get("client_id");
+  const scope = url.searchParams.get("scope");
+  const redirectUri = url.searchParams.get("redirect_uri");
 
   const app = OAUTH_APPS[clientId];
-  if (!app) throw error(400, 'Invalid client_id');
+  if (!app) throw error(400, "Invalid client_id");
 
   return {
     app,
-    authRequest: { clientId, scope, redirectUri }
+    authRequest: { clientId, scope, redirectUri },
   };
 };
 
@@ -120,7 +128,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   // Verify client credentials
   const app = OAUTH_APPS[client_id];
   if (!app || app.client_secret !== client_secret) {
-    throw error(401, 'Invalid client credentials');
+    throw error(401, "Invalid client credentials");
   }
 
   // Verify auth code, get user
@@ -130,8 +138,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   // Create or get app-specific API key for this user
   const apiKey = await createUserApiKey(user.id, client_id, {
     name: `App: ${OAUTH_APPS[client_id].name}`,
-    description: 'API key for app usage',
-    app_context: client_id
+    description: "API key for app usage",
+    app_context: client_id,
   });
 
   // Grant promotional credits if new app user
@@ -146,8 +154,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       id: user.id,
       email: user.email,
       credits: user.credits,
-      granted_promo: app.promotional_credits
-    }
+      granted_promo: app.promotional_credits,
+    },
   });
 };
 ```
@@ -155,6 +163,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 ### 2. App Agent Template AuthGuard Component (React + Cloudflare Workers)
 
 #### OAuth Configuration (Production URLs)
+
 ```typescript
 // src/config/oauth.ts
 interface OAuthConfig {
@@ -166,14 +175,15 @@ interface OAuthConfig {
 export const getOAuthConfig = (): OAuthConfig => {
   // Use production AtYourService.ai for all environments
   return {
-    client_id: 'app-agent-template',
-    auth_url: 'https://atyourservice.ai',
-    token_url: 'https://atyourservice.ai/oauth/token',
+    client_id: "app-agent-template",
+    auth_url: "https://atyourservice.ai",
+    token_url: "https://atyourservice.ai/oauth/token",
   };
 };
 ```
 
 #### AuthGuard Component
+
 ```typescript
 // src/components/auth/AuthGuard.tsx
 interface AuthMethod {
@@ -219,6 +229,7 @@ function initiateOAuth() {
 ```
 
 #### OAuth Callback Handler with Client Secret
+
 ```typescript
 // src/routes/auth/callback/page.tsx - Server-side token exchange
 export default function AuthCallback() {
@@ -283,58 +294,65 @@ export default function AuthCallback() {
 
 ```typescript
 // src/server.ts - Main entry point using routeAgentRequest
-import { routeAgentRequest } from 'agents';
+import { routeAgentRequest } from "agents";
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    return (await routeAgentRequest(request, env, {
-      // Authenticate users before WebSocket connection
-      onBeforeConnect: async (request) => {
-        const url = new URL(request.url);
-        const token = url.searchParams.get('token');
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
+    return (
+      (await routeAgentRequest(request, env, {
+        // Authenticate users before WebSocket connection
+        onBeforeConnect: async (request) => {
+          const url = new URL(request.url);
+          const token = url.searchParams.get("token");
 
-        if (!token) {
-          return new Response('Missing auth token', { status: 401 });
-        }
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
 
-        // Verify OAuth token with AtYourService.ai
-        const userInfo = await verifyOAuthToken(token, env);
-        if (!userInfo) {
-          return new Response('Invalid auth token', { status: 403 });
-        }
+          // Verify OAuth token with AtYourService.ai
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
 
-        // User info will be available to the agent instance
-        // Agent name automatically becomes: `/agents/app-agent-template/{userInfo.id}`
+          // User info will be available to the agent instance
+          // Agent name automatically becomes: `/agents/app-agent-template/{userInfo.id}`
 
-        return undefined; // Continue to agent
-      },
+          return undefined; // Continue to agent
+        },
 
-      // Authenticate HTTP requests
-      onBeforeRequest: async (request) => {
-        const url = new URL(request.url);
-        const token = url.searchParams.get('token') ||
-                     request.headers.get('Authorization')?.replace('Bearer ', '');
+        // Authenticate HTTP requests
+        onBeforeRequest: async (request) => {
+          const url = new URL(request.url);
+          const token =
+            url.searchParams.get("token") ||
+            request.headers.get("Authorization")?.replace("Bearer ", "");
 
-        if (!token) {
-          return new Response('Missing auth token', { status: 401 });
-        }
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
 
-        const userInfo = await verifyOAuthToken(token, env);
-        if (!userInfo) {
-          return new Response('Invalid auth token', { status: 403 });
-        }
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
 
-        return undefined; // Continue to agent
-      }
-    })) || new Response('Not found', { status: 404 });
-  }
+          return undefined; // Continue to agent
+        },
+      })) || new Response("Not found", { status: 404 })
+    );
+  },
 };
 
 async function verifyOAuthToken(token: string, env: Env) {
   try {
     // Call AtYourService.ai to verify the OAuth token
-    const response = await fetch('https://atyourservice.ai/api/oauth/verify', {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const response = await fetch("https://atyourservice.ai/api/oauth/verify", {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) return null;
@@ -342,13 +360,14 @@ async function verifyOAuthToken(token: string, env: Env) {
     const userInfo = await response.json();
     return userInfo; // { id, email, api_key, payment_method: 'credits'|'byok' }
   } catch (error) {
-    console.error('Token verification failed:', error);
+    console.error("Token verification failed:", error);
     return null;
   }
 }
 ```
 
 #### Frontend Agent Connection (User-Specific Rooms)
+
 ```typescript
 // src/hooks/useAgentAuth.tsx - Connect to user-specific agent instances
 export function useAgentAuth() {
@@ -359,7 +378,7 @@ export function useAgentAuth() {
 
     // Each user gets their own agent instance using their user ID
     return {
-      agent: 'app-agent-template',
+      agent: "app-agent-template",
       name: userInfo.id, // User-specific room name
       url: `${window.location.origin}/agents/app-agent-template/${userInfo.id}?token=${token}`,
     };
@@ -454,15 +473,15 @@ async onChatMessage(
 // Enhanced onBeforeConnect with user data storage
 onBeforeConnect: async (request) => {
   const url = new URL(request.url);
-  const token = url.searchParams.get('token');
+  const token = url.searchParams.get("token");
 
   if (!token) {
-    return new Response('Missing auth token', { status: 401 });
+    return new Response("Missing auth token", { status: 401 });
   }
 
   const userInfo = await verifyOAuthToken(token, env);
   if (!userInfo) {
-    return new Response('Invalid auth token', { status: 403 });
+    return new Response("Invalid auth token", { status: 403 });
   }
 
   // Store user info in the agent's Durable Object
@@ -471,20 +490,23 @@ onBeforeConnect: async (request) => {
   const agentStub = env.AppAgent.get(agentId);
 
   // Store user info for later access
-  await agentStub.fetch(new Request('http://internal/store-user-info', {
-    method: 'POST',
-    body: JSON.stringify({
-      user_id: userInfo.id,
-      api_key: userInfo.api_key,
-      email: userInfo.email,
-      credits: userInfo.credits
+  await agentStub.fetch(
+    new Request("http://internal/store-user-info", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: userInfo.id,
+        api_key: userInfo.api_key,
+        email: userInfo.email,
+        credits: userInfo.credits,
+      }),
     })
-  }));
+  );
 
   return undefined; // Continue to agent
-}
+};
 ```
-```
+
+````
 
 ## Implementation Priority
 
@@ -558,114 +580,133 @@ export const OAUTH_APPS: Record<string, OAuthApp> = {
     scopes: ['api_access', 'credit_usage']
   }
 };
-```
+````
 
 #### 1.2 OAuth Authorization Endpoint
+
 Create the authorization endpoint:
 
 ```typescript
 // website/src/routes/oauth/authorize/+server.ts
-import { redirect, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { OAUTH_APPS } from '$lib/settings/oauth-apps';
-import { generateApiKey } from '$lib/api/key-utils';
+import { redirect, error } from "@sveltejs/kit";
+import type { RequestHandler } from "./$types";
+import { OAUTH_APPS } from "$lib/settings/oauth-apps";
+import { generateApiKey } from "$lib/api/key-utils";
 
 export const GET: RequestHandler = async ({ url, locals: { session } }) => {
-  const client_id = url.searchParams.get('client_id');
-  const redirect_uri = url.searchParams.get('redirect_uri');
-  const response_type = url.searchParams.get('response_type');
-  const state = url.searchParams.get('state');
+  const client_id = url.searchParams.get("client_id");
+  const redirect_uri = url.searchParams.get("redirect_uri");
+  const response_type = url.searchParams.get("response_type");
+  const state = url.searchParams.get("state");
 
   // Validate OAuth parameters
-  if (!client_id || !redirect_uri || response_type !== 'code') {
-    throw error(400, 'Invalid OAuth parameters');
+  if (!client_id || !redirect_uri || response_type !== "code") {
+    throw error(400, "Invalid OAuth parameters");
   }
 
   const app = OAUTH_APPS[client_id];
   if (!app || !app.redirect_uris.includes(redirect_uri)) {
-    throw error(400, 'Invalid client_id or redirect_uri');
+    throw error(400, "Invalid client_id or redirect_uri");
   }
 
   // If user not logged in, redirect to login with OAuth context
   if (!session) {
-    const loginUrl = new URL('/login', url.origin);
-    loginUrl.searchParams.set('redirectTo', url.toString());
-    loginUrl.searchParams.set('oauth_app', app.name);
+    const loginUrl = new URL("/login", url.origin);
+    loginUrl.searchParams.set("redirectTo", url.toString());
+    loginUrl.searchParams.set("oauth_app", app.name);
     throw redirect(303, loginUrl.toString());
   }
 
   // Generate authorization code (store temporarily in your preferred cache/database)
-  const authCode = generateApiKey('auth_');
+  const authCode = generateApiKey("auth_");
 
   // Store auth code with user info (implement your storage mechanism)
   await storeAuthCode(authCode, {
     user_id: session.user.id,
     client_id,
-    expires_at: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
   });
 
   // Redirect back to app with auth code
   const redirectUrl = new URL(redirect_uri);
-  redirectUrl.searchParams.set('code', authCode);
-  if (state) redirectUrl.searchParams.set('state', state);
+  redirectUrl.searchParams.set("code", authCode);
+  if (state) redirectUrl.searchParams.set("state", state);
 
   throw redirect(303, redirectUrl.toString());
 };
 ```
 
 #### 1.3 OAuth Token Exchange Endpoint
+
 Create the token exchange endpoint:
 
 ```typescript
 // website/src/routes/oauth/token/+server.ts
-import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { OAUTH_APPS } from '$lib/settings/oauth-apps';
-import { generateApiKey, hashApiKey } from '$lib/api/key-utils';
+import { json, error } from "@sveltejs/kit";
+import type { RequestHandler } from "./$types";
+import { OAUTH_APPS } from "$lib/settings/oauth-apps";
+import { generateApiKey, hashApiKey } from "$lib/api/key-utils";
 
-export const POST: RequestHandler = async ({ request, locals: { supabaseServiceRole } }) => {
+export const POST: RequestHandler = async ({
+  request,
+  locals: { supabaseServiceRole },
+}) => {
   const { code, client_id, client_secret } = await request.json();
 
   // Verify client credentials
   const app = OAUTH_APPS[client_id];
   if (!app || app.client_secret !== client_secret) {
-    throw error(401, 'Invalid client credentials');
+    throw error(401, "Invalid client credentials");
   }
 
   // Verify and consume auth code
   const authSession = await getAndDeleteAuthCode(code);
   if (!authSession || authSession.client_id !== client_id) {
-    throw error(400, 'Invalid or expired authorization code');
+    throw error(400, "Invalid or expired authorization code");
   }
 
   // Create or get app-specific API key for this user
-  const apiKey = await createUserApiKey(supabaseServiceRole, authSession.user_id, {
-    name: `App: ${app.name}`,
-    app_context: client_id,
-    settings: {
-      enable_minimization: true,
-      minimization_token_threshold: 200000
+  const apiKey = await createUserApiKey(
+    supabaseServiceRole,
+    authSession.user_id,
+    {
+      name: `App: ${app.name}`,
+      app_context: client_id,
+      settings: {
+        enable_minimization: true,
+        minimization_token_threshold: 200000,
+      },
     }
-  });
+  );
 
   // Grant promotional credits if new app user
   if (app.promotional_credits) {
-    await grantPromotionalCredits(supabaseServiceRole, authSession.user_id, app.promotional_credits, client_id);
+    await grantPromotionalCredits(
+      supabaseServiceRole,
+      authSession.user_id,
+      app.promotional_credits,
+      client_id
+    );
   }
 
   // Get user info
-  const { data: userData } = await supabaseServiceRole.auth.admin.getUserById(authSession.user_id);
+  const { data: userData } = await supabaseServiceRole.auth.admin.getUserById(
+    authSession.user_id
+  );
   const user = userData?.user;
 
   return json({
     access_token: apiKey.key, // Return the actual AtYourService.ai API key
-    token_type: 'bearer',
+    token_type: "bearer",
     user_info: {
       id: user?.id,
       email: user?.email,
-      credits: await getUserCreditBalance(supabaseServiceRole, authSession.user_id),
-      granted_promo: app.promotional_credits
-    }
+      credits: await getUserCreditBalance(
+        supabaseServiceRole,
+        authSession.user_id
+      ),
+      granted_promo: app.promotional_credits,
+    },
   });
 };
 
@@ -679,17 +720,17 @@ async function getAndDeleteAuthCode(code: string) {
 }
 
 async function createUserApiKey(supabase: any, userId: string, options: any) {
-  const key = generateApiKey('sk-cm-v1-');
+  const key = generateApiKey("sk-cm-v1-");
   const keyHash = await hashApiKey(key);
 
   const { data } = await supabase
-    .from('api_keys')
+    .from("api_keys")
     .insert({
       user_id: userId,
       name: options.name,
       key_hash: keyHash,
       settings: options.settings,
-      is_active: true
+      is_active: true,
     })
     .select()
     .single();
@@ -701,6 +742,7 @@ async function createUserApiKey(supabase: any, userId: string, options: any) {
 ### Phase 2: Agent Template Authentication
 
 #### 2.1 OAuth Configuration
+
 Create OAuth configuration in the agent:
 
 ```typescript
@@ -715,15 +757,16 @@ interface OAuthConfig {
 export const getOAuthConfig = (): OAuthConfig => {
   // Use production AtYourService.ai for all environments
   return {
-    client_id: 'app-agent-template',
-    client_secret: 'app-agent-template-secret-dev', // From Cloudflare Worker environment variables
-    auth_url: 'https://atyourservice.ai/oauth/authorize',
-    token_url: 'https://atyourservice.ai/oauth/token',
+    client_id: "app-agent-template",
+    client_secret: "app-agent-template-secret-dev", // From Cloudflare Worker environment variables
+    auth_url: "https://atyourservice.ai/oauth/authorize",
+    token_url: "https://atyourservice.ai/oauth/token",
   };
 };
 ```
 
 #### 2.2 AuthGuard Component
+
 Create the main authentication component:
 
 ```typescript
@@ -869,6 +912,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 ```
 
 #### 2.3 OAuth Callback Handler
+
 Create the OAuth callback handler:
 
 ```typescript
@@ -951,12 +995,13 @@ export default function AuthCallback() {
 ```
 
 #### 2.4 Agent Connection Hook
+
 Create a hook for agent authentication:
 
 ```typescript
 // packages/demos/app-agent-template/src/hooks/useAgentAuth.tsx
-import { useMemo } from 'react';
-import { useAuth } from '../components/auth/AuthGuard';
+import { useMemo } from "react";
+import { useAuth } from "../components/auth/AuthGuard";
 
 export function useAgentAuth() {
   const { authMethod } = useAuth();
@@ -966,8 +1011,8 @@ export function useAgentAuth() {
 
     // Each user gets their own agent instance using their user ID
     return {
-      agent: 'app-agent-template',
-      name: authMethod.userInfo?.id || 'anonymous',
+      agent: "app-agent-template",
+      name: authMethod.userInfo?.id || "anonymous",
       url: authMethod.userInfo
         ? `/agents/app-agent-template/${authMethod.userInfo.id}?token=${authMethod.apiKey}`
         : undefined,
@@ -981,80 +1026,90 @@ export function useAgentAuth() {
 ### Phase 3: Cloudflare Workers Integration
 
 #### 3.1 Main Worker Entry Point
+
 Update the main worker entry point to use authentication:
 
 ```typescript
 // packages/demos/app-agent-template/src/server.ts
-import { routeAgentRequest } from 'agents';
+import { routeAgentRequest } from "agents";
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    return (await routeAgentRequest(request, env, {
-      // Authenticate users before WebSocket connection
-      onBeforeConnect: async (request) => {
-        const url = new URL(request.url);
-        const token = url.searchParams.get('token');
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
+    return (
+      (await routeAgentRequest(request, env, {
+        // Authenticate users before WebSocket connection
+        onBeforeConnect: async (request) => {
+          const url = new URL(request.url);
+          const token = url.searchParams.get("token");
 
-        if (!token) {
-          return new Response('Missing auth token', { status: 401 });
-        }
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
 
-        // Verify OAuth token with AtYourService.ai
-        const userInfo = await verifyOAuthToken(token, env);
-        if (!userInfo) {
-          return new Response('Invalid auth token', { status: 403 });
-        }
+          // Verify OAuth token with AtYourService.ai
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
 
-        // Store user info in the agent's Durable Object before connection
-        const userId = extractUserIdFromPath(url.pathname);
-        if (userId !== userInfo.id) {
-          return new Response('User ID mismatch', { status: 403 });
-        }
+          // Store user info in the agent's Durable Object before connection
+          const userId = extractUserIdFromPath(url.pathname);
+          if (userId !== userInfo.id) {
+            return new Response("User ID mismatch", { status: 403 });
+          }
 
-        const agentId = env.AppAgent.idFromName(userId);
-        const agentStub = env.AppAgent.get(agentId);
+          const agentId = env.AppAgent.idFromName(userId);
+          const agentStub = env.AppAgent.get(agentId);
 
-        // Store user info for later access by the agent
-        await agentStub.fetch(new Request('http://internal/store-user-info', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_id: userInfo.id,
-            api_key: token, // Store the AtYourService.ai API key
-            email: userInfo.email,
-            credits: userInfo.credits,
-            payment_method: userInfo.payment_method
-          })
-        }));
+          // Store user info for later access by the agent
+          await agentStub.fetch(
+            new Request("http://internal/store-user-info", {
+              method: "POST",
+              body: JSON.stringify({
+                user_id: userInfo.id,
+                api_key: token, // Store the AtYourService.ai API key
+                email: userInfo.email,
+                credits: userInfo.credits,
+                payment_method: userInfo.payment_method,
+              }),
+            })
+          );
 
-        return undefined; // Continue to agent
-      },
+          return undefined; // Continue to agent
+        },
 
-      // Authenticate HTTP requests
-      onBeforeRequest: async (request) => {
-        const url = new URL(request.url);
-        const token = url.searchParams.get('token') ||
-                     request.headers.get('Authorization')?.replace('Bearer ', '');
+        // Authenticate HTTP requests
+        onBeforeRequest: async (request) => {
+          const url = new URL(request.url);
+          const token =
+            url.searchParams.get("token") ||
+            request.headers.get("Authorization")?.replace("Bearer ", "");
 
-        if (!token) {
-          return new Response('Missing auth token', { status: 401 });
-        }
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
 
-        const userInfo = await verifyOAuthToken(token, env);
-        if (!userInfo) {
-          return new Response('Invalid auth token', { status: 403 });
-        }
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
 
-        return undefined; // Continue to agent
-      }
-    })) || new Response('Not found', { status: 404 });
-  }
+          return undefined; // Continue to agent
+        },
+      })) || new Response("Not found", { status: 404 })
+    );
+  },
 };
 
 async function verifyOAuthToken(token: string, env: Env) {
   try {
     // Call AtYourService.ai gateway to verify the token
     const response = await fetch(`${env.GATEWAY_BASE_URL}/api/oauth/verify`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) return null;
@@ -1062,7 +1117,7 @@ async function verifyOAuthToken(token: string, env: Env) {
     const userInfo = await response.json();
     return userInfo; // { id, email, credits, payment_method: 'credits'|'byok' }
   } catch (error) {
-    console.error('Token verification failed:', error);
+    console.error("Token verification failed:", error);
     return null;
   }
 }
@@ -1074,6 +1129,7 @@ function extractUserIdFromPath(pathname: string): string | null {
 ```
 
 #### 3.2 Agent Implementation Updates
+
 Update the AppAgent to use stored user information:
 
 ```typescript
@@ -1173,6 +1229,7 @@ async onChatMessage(
 ### Phase 4: Frontend Integration
 
 #### 4.1 Update Main App Component
+
 Update the main app to use authentication:
 
 ```typescript
@@ -1205,6 +1262,7 @@ export default function App() {
 ```
 
 #### 4.2 Update Agent State Hook
+
 Update the useAgentState hook to accept external configuration:
 
 ```typescript
@@ -1249,6 +1307,7 @@ export function useAgentState(
 ### Key File Locations and Dependencies
 
 #### Website (SvelteKit) Files:
+
 - `website/src/lib/settings/oauth-apps.ts` - OAuth app configuration
 - `website/src/routes/oauth/authorize/+server.ts` - Authorization endpoint
 - `website/src/routes/oauth/token/+server.ts` - Token exchange endpoint
@@ -1256,6 +1315,7 @@ export function useAgentState(
 - `website/src/lib/auth/ws-token.ts` - WebSocket token utilities (already exists)
 
 #### Agent Template Files:
+
 - `packages/demos/app-agent-template/src/config/oauth.ts` - OAuth configuration
 - `packages/demos/app-agent-template/src/components/auth/AuthGuard.tsx` - Main auth component
 - `packages/demos/app-agent-template/src/components/auth/AuthCallback.tsx` - OAuth callback
@@ -1266,7 +1326,9 @@ export function useAgentState(
 - `packages/demos/app-agent-template/src/hooks/useAgentState.ts` - Agent state hook (modify existing)
 
 #### Environment Variables:
+
 Add to Cloudflare Worker environment (wrangler.toml or via dashboard):
+
 ```toml
 [env.production.vars]
 OAUTH_CLIENT_SECRET = "app-agent-template-secret-production"
@@ -1276,7 +1338,9 @@ OAUTH_CLIENT_SECRET = "app-agent-template-secret-preview"
 ```
 
 #### Dependencies:
+
 The implementation uses existing dependencies and patterns from:
+
 - **SvelteKit**: Website framework (already in use)
 - **Supabase**: Database and auth (already in use)
 - **Cloudflare Workers**: Agent hosting (already in use)
