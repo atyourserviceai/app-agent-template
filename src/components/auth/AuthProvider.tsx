@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       window.location.hostname === "127.0.0.1";
 
     const authUrl = isDev
-      ? "http://localhost:5173/oauth/authorize"
+      ? "http://127.0.0.1:45173/oauth/authorize"
       : "https://atyourservice.ai/oauth/authorize";
 
     const state = Math.random().toString(36).substring(2);

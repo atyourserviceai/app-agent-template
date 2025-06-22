@@ -14,9 +14,9 @@ function getEnvironmentConfig(env: Env): OAuthConfig {
     return {
       client_id: "app-agent-template",
       client_secret: env.APP_AGENT_TEMPLATE_SECRET, // Now properly typed
-      auth_url: "http://localhost:5173/oauth/authorize",
-      token_url: "http://localhost:5173/oauth/token",
-      verify_url: "http://localhost:5173/oauth/verify",
+      auth_url: "http://127.0.0.1:45173/oauth/authorize",
+      token_url: "http://127.0.0.1:45173/oauth/token",
+      verify_url: "http://127.0.0.1:45173/oauth/verify",
     };
   }
 
