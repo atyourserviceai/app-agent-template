@@ -7,7 +7,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { authMethod, login } = useAuth();
+  const { authMethod, login, isLoading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Check for auth errors in URL
@@ -29,6 +29,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/80">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!authMethod) {
     return (

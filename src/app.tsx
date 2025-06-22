@@ -24,6 +24,7 @@ import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import AuthCallback from "./components/auth/AuthCallback";
+import { AuthHeader } from "./components/auth/AuthHeader";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -813,7 +814,7 @@ function Chat() {
 
   return (
     <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
-      <HasOpenAIKey />
+      <AuthHeader />
 
       {/* Main Container - Responsive layout with chat and playbook */}
       <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0">
@@ -935,17 +936,6 @@ function HasOpenAIKey() {
 
 // Main App component with authentication
 export default function App() {
-  // Simple client-side routing for OAuth callback
-  const currentPath = window.location.pathname;
-
-  if (currentPath === "/auth/callback") {
-    return (
-      <AuthProvider>
-        <AuthCallback />
-      </AuthProvider>
-    );
-  }
-
   return (
     <AuthProvider>
       <AuthGuard>
