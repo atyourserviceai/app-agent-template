@@ -2,3 +2,4 @@ GATEWAY_API_KEY=foo
 GATEWAY_BASE_URL=https://gateway.atyourservice.ai
 BROWSERBASE_API_KEY=your-browserbase-api-key
 COMPOSIO_API_KEY=your-composio-api-key
+APP_AGENT_TEMPLATE_SECRET=app-agent-template-secret-dev

@@ -28,6 +28,7 @@
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
+    "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-dev",
   },
   "env": {
     "staging": {
@@ -36,6 +37,7 @@
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
+        "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-staging",
       },
       "routes": [
         {
@@ -50,6 +52,7 @@
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
+        "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-production",
       },
       "routes": [
         {

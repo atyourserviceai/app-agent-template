@@ -20,6 +20,10 @@ import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
+// Auth components
+import { AuthProvider } from "./components/auth/AuthProvider";
+import { AuthGuard } from "./components/auth/AuthGuard";
+import AuthCallback from "./components/auth/AuthCallback";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -137,7 +141,7 @@ function SuggestedActions({
   );
 }
 
-export default function Chat() {
+function Chat() {
   // UI-related state
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     // Check localStorage first, default to dark if not found
@@ -927,4 +931,26 @@ function HasOpenAIKey() {
     );
   }
   return null;
+}
+
+// Main App component with authentication
+export default function App() {
+  // Simple client-side routing for OAuth callback
+  const currentPath = window.location.pathname;
+
+  if (currentPath === "/auth/callback") {
+    return (
+      <AuthProvider>
+        <AuthCallback />
+      </AuthProvider>
+    );
+  }
+
+  return (
+    <AuthProvider>
+      <AuthGuard>
+        <Chat />
+      </AuthGuard>
+    </AuthProvider>
+  );
 }

@@ -1,5 +1,6 @@
 import { routeAgentRequest } from "agents";
 import { AppAgent } from "./agent";
+import { handleTokenExchange } from "./api/oauth-token-exchange";
 
 export { AppAgent };
 
@@ -13,6 +14,11 @@ export default {
     ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
+
+    // Handle OAuth token exchange
+    if (url.pathname === "/api/oauth/token-exchange") {
+      return handleTokenExchange(request, env);
+    }
 
     if (url.pathname === "/check-open-ai-key") {
       const hasApiKey = !!env.GATEWAY_API_KEY;
