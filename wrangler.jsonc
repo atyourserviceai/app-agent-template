@@ -24,22 +24,22 @@
     },
   ],
   "vars": {
-    "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
-    "OAUTH_PROVIDER_BASE_URL": "http://127.0.0.1:45173",
+    "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
+    "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
-    "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-dev",
+    "OAUTH_CLIENT_SECRET": "app-agent-template-secret-dev",
   },
   "env": {
     "staging": {
       "vars": {
-        "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
-        "OAUTH_PROVIDER_BASE_URL": "https://staging.atyourservice.ai",
+        "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
+        "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-staging",
+        "OAUTH_CLIENT_SECRET": "app-agent-template-secret-staging",
       },
       "routes": [
         {
@@ -50,12 +50,12 @@
     },
     "production": {
       "vars": {
-        "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
+        "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
         "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "APP_AGENT_TEMPLATE_SECRET": "app-agent-template-secret-production",
+        "OAUTH_CLIENT_SECRET": "app-agent-template-secret-production",
       },
       "routes": [
         {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { getOAuthConfig } from "../../config/oauth";
+import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
 export interface UserInfo {
   id: string;
@@ -22,6 +22,7 @@ export interface AuthContextType {
   authMethod: AuthMethod | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  oauthConfig: OAuthConfig | null;
   login: () => void;
   logout: () => void;
   switchToBYOK: (keys: { openai?: string; anthropic?: string }) => void;
@@ -46,25 +47,37 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   useEffect(() => {
-    // Check for stored auth on component mount
-    const stored = localStorage.getItem("auth_method");
-    if (stored) {
+    // Load OAuth config and check for stored auth on component mount
+    const init = async () => {
       try {
-        const parsedAuth = JSON.parse(stored);
-        setAuthMethod(parsedAuth);
-      } catch (e) {
-        console.error("Invalid stored auth:", e);
-        localStorage.removeItem("auth_method");
+        const config = await getOAuthConfig();
+        setOauthConfig(config);
+      } catch (error) {
+        console.error("Failed to load OAuth config:", error);
       }
-    }
-    setIsLoading(false);
+
+      const stored = localStorage.getItem("auth_method");
+      if (stored) {
+        try {
+          const parsedAuth = JSON.parse(stored);
+          setAuthMethod(parsedAuth);
+        } catch (e) {
+          console.error("Invalid stored auth:", e);
+          localStorage.removeItem("auth_method");
+        }
+      }
+      setIsLoading(false);
+    };
+
+    init();
   }, []);
 
   const login = async () => {
     try {
-      const config = await getOAuthConfig();
+      const config = oauthConfig || await getOAuthConfig();
       const state = Math.random().toString(36).substring(2);
 
       const authUrl = new URL(config.auth_url);
@@ -164,6 +177,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authMethod,
     isAuthenticated: !!authMethod,
     isLoading,
+    oauthConfig,
     login,
     logout,
     switchToBYOK,
