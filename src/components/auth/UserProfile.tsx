@@ -98,9 +98,9 @@ export function UserProfile() {
             {userInfo.credits !== undefined ? (
               <>
                 <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  ${(userInfo.credits / 100).toFixed(2)}
+                  ${userInfo.credits.toFixed(2)}
                 </div>
-                {userInfo.credits < 10 && (
+                {userInfo.credits < 1 && (
                   <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                     Low balance - consider topping up
                   </div>
