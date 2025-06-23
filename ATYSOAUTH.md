@@ -4,6 +4,82 @@
 
 Implement a clean OAuth flow where AtYourService.ai acts as the **AI fuel provider** for demos, separate from the demo's own authentication system. Users can choose between AtYourService.ai credits or their own API keys to power the AI.
 
+## ✅ **IMPLEMENTATION STATUS - UPDATED 2025-01-23**
+
+### **✅ Phase 1: Website OAuth Provider (SvelteKit) - COMPLETE**
+**Files Created/Modified:**
+- `website/src/lib/settings/oauth-apps.ts` - OAuth app configuration with proper redirect URIs
+- `website/src/routes/oauth/authorize/+server.ts` - Authorization endpoint with debug logging
+- `website/src/routes/oauth/token/+server.ts` - Token exchange endpoint with comprehensive error handling
+- `website/src/lib/oauth/auth-storage.ts` - Authorization code storage (in-memory for dev)
+- `website/src/routes/oauth/verify/+server.ts` - Token verification endpoint
+
+**✅ Issues Fixed:**
+- **OAuth Redirect URI Mismatch**: Added `127.0.0.1` variants to allowed redirect URIs
+- **Email Magic Link Redirect**: Enhanced auth callback to preserve OAuth context during email signup
+- **SMTP Timeout Issues**: Increased timeout and improved retry logic for email sending
+
+### **✅ Phase 2: App Agent Template OAuth Client - COMPLETE**
+**Files Created/Modified:**
+- `src/config/oauth.ts` - OAuth configuration with environment-specific URLs
+- `src/components/auth/AuthProvider.tsx` - Authentication state management
+- `src/components/auth/AuthGuard.tsx` - Landing page with proper AtYourService.ai branding
+- `src/components/auth/AuthCallback.tsx` - OAuth callback handler (client-side, unused)
+- `src/api/oauth-token-exchange.ts` - Server-side token exchange API
+- `src/server.ts` - Complete authentication flow with `onBeforeConnect` hook
+- `src/hooks/useAgentAuth.tsx` - User-specific agent room configuration
+
+**✅ Critical Bug Fixes Applied:**
+1. **Missing `grant_type` Parameter**: Fixed OAuth callback to include required `grant_type: "authorization_code"`
+2. **Token Exchange Flow**: Server-side callback now properly exchanges authorization codes for API keys
+3. **Authentication Integration**: Added proper `onBeforeConnect` and `onBeforeRequest` hooks following [Cloudflare best practices](https://developers.cloudflare.com/agents/api-reference/calling-agents/#authenticating-agents)
+
+### **🚨 Phase 3: Frontend Integration - NEEDS COMPLETION**
+
+**✅ Completed:**
+1. **User-Specific Agent Rooms**: URLs like `/agents/app-agent/{user_id}?token={api_key}` ✅
+2. **`onBeforeConnect` Authentication Hook**: Server verifies OAuth tokens before WebSocket connections ✅
+3. **User-Specific API Keys**: Modified `AppAgent` to use user's AtYourService.ai API key ✅
+4. **Agent State Management**: Extended state to include user authentication info ✅
+
+**❌ Current Issue - React App Integration:**
+The OAuth flow works perfectly, but the React app still connects to the default agent pattern instead of the authenticated pattern:
+
+**Current Behavior (❌ Wrong):**
+```
+[UI] Initial agent config: default-room
+Request to: /agents/app-agent/default-room/get-messages
+Response: "Missing auth token" (401)
+Error: SyntaxError - trying to parse "Missing auth token" as JSON
+```
+
+**Expected Behavior (✅ Correct):**
+```
+[UI] Initial agent config: user_abc123
+Request to: /agents/app-agent/user_abc123?token=sk-oauth-xyz
+Response: Successful agent connection with user context
+```
+
+## 🚨 **IMMEDIATE NEXT STEPS**
+
+### **Step 1: Fix Agent Connection Integration**
+**Problem**: App uses `default-room` instead of authenticated user config
+**Root Cause**: `useAgentState` hook not properly using `useAgentAuth` config
+**Files to modify:**
+- `src/app.tsx` - Ensure AuthGuard wraps entire app and passes auth config
+- `src/hooks/useAgentState.ts` - Accept and use external authenticated agent config
+- Switch from `useAgent` to `useAgentChat` per [Cloudflare React API docs](https://developers.cloudflare.com/agents/api-reference/agents-api/#chat-agent-react-api)
+
+### **Step 2: Error Handling Improvements**
+- Add React error boundary for graceful error handling
+- Handle "Missing auth token" responses properly (don't try to parse as JSON)
+- Add loading states during authentication
+
+### **Step 3: Production Readiness**
+- Clean up debug logging added during troubleshooting
+- Test full OAuth flow end-to-end
+- Verify agent state persistence and user isolation
+
 ## Key Architecture Insights
 
 ### 1. **Always Require AtYourService.ai Account**
@@ -1363,3 +1439,59 @@ The implementation uses existing dependencies and patterns from:
 4. **Credit Tracking**: Test that AtYourService.ai gateway properly tracks usage per API key
 
 This implementation provides a complete, production-ready OAuth integration that showcases AtYourService.ai as an "AI backend as a service" solution for AI integrators.
+
+---
+
+## 📚 **CLOUDFLARE DOCUMENTATION COMPLIANCE**
+
+### **✅ Perfect Alignment with [Cloudflare Agents Authentication Best Practices](https://developers.cloudflare.com/agents/api-reference/calling-agents/#authenticating-agents)**
+
+Our implementation follows **all three** Cloudflare best practices exactly:
+
+#### **1. ✅ Authentication in Workers Code (Before Agent Invocation)**
+```typescript
+// Our implementation in src/server.ts
+return (await routeAgentRequest(request, env, {
+  onBeforeConnect: async (request) => {
+    // ✅ Authentication happens BEFORE agent creation
+    const token = url.searchParams.get("token");
+    if (!token) {
+      return new Response("Missing auth token", { status: 401 }); // ✅ Stops processing
+    }
+
+    const userInfo = await verifyOAuthToken(token, env);
+    if (!userInfo) {
+      return new Response("Invalid auth token", { status: 403 }); // ✅ Stops processing
+    }
+
+    return undefined; // ✅ Continue to agent only if authenticated
+  }
+}))
+```
+
+#### **2. ✅ Using Built-in Hooks (`onBeforeConnect` & `onBeforeRequest`)**
+- **`onBeforeConnect`**: Authenticates WebSocket connections ✅
+- **`onBeforeRequest`**: Authenticates HTTP requests ✅
+- **Both hooks**: Return error responses to stop unauthorized requests ✅
+
+#### **3. ✅ User-Specific Agent Naming**
+Our URL pattern `/agents/app-agent/{user_id}?token={api_key}` follows the documented `/agents/:agent/:name` pattern:
+- `:agent` = `app-agent` (kebab-case of our Agent class)
+- `:name` = `{user_id}` (user-specific instance for data isolation)
+
+### **📝 React API Update Required**
+
+**Current**: Using `useAgent` hook (generic)
+**Should Use**: `useAgentChat` hook per [Cloudflare React API docs](https://developers.cloudflare.com/agents/api-reference/agents-api/#chat-agent-react-api)
+
+**Next Step**: Update `src/hooks/useAgentState.ts` to use `useAgentChat` for chat functionality.
+
+### **🎯 Current Status vs. Cloudflare Standards**
+
+**✅ Server-Side Authentication**: 100% compliant with Cloudflare best practices
+**✅ Agent Naming & Routing**: Follows documented URL patterns
+**✅ Security Model**: Authentication before agent invocation
+**❌ React Integration**: Using generic `useAgent` instead of `useAgentChat`
+**❌ Frontend Connection**: Not using authenticated agent config from `useAgentAuth`
+
+**Next Developer Focus**: Complete the React app integration to use authenticated agent configuration and `useAgentChat` hook as documented.
