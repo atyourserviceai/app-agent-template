@@ -13,17 +13,17 @@ export async function getOAuthConfig(): Promise<OAuthConfig> {
   }
 
   try {
-    const response = await fetch('/api/oauth/config');
+    const response = await fetch("/api/oauth/config");
     if (!response.ok) {
       throw new Error(`Failed to fetch OAuth config: ${response.status}`);
     }
 
     const config: OAuthConfig = await response.json();
     cachedConfig = config;
-    console.log('[OAuth Config] Fetched from server:', config);
+    console.log("[OAuth Config] Fetched from server:", config);
     return config;
   } catch (error) {
-    console.error('[OAuth Config] Failed to fetch from server:', error);
-    throw new Error('Failed to load OAuth configuration');
+    console.error("[OAuth Config] Failed to fetch from server:", error);
+    throw new Error("Failed to load OAuth configuration");
   }
 }

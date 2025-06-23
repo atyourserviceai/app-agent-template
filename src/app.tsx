@@ -24,7 +24,6 @@ import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 // Auth components
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { AuthGuard } from "./components/auth/AuthGuard";
-import AuthCallback from "./components/auth/AuthCallback";
 
 // Define agent data interface for typing
 interface AgentData {

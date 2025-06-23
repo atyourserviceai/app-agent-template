@@ -213,12 +213,11 @@ export class AppAgent extends AIChatAgent<Env> {
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
       );
       return getOpenAI(this.env, userApiKey);
-    } else {
-      const errorMsg =
-        "No user API key available. User must be authenticated to use AI features.";
-      console.error(`[AppAgent] ${errorMsg}`);
-      throw new Error(errorMsg);
     }
+    const errorMsg =
+      "No user API key available. User must be authenticated to use AI features.";
+    console.error(`[AppAgent] ${errorMsg}`);
+    throw new Error(errorMsg);
   }
 
   /**

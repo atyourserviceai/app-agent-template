@@ -4,7 +4,11 @@ import { useAgent } from "agents/react";
 
 export function useAgentState(
   initialMode: AgentMode = "onboarding",
-  externalConfig?: { agent: string; name: string; query?: Record<string, string> } | null
+  externalConfig?: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null
 ) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
   const [agentMode, setAgentMode] = useState<AgentMode>(initialMode);

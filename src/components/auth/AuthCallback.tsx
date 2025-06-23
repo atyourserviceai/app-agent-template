@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { getOAuthConfig } from "../../config/oauth";
 
 interface TokenResponse {
@@ -24,7 +24,7 @@ export default function AuthCallback() {
 
       if (error) {
         console.error("OAuth error:", error);
-        window.location.href = "/?error=" + error;
+        window.location.href = `/?error=${error}`;
         return;
       }
 
@@ -100,7 +100,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
           Completing Authentication
         </h2>

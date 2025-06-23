@@ -1,5 +1,3 @@
-import { getOAuthConfig } from "../config/oauth";
-
 interface TokenExchangeRequest {
   code: string;
   grant_type: string;
@@ -14,6 +12,14 @@ interface TokenResponse {
     credits: number;
     granted_promo?: number;
     payment_method: string;
+  };
+}
+
+function getServerOAuthConfig(env: Env) {
+  return {
+    client_id: "app-agent-template",
+    token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+    client_secret: env.APP_AGENT_TEMPLATE_SECRET || "dev-secret", // Use env variable for secret
   };
 }
 
@@ -32,7 +38,7 @@ export async function handleTokenExchange(
       return new Response("Invalid request parameters", { status: 400 });
     }
 
-    const config = getOAuthConfig(env);
+    const config = getServerOAuthConfig(env);
 
     console.log(
       "[OAuth Token Exchange] Exchanging authorization code for token..."

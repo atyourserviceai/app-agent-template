@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "./AuthProvider";
-import { User, SignOut, CreditCard, Key } from "@phosphor-icons/react";
+import { SignOut, CreditCard, Key } from "@phosphor-icons/react";
 
 export function UserProfile() {
   const { authMethod, logout, switchToBYOK, switchToCredits, refreshUserInfo } =
@@ -60,6 +60,7 @@ export function UserProfile() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={handleDropdownToggle}
         className="flex items-center justify-center h-9 w-9 bg-blue-500 hover:bg-blue-600 rounded-full text-white text-sm font-semibold transition-colors"
         title={`Signed in as ${userInfo.email}`}
@@ -92,6 +93,7 @@ export function UserProfile() {
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   if (authMethod.type !== "atyourservice") {
                     switchToCredits();
@@ -108,6 +110,7 @@ export function UserProfile() {
                 Credits
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (authMethod.type !== "byok") {
                     // For now, just switch with empty keys - user would need to configure them
@@ -158,6 +161,7 @@ export function UserProfile() {
           {/* Sign Out */}
           <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2">
             <button
+              type="button"
               onClick={handleLogout}
               className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
             >

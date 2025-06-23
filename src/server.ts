@@ -1,7 +1,6 @@
 import { routeAgentRequest } from "agents";
 import { AppAgent } from "./agent";
 import { handleTokenExchange } from "./api/oauth-token-exchange";
-import { getOAuthConfig } from "./config/oauth";
 
 export { AppAgent };
 
@@ -39,8 +38,6 @@ export default {
       return handleTokenExchange(request, env);
     }
 
-
-
     if (!env.GATEWAY_API_KEY) {
       console.error(
         "GATEWAY_API_KEY is not set, don't forget to set it locally in .dev.vars, and use `wrangler secret bulk .dev.vars` to upload it to production"
@@ -74,44 +71,53 @@ export default {
     }
 
     // Handle OAuth configuration requests
-    if (url.pathname === '/api/oauth/config') {
-      return new Response(JSON.stringify({
-        client_id: "app-agent-template",
-        auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
-        token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
+    if (url.pathname === "/api/oauth/config") {
+      return new Response(
+        JSON.stringify({
+          client_id: "app-agent-template",
+          auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+          token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Handle user info requests by proxying to gateway
-    if (url.pathname === '/api/user/info') {
-      const authHeader = request.headers.get('Authorization');
+    if (url.pathname === "/api/user/info") {
+      const authHeader = request.headers.get("Authorization");
       if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing Authorization header" }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
       // Proxy the request to the gateway
-      const gatewayResponse = await fetch(`${env.GATEWAY_BASE_URL}/v1/user/info`, {
-        method: 'GET',
-        headers: {
-          'Authorization': authHeader,
-        },
-      });
+      const gatewayResponse = await fetch(
+        `${env.GATEWAY_BASE_URL}/v1/user/info`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: authHeader,
+          },
+        }
+      );
 
       // Return the gateway response
       const responseData = await gatewayResponse.text();
       return new Response(responseData, {
         status: gatewayResponse.status,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-        }
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
       });
     }
 
@@ -127,12 +133,21 @@ export default {
           if (!token) {
             // Allow unauthenticated access to default agent patterns
             // Only require auth for user-specific agent instances
-            const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+            const pathMatch = url.pathname.match(
+              /\/agents\/([^\/]+)\/([^\/\?]+)/
+            );
             if (pathMatch) {
-              const [, agentName, roomName] = pathMatch;
+              const [, , roomName] = pathMatch;
               // If room name looks like a user ID (not "default-room" or similar), require auth
-              if (roomName !== "default-room" && roomName !== "onboarding" && roomName.length > 10) {
-                return new Response("Authentication required for user-specific agents", { status: 401 });
+              if (
+                roomName !== "default-room" &&
+                roomName !== "onboarding" &&
+                roomName.length > 10
+              ) {
+                return new Response(
+                  "Authentication required for user-specific agents",
+                  { status: 401 }
+                );
               }
             }
             // Allow connection to default/demo agent without auth
@@ -146,11 +161,15 @@ export default {
           }
 
           // Ensure user can only access their own agent instance
-          const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+          const pathMatch = url.pathname.match(
+            /\/agents\/([^\/]+)\/([^\/\?]+)/
+          );
           if (pathMatch) {
-            const [, agentName, roomName] = pathMatch;
+            const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {
-              return new Response("Access denied: User ID mismatch", { status: 403 });
+              return new Response("Access denied: User ID mismatch", {
+                status: 403,
+              });
             }
           }
 
@@ -160,7 +179,11 @@ export default {
           const url = new URL(request.url);
 
           // Skip auth for API routes and static assets
-          if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/assets/') || url.pathname === '/') {
+          if (
+            url.pathname.startsWith("/api/") ||
+            url.pathname.startsWith("/assets/") ||
+            url.pathname === "/"
+          ) {
             return undefined;
           }
 
@@ -169,10 +192,16 @@ export default {
             request.headers.get("Authorization")?.replace("Bearer ", "");
 
           // Only require auth for user-specific agent requests
-          const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+          const pathMatch = url.pathname.match(
+            /\/agents\/([^\/]+)\/([^\/\?]+)/
+          );
           if (pathMatch) {
-            const [, agentName, roomName] = pathMatch;
-            if (roomName !== "default-room" && roomName !== "onboarding" && roomName.length > 10) {
+            const [, , roomName] = pathMatch;
+            if (
+              roomName !== "default-room" &&
+              roomName !== "onboarding" &&
+              roomName.length > 10
+            ) {
               if (!token) {
                 return new Response("Authentication required", { status: 401 });
               }
@@ -193,7 +222,10 @@ export default {
       }
 
       // For the root route and other non-API routes, serve a simple HTML page
-      if (url.pathname === "/" || (!url.pathname.includes("/api/") && !url.pathname.includes("."))) {
+      if (
+        url.pathname === "/" ||
+        (!url.pathname.includes("/api/") && !url.pathname.includes("."))
+      ) {
         return new Response(getMainHTML(), {
           headers: {
             "Content-Type": "text/html",
@@ -225,19 +257,23 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-async function verifyOAuthToken(token: string, env: Env): Promise<UserInfo | null> {
+async function verifyOAuthToken(
+  token: string,
+  env: Env
+): Promise<UserInfo | null> {
   try {
     // Use the OAuth provider URL (website) for token verification
-    const oauthProviderUrl = env.OAUTH_PROVIDER_BASE_URL || "https://atyourservice.ai";
+    const oauthProviderUrl =
+      env.OAUTH_PROVIDER_BASE_URL || "https://atyourservice.ai";
     const verifyEndpoint = `${oauthProviderUrl}/oauth/verify`;
 
     console.log(`[Auth] Verifying token at: ${verifyEndpoint}`);
 
     const response = await fetch(verifyEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
@@ -245,11 +281,13 @@ async function verifyOAuthToken(token: string, env: Env): Promise<UserInfo | nul
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Auth] Verification failed: ${response.status} - ${errorText}`);
+      console.error(
+        `[Auth] Verification failed: ${response.status} - ${errorText}`
+      );
       return null;
     }
 
-    const userInfo = await response.json() as UserInfo;
+    const userInfo = (await response.json()) as UserInfo;
     console.log(`[Auth] Verification successful for user: ${userInfo.id}`);
     return userInfo;
   } catch (error) {
@@ -258,15 +296,13 @@ async function verifyOAuthToken(token: string, env: Env): Promise<UserInfo | nul
   }
 }
 
-function extractUserIdFromPath(pathname: string): string | null {
-  const match = pathname.match(/\/agents\/app-agent\/([^\/\?]+)/);
-  return match ? match[1] : null;
-}
-
 /**
  * Handle OAuth callback directly on the server
  */
-async function handleOAuthCallback(request: Request, env: Env): Promise<Response> {
+async function handleOAuthCallback(
+  request: Request,
+  env: Env
+): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -296,29 +332,31 @@ async function handleOAuthCallback(request: Request, env: Env): Promise<Response
     console.log("[OAuth Callback] Exchanging authorization code for token...");
 
     // Exchange code for token using our API endpoint
-    const tokenResponse = await fetch(`${url.origin}/api/oauth/token-exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code,
-        grant_type: "authorization_code"
-      }),
-    });
+    const tokenResponse = await fetch(
+      `${url.origin}/api/oauth/token-exchange`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          grant_type: "authorization_code",
+        }),
+      }
+    );
 
     if (!tokenResponse.ok) {
       throw new Error(`Token exchange failed: ${tokenResponse.status}`);
     }
 
-    const tokenData = await tokenResponse.json() as TokenData;
+    const tokenData = (await tokenResponse.json()) as TokenData;
 
-    console.log(`[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`);
-
-    return new Response(
-      getCallbackHTML(null, tokenData),
-      {
-        headers: { "Content-Type": "text/html" },
-      }
+    console.log(
+      `[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`
     );
+
+    return new Response(getCallbackHTML(null, tokenData), {
+      headers: { "Content-Type": "text/html" },
+    });
   } catch (err) {
     console.error("Token exchange failed:", err);
     return new Response(
@@ -333,7 +371,10 @@ async function handleOAuthCallback(request: Request, env: Env): Promise<Response
 /**
  * Generate HTML for OAuth callback handling
  */
-function getCallbackHTML(error: string | null, tokenData: TokenData | null): string {
+function getCallbackHTML(
+  error: string | null,
+  tokenData: TokenData | null
+): string {
   if (error) {
     return `
 <!DOCTYPE html>
