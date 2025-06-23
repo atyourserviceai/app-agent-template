@@ -1,37 +1,22 @@
-interface OAuthConfig {
+export interface OAuthConfig {
   client_id: string;
-  client_secret: string;
   auth_url: string;
   token_url: string;
-  verify_url: string;
 }
 
-function getEnvironmentConfig(env: Env): OAuthConfig {
-  // Check if we're in development
-  const isDev = env.SETTINGS_ENVIRONMENT === "dev";
+export function getOAuthConfig(): OAuthConfig {
+  // Use the environment variable set via .env files or deployment environment
+  const oauthProviderUrl = import.meta.env.VITE_OAUTH_PROVIDER_BASE_URL;
 
-  if (isDev) {
-    return {
-      client_id: "app-agent-template",
-      client_secret: env.APP_AGENT_TEMPLATE_SECRET, // Now properly typed
-      auth_url: "http://127.0.0.1:45173/oauth/authorize",
-      token_url: "http://127.0.0.1:45173/oauth/token",
-      verify_url: "http://127.0.0.1:45173/oauth/verify",
-    };
+  console.log('[OAuth Config] VITE_OAUTH_PROVIDER_BASE_URL:', oauthProviderUrl);
+
+  if (!oauthProviderUrl) {
+    throw new Error('VITE_OAUTH_PROVIDER_BASE_URL environment variable is not set');
   }
 
-  // Production/staging - connect to live AtYourService.ai
   return {
     client_id: "app-agent-template",
-    client_secret: env.APP_AGENT_TEMPLATE_SECRET, // Now properly typed
-    auth_url: "https://atyourservice.ai/oauth/authorize",
-    token_url: "https://atyourservice.ai/oauth/token",
-    verify_url: "https://atyourservice.ai/oauth/verify",
+    auth_url: `${oauthProviderUrl}/oauth/authorize`,
+    token_url: `${oauthProviderUrl}/oauth/token`,
   };
 }
-
-export const getOAuthConfig = (env: Env): OAuthConfig => {
-  return getEnvironmentConfig(env);
-};
-
-export type { OAuthConfig };

@@ -176,22 +176,30 @@ export default {
 
 async function verifyOAuthToken(token: string, env: Env): Promise<UserInfo | null> {
   try {
-    if (env.SETTINGS_ENVIRONMENT === "dev") {
-      return {
-        id: "dev-user-" + token.slice(-8),
-        email: "dev@example.com",
-        credits: 50,
-        payment_method: 'credits'
-      };
-    }
+    // Use the OAuth provider URL (website) for token verification
+    const oauthProviderUrl = env.OAUTH_PROVIDER_BASE_URL || "https://atyourservice.ai";
+    const verifyEndpoint = `${oauthProviderUrl}/oauth/verify`;
 
-    const response = await fetch(`${env.GATEWAY_BASE_URL}/api/oauth/verify`, {
-      headers: { Authorization: `Bearer ${token}` },
+    console.log(`[Auth] Verifying token at: ${verifyEndpoint}`);
+
+    const response = await fetch(verifyEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
 
-    if (!response.ok) return null;
+    console.log(`[Auth] Verification response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Auth] Verification failed: ${response.status} - ${errorText}`);
+      return null;
+    }
 
     const userInfo = await response.json() as UserInfo;
+    console.log(`[Auth] Verification successful for user: ${userInfo.id}`);
     return userInfo;
   } catch (error) {
     console.error("Token verification failed:", error);

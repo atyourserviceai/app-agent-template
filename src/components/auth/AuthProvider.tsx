@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { getOAuthConfig } from "../../config/oauth";
 
 export interface UserInfo {
   id: string;
@@ -61,19 +62,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = () => {
-    // For browser-side OAuth initiation, determine URL based on current hostname
-    const isDev =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    const authUrl = isDev
-      ? "http://127.0.0.1:45173/oauth/authorize"
-      : "https://atyourservice.ai/oauth/authorize";
+    const config = getOAuthConfig();
 
     const state = Math.random().toString(36).substring(2);
 
-    const url = new URL(authUrl);
-    url.searchParams.set("client_id", "app-agent-template");
+    const url = new URL(config.auth_url);
+    url.searchParams.set("client_id", config.client_id);
     url.searchParams.set(
       "redirect_uri",
       `${window.location.origin}/auth/callback`
