@@ -77,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async () => {
     try {
-      const config = oauthConfig || await getOAuthConfig();
+      const config = oauthConfig || (await getOAuthConfig());
       const state = Math.random().toString(36).substring(2);
 
       const authUrl = new URL(config.auth_url);

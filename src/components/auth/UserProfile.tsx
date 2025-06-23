@@ -15,9 +15,9 @@ export function UserProfile() {
   const { userInfo } = authMethod;
 
   // Extract base URL from OAuth auth_url and construct account URL
-  const accountUrl = oauthConfig ?
-    new URL("/account", oauthConfig.auth_url).toString() :
-    "https://atyourservice.ai/account"; // fallback
+  const accountUrl = oauthConfig
+    ? new URL("/account", oauthConfig.auth_url).toString()
+    : "https://atyourservice.ai/account"; // fallback
 
   // Close dropdown when clicking outside
   useEffect(() => {
