@@ -34,8 +34,11 @@ import type {
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
+  if (!apiKey) {
+    throw new Error("API key is required for AI requests");
+  }
   return createOpenAI({
-    apiKey: apiKey || env.GATEWAY_API_KEY,
+    apiKey: apiKey,
     baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
   });
 };
@@ -209,8 +212,9 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log(`[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`);
       return getOpenAI(this.env, userApiKey);
     } else {
-      console.log("[AppAgent] Using default API key");
-      return getOpenAI(this.env);
+      const errorMsg = "No user API key available. User must be authenticated to use AI features.";
+      console.error(`[AppAgent] ${errorMsg}`);
+      throw new Error(errorMsg);
     }
   }
 
