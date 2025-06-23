@@ -14,8 +14,10 @@ export function useAgentAuth() {
     return {
       agent: "app-agent",
       name: userId, // User-specific room name
-      url: `/agents/app-agent/${userId}?token=${authMethod.apiKey}`,
-    };
+      query: {
+        token: authMethod.apiKey, // Pass token as query parameter directly
+      },
+    } as const;
   }, [authMethod]);
 
   return agentConfig;

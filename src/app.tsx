@@ -3,6 +3,7 @@ import { useAgentChat } from "agents/ai-react";
 import { use, useEffect, useRef, useState } from "react";
 import type { ToolTypes } from "./agent/tools/types";
 import { useAgentState } from "./hooks/useAgentState";
+import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import { useMessageEditing } from "./hooks/useMessageEditing";
 
@@ -174,9 +175,12 @@ function Chat() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Use the agent state hook instead of implementing the logic directly
+  // Get authenticated agent configuration
+  const agentConfig = useAgentAuth();
+
+  // Use the agent state hook with authenticated config
   const { agent, agentState, agentMode, changeAgentMode } =
-    useAgentState("onboarding");
+    useAgentState("onboarding", agentConfig);
 
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =

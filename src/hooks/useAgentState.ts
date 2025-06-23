@@ -2,7 +2,10 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import type { AgentMode, AppAgentState } from "../agent/AppAgent";
 import { useAgent } from "agents/react";
 
-export function useAgentState(initialMode: AgentMode = "onboarding") {
+export function useAgentState(
+  initialMode: AgentMode = "onboarding",
+  externalConfig?: { agent: string; name: string; query: Record<string, string> } | null
+) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
   const [agentMode, setAgentMode] = useState<AgentMode>(initialMode);
 
@@ -17,9 +20,14 @@ export function useAgentState(initialMode: AgentMode = "onboarding") {
   }, []);
 
   const [agentConfig] = useState(() => {
-    // Get initial config from URL
+    if (externalConfig) {
+      console.log(`[UI] Using external agent config: ${externalConfig.name}`);
+      return externalConfig;
+    }
+
+    // Fallback to URL-based config for development
     const name = getNameFromURL() || "default-room";
-    console.log(`[UI] Initial agent config: ${name}`);
+    console.log(`[UI] Using URL-based agent config: ${name}`);
     return {
       agent: "app-agent",
       name,
@@ -57,6 +65,8 @@ export function useAgentState(initialMode: AgentMode = "onboarding") {
   const agent = useAgent({
     agent: agentConfig.agent,
     name: agentConfig.name,
+    // Pass query parameters directly for authentication
+    ...("query" in agentConfig ? { query: agentConfig.query } : {}),
     onStateUpdate: (newState: AppAgentState) => {
       console.log("[UI] Agent state updated:", newState);
 
