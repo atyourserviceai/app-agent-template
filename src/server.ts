@@ -240,7 +240,10 @@ async function handleOAuthCallback(request: Request, env: Env): Promise<Response
     const tokenResponse = await fetch(`${url.origin}/api/oauth/token-exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, state }),
+      body: JSON.stringify({
+        code,
+        grant_type: "authorization_code"
+      }),
     });
 
     if (!tokenResponse.ok) {
