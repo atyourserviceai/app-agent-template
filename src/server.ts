@@ -78,6 +78,48 @@ export default {
       }
     }
 
+    // Handle OAuth configuration requests
+    if (url.pathname === '/api/oauth/config') {
+      return new Response(JSON.stringify({
+        client_id: "app-agent-template",
+        auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+        token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Handle user info requests by proxying to gateway
+    if (url.pathname === '/api/user/info') {
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Proxy the request to the gateway
+      const gatewayResponse = await fetch(`${env.GATEWAY_BASE_URL}/v1/user/info`, {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader,
+        },
+      });
+
+      // Return the gateway response
+      const responseData = await gatewayResponse.text();
+      return new Response(responseData, {
+        status: gatewayResponse.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
+    }
+
     try {
       // Try to route to agent first
       const agentResponse = await routeAgentRequest(request, env, {
@@ -86,54 +128,68 @@ export default {
           const url = new URL(request.url);
           const token = url.searchParams.get("token");
 
+          // If no token provided, check if this is an authenticated agent path
           if (!token) {
-            return new Response("Missing auth token", { status: 401 });
+            // Allow unauthenticated access to default agent patterns
+            // Only require auth for user-specific agent instances
+            const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+            if (pathMatch) {
+              const [, agentName, roomName] = pathMatch;
+              // If room name looks like a user ID (not "default-room" or similar), require auth
+              if (roomName !== "default-room" && roomName !== "onboarding" && roomName.length > 10) {
+                return new Response("Authentication required for user-specific agents", { status: 401 });
+              }
+            }
+            // Allow connection to default/demo agent without auth
+            return undefined;
           }
 
+          // If token provided, verify it
           const userInfo = await verifyOAuthToken(token, env);
           if (!userInfo) {
             return new Response("Invalid auth token", { status: 403 });
           }
 
-          const userId = extractUserIdFromPath(url.pathname);
-          if (userId !== userInfo.id) {
-            return new Response("User ID mismatch", { status: 403 });
+          // Ensure user can only access their own agent instance
+          const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+          if (pathMatch) {
+            const [, agentName, roomName] = pathMatch;
+            if (roomName !== userInfo.id) {
+              return new Response("Access denied: User ID mismatch", { status: 403 });
+            }
           }
 
-          const agentId = env.AppAgent.idFromName(userId);
-          const agentStub = env.AppAgent.get(agentId);
-
-          await agentStub.fetch(
-            new Request("http://internal/store-user-info", {
-              method: "POST",
-              body: JSON.stringify({
-                user_id: userInfo.id,
-                api_key: token,
-                email: userInfo.email,
-                credits: userInfo.credits,
-                payment_method: userInfo.payment_method || 'credits',
-              }),
-            })
-          );
-
-          return undefined;
+          return undefined; // Continue to agent
         },
         onBeforeRequest: async (request) => {
           const url = new URL(request.url);
+
+          // Skip auth for API routes and static assets
+          if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/assets/') || url.pathname === '/') {
+            return undefined;
+          }
+
           const token =
             url.searchParams.get("token") ||
             request.headers.get("Authorization")?.replace("Bearer ", "");
 
-          if (!token) {
-            return new Response("Missing auth token", { status: 401 });
+          // Only require auth for user-specific agent requests
+          const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+          if (pathMatch) {
+            const [, agentName, roomName] = pathMatch;
+            if (roomName !== "default-room" && roomName !== "onboarding" && roomName.length > 10) {
+              if (!token) {
+                return new Response("Authentication required", { status: 401 });
+              }
+
+              const userInfo = await verifyOAuthToken(token, env);
+              if (!userInfo || userInfo.id !== roomName) {
+                return new Response("Access denied", { status: 403 });
+              }
+            }
           }
 
-          const userInfo = await verifyOAuthToken(token, env);
-          if (!userInfo) {
-            return new Response("Invalid auth token", { status: 403 });
-          }
-
-          return undefined;
+          return undefined; // Continue to agent
         },
       });
 

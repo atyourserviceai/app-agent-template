@@ -3,8 +3,9 @@ import { useAuth } from "./AuthProvider";
 import { User, SignOut, CreditCard, Key } from "@phosphor-icons/react";
 
 export function UserProfile() {
-  const { authMethod, logout, switchToBYOK, switchToCredits } = useAuth();
+  const { authMethod, logout, switchToBYOK, switchToCredits, refreshUserInfo } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   if (!authMethod || !authMethod.userInfo) {
@@ -37,10 +38,27 @@ export function UserProfile() {
     window.location.href = "/";
   };
 
+  const handleDropdownToggle = async () => {
+    const newShowState = !showDropdown;
+    setShowDropdown(newShowState);
+
+    // Refresh user info when opening dropdown to get current credit balance
+    if (newShowState && authMethod?.type === "atyourservice") {
+      setIsRefreshing(true);
+      try {
+        await refreshUserInfo();
+      } catch (error) {
+        console.error("Failed to refresh user info:", error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={handleDropdownToggle}
         className="flex items-center justify-center h-9 w-9 bg-blue-500 hover:bg-blue-600 rounded-full text-white text-sm font-semibold transition-colors"
         title={`Signed in as ${userInfo.email}`}
       >
@@ -112,6 +130,9 @@ export function UserProfile() {
             <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-700">
               <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 Credit Balance
+                {isRefreshing && (
+                  <span className="ml-1 inline-block animate-spin">⟳</span>
+                )}
               </div>
               <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                 ${(userInfo.credits / 100).toFixed(2)}

@@ -4,19 +4,26 @@ export interface OAuthConfig {
   token_url: string;
 }
 
-export function getOAuthConfig(): OAuthConfig {
-  // Use the environment variable set via .env files or deployment environment
-  const oauthProviderUrl = import.meta.env.VITE_OAUTH_PROVIDER_BASE_URL;
+let cachedConfig: OAuthConfig | null = null;
 
-  console.log('[OAuth Config] VITE_OAUTH_PROVIDER_BASE_URL:', oauthProviderUrl);
-
-  if (!oauthProviderUrl) {
-    throw new Error('VITE_OAUTH_PROVIDER_BASE_URL environment variable is not set');
+export async function getOAuthConfig(): Promise<OAuthConfig> {
+  // Return cached config if available
+  if (cachedConfig) {
+    return cachedConfig;
   }
 
-  return {
-    client_id: "app-agent-template",
-    auth_url: `${oauthProviderUrl}/oauth/authorize`,
-    token_url: `${oauthProviderUrl}/oauth/token`,
-  };
+  try {
+    const response = await fetch('/api/oauth/config');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OAuth config: ${response.status}`);
+    }
+
+    const config: OAuthConfig = await response.json();
+    cachedConfig = config;
+    console.log('[OAuth Config] Fetched from server:', config);
+    return config;
+  } catch (error) {
+    console.error('[OAuth Config] Failed to fetch from server:', error);
+    throw new Error('Failed to load OAuth configuration');
+  }
 }

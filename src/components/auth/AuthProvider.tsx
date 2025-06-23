@@ -26,6 +26,7 @@ export interface AuthContextType {
   logout: () => void;
   switchToBYOK: (keys: { openai?: string; anthropic?: string }) => void;
   switchToCredits: () => void;
+  refreshUserInfo: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -61,23 +62,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(false);
   }, []);
 
-  const login = () => {
-    const config = getOAuthConfig();
+  const login = async () => {
+    try {
+      const config = await getOAuthConfig();
+      const state = Math.random().toString(36).substring(2);
 
-    const state = Math.random().toString(36).substring(2);
+      const authUrl = new URL(config.auth_url);
+      authUrl.searchParams.set("client_id", config.client_id);
+      authUrl.searchParams.set("redirect_uri", `${window.location.origin}/auth/callback`);
+      authUrl.searchParams.set("response_type", "code");
+      authUrl.searchParams.set("state", state);
 
-    const url = new URL(config.auth_url);
-    url.searchParams.set("client_id", config.client_id);
-    url.searchParams.set(
-      "redirect_uri",
-      `${window.location.origin}/auth/callback`
-    );
-    url.searchParams.set("response_type", "code");
-    url.searchParams.set("scope", "api_access credit_usage agent_fuel");
-    url.searchParams.set("state", state);
-
-    localStorage.setItem("oauth_state", state);
-    window.location.href = url.toString();
+      localStorage.setItem("oauth_state", state);
+      window.location.href = authUrl.toString();
+    } catch (error) {
+      console.error('[Auth] Failed to start OAuth flow:', error);
+      // Could show error message to user here
+    }
   };
 
   const logout = () => {
@@ -113,6 +114,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem("auth_method", JSON.stringify(newAuth));
   };
 
+  const refreshUserInfo = async () => {
+    if (!authMethod || !authMethod.apiKey) return;
+
+    try {
+      // Call the local server endpoint that proxies to the gateway
+      const response = await fetch("/api/user/info", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authMethod.apiKey}`,
+        },
+      });
+
+      if (response.ok) {
+        const userInfo = await response.json() as { id: string; email: string; credits: number };
+
+        // Update the stored auth method with fresh user info
+        const updatedAuth = {
+          ...authMethod,
+          userInfo: {
+            id: userInfo.id,
+            email: userInfo.email,
+            credits: userInfo.credits,
+          },
+        };
+
+        setAuthMethod(updatedAuth);
+        localStorage.setItem("auth_method", JSON.stringify(updatedAuth));
+      } else {
+        console.error("Failed to refresh user info:", response.status, await response.text());
+      }
+    } catch (error) {
+      console.error("Error refreshing user info:", error);
+    }
+  };
+
   const value: AuthContextType = {
     authMethod,
     isAuthenticated: !!authMethod,
@@ -121,6 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     switchToBYOK,
     switchToCredits,
+    refreshUserInfo,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { getOAuthConfig } from "../../config/oauth";
 
 interface TokenResponse {
   access_token: string;
@@ -40,12 +41,13 @@ export default function AuthCallback() {
           "[OAuth Callback] Exchanging authorization code for token..."
         );
 
-        // Use our server-side API route for secure token exchange
-        const response = await fetch("/api/oauth/token-exchange", {
+        const config = await getOAuthConfig();
+        const response = await fetch(config.token_url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             code,
+            client_id: config.client_id,
             grant_type: "authorization_code",
           }),
         });

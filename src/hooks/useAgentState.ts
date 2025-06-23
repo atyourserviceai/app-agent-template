@@ -4,7 +4,7 @@ import { useAgent } from "agents/react";
 
 export function useAgentState(
   initialMode: AgentMode = "onboarding",
-  externalConfig?: { agent: string; name: string; query: Record<string, string> } | null
+  externalConfig?: { agent: string; name: string; query?: Record<string, string> } | null
 ) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
   const [agentMode, setAgentMode] = useState<AgentMode>(initialMode);
@@ -61,12 +61,11 @@ export function useAgentState(
     };
   }, [agentConfig.agent, agentConfig.name, changeAgentConfig, getNameFromURL]);
 
-  // Initialize the agent EARLY to get mode info as soon as possible
+  // Initialize the agent with authentication if available
   const agent = useAgent({
     agent: agentConfig.agent,
     name: agentConfig.name,
-    // Pass query parameters directly for authentication
-    ...("query" in agentConfig ? { query: agentConfig.query } : {}),
+    query: agentConfig.query, // Include query params for authentication
     onStateUpdate: (newState: AppAgentState) => {
       console.log("[UI] Agent state updated:", newState);
 
