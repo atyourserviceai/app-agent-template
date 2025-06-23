@@ -5,6 +5,7 @@
 The OAuth integration for the app-agent-template is **FULLY FUNCTIONAL** with end-to-end authentication working perfectly.
 
 ### **✅ What's Working:**
+
 - Complete authentication flow with AtYourService.ai
 - Demo mode for unauthenticated users
 - User-specific private agent instances (`/agents/app-agent/{user_id}`)
@@ -13,6 +14,7 @@ The OAuth integration for the app-agent-template is **FULLY FUNCTIONAL** with en
 - Smart authentication with progressive enhancement
 
 ### **✅ Architecture Overview:**
+
 - **OAuth Provider**: Website (SvelteKit) handles authorization and token exchange
 - **Agent Template**: React + Cloudflare Workers with authentication hooks
 - **Gateway Integration**: User info endpoint and API key verification
@@ -25,6 +27,7 @@ The OAuth integration for the app-agent-template is **FULLY FUNCTIONAL** with en
 ### **Current Status: Superfans Demo**
 
 ✅ **PARTIALLY IMPLEMENTED** - Basic OAuth integration added to superfans demo:
+
 - Environment variables configured
 - Server endpoints added
 - Auth components copied
@@ -104,38 +107,51 @@ export { AppAgent };
 export { AppAgent as SuperfansAgent };
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<Response> {
     const url = new URL(request.url);
 
     // OAuth configuration endpoint
-    if (url.pathname === '/api/oauth/config') {
-      return new Response(JSON.stringify({
-        client_id: "superfans-demo",
-        auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
-        token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
+    if (url.pathname === "/api/oauth/config") {
+      return new Response(
+        JSON.stringify({
+          client_id: "superfans-demo",
+          auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+          token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
     // User info proxy endpoint
-    if (url.pathname === '/api/user/info') {
-      const authHeader = request.headers.get('Authorization');
+    if (url.pathname === "/api/user/info") {
+      const authHeader = request.headers.get("Authorization");
       if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(
+          JSON.stringify({ error: "Missing Authorization header" }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
-      const gatewayResponse = await fetch(`${env.GATEWAY_BASE_URL}/v1/user/info`, {
-        method: 'GET',
-        headers: { 'Authorization': authHeader },
-      });
+      const gatewayResponse = await fetch(
+        `${env.GATEWAY_BASE_URL}/v1/user/info`,
+        {
+          method: "GET",
+          headers: { Authorization: authHeader },
+        }
+      );
 
       return new Response(await gatewayResponse.text(), {
         status: gatewayResponse.status,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -160,11 +176,20 @@ export default {
 
           if (!token) {
             // Allow demo mode for default rooms
-            const pathMatch = url.pathname.match(/\/agents\/([^\/]+)\/([^\/\?]+)/);
+            const pathMatch = url.pathname.match(
+              /\/agents\/([^\/]+)\/([^\/\?]+)/
+            );
             if (pathMatch) {
               const [, agentName, roomName] = pathMatch;
-              if (roomName !== "default-room" && roomName !== "onboarding" && roomName.length > 10) {
-                return new Response("Authentication required for user-specific agents", { status: 401 });
+              if (
+                roomName !== "default-room" &&
+                roomName !== "onboarding" &&
+                roomName.length > 10
+              ) {
+                return new Response(
+                  "Authentication required for user-specific agents",
+                  { status: 401 }
+                );
               }
             }
             return undefined; // Allow demo access
@@ -292,7 +317,11 @@ Modify `packages/demos/superfans/src/hooks/useAgentState.ts`:
 ```typescript
 export function useAgentState(
   initialMode: AgentMode = "onboarding",
-  externalConfig?: { agent: string; name: string; query?: Record<string, string> } | null
+  externalConfig?: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null
 ) {
   // ... existing state declarations
 

@@ -3,7 +3,8 @@ import { useAuth } from "./AuthProvider";
 import { User, SignOut, CreditCard, Key } from "@phosphor-icons/react";
 
 export function UserProfile() {
-  const { authMethod, logout, switchToBYOK, switchToCredits, refreshUserInfo } = useAuth();
+  const { authMethod, logout, switchToBYOK, switchToCredits, refreshUserInfo } =
+    useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,7 +28,8 @@ export function UserProfile() {
 
     if (showDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showDropdown]);
 

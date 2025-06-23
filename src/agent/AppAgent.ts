@@ -209,10 +209,13 @@ export class AppAgent extends AIChatAgent<Env> {
     const userApiKey = state.userInfo?.api_key;
 
     if (userApiKey) {
-      console.log(`[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`);
+      console.log(
+        `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
+      );
       return getOpenAI(this.env, userApiKey);
     } else {
-      const errorMsg = "No user API key available. User must be authenticated to use AI features.";
+      const errorMsg =
+        "No user API key available. User must be authenticated to use AI features.";
       console.error(`[AppAgent] ${errorMsg}`);
       throw new Error(errorMsg);
     }
@@ -472,7 +475,7 @@ export class AppAgent extends AIChatAgent<Env> {
     // Handle internal user info storage request
     if (url.pathname === "/store-user-info" && request.method === "POST") {
       try {
-        const userInfo = await request.json() as {
+        const userInfo = (await request.json()) as {
           user_id: string;
           api_key: string;
           email: string;
@@ -480,7 +483,9 @@ export class AppAgent extends AIChatAgent<Env> {
           payment_method: string;
         };
 
-        console.log(`[AppAgent] Storing user info for user: ${userInfo.user_id}`);
+        console.log(
+          `[AppAgent] Storing user info for user: ${userInfo.user_id}`
+        );
 
         // Update agent state with user info
         const currentState = this.state as AppAgentState;

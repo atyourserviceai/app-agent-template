@@ -69,14 +69,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const authUrl = new URL(config.auth_url);
       authUrl.searchParams.set("client_id", config.client_id);
-      authUrl.searchParams.set("redirect_uri", `${window.location.origin}/auth/callback`);
+      authUrl.searchParams.set(
+        "redirect_uri",
+        `${window.location.origin}/auth/callback`
+      );
       authUrl.searchParams.set("response_type", "code");
       authUrl.searchParams.set("state", state);
 
       localStorage.setItem("oauth_state", state);
       window.location.href = authUrl.toString();
     } catch (error) {
-      console.error('[Auth] Failed to start OAuth flow:', error);
+      console.error("[Auth] Failed to start OAuth flow:", error);
       // Could show error message to user here
     }
   };
@@ -127,7 +130,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (response.ok) {
-        const userInfo = await response.json() as { id: string; email: string; credits: number };
+        const userInfo = (await response.json()) as {
+          id: string;
+          email: string;
+          credits: number;
+        };
 
         // Update the stored auth method with fresh user info
         const updatedAuth = {
@@ -142,7 +149,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAuthMethod(updatedAuth);
         localStorage.setItem("auth_method", JSON.stringify(updatedAuth));
       } else {
-        console.error("Failed to refresh user info:", response.status, await response.text());
+        console.error(
+          "Failed to refresh user info:",
+          response.status,
+          await response.text()
+        );
       }
     } catch (error) {
       console.error("Error refreshing user info:", error);

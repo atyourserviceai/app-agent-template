@@ -178,8 +178,10 @@ function Chat() {
   const agentConfig = useAgentAuth();
 
   // Use the agent state hook with authenticated config
-  const { agent, agentState, agentMode, changeAgentMode } =
-    useAgentState("onboarding", agentConfig);
+  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+    "onboarding",
+    agentConfig
+  );
 
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
@@ -860,8 +862,6 @@ function Chat() {
     </div>
   );
 }
-
-
 
 // Main App component with authentication
 export default function App() {
