@@ -41,7 +41,7 @@ export function ChatContainer({
 }: ChatContainerProps) {
   return (
     <div
-      className={`h-full md:w-3/5 lg:w-3/5 max-w-[800px] flex-shrink-0 flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 ${
+      className={`h-full md:w-3/5 lg:w-3/5 max-w-[800px] flex-shrink-0 flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-black ${
         activeTab === "chat" ? "block" : "hidden md:flex"
       }`}
     >

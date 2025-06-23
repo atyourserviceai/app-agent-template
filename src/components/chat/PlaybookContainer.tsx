@@ -28,7 +28,7 @@ export function PlaybookContainer({
 
   return (
     <div
-      className={`h-full md:w-2/5 lg:w-2/5 max-w-[600px] flex-shrink-0 shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 ${
+      className={`h-full md:w-2/5 lg:w-2/5 max-w-[600px] flex-shrink-0 shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-black ${
         activeTab === "playbook" ? "block" : "hidden md:block"
       }`}
     >
