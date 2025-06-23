@@ -401,8 +401,6 @@ function Chat() {
     handleRetryLastUserMessage,
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
 
-  console.log(`[Chat] agentData: ${JSON.stringify(agentData)}`);
-
   // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
