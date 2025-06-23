@@ -817,7 +817,7 @@ function Chat() {
   }, [agentMessages, isLoading, temporaryLoading, reload]);
 
   return (
-    <div className="h-[100vh] w-full p-4 flex justify-center items-center bg-fixed overflow-hidden">
+    <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">
       <AuthHeader />
 
       {/* Main Container - Responsive layout with chat and playbook */}
@@ -941,10 +941,12 @@ function HasOpenAIKey() {
 // Main App component with authentication
 export default function App() {
   return (
-    <AuthProvider>
-      <AuthGuard>
-        <Chat />
-      </AuthGuard>
-    </AuthProvider>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-black to-blue-900">
+      <AuthProvider>
+        <AuthGuard>
+          <Chat />
+        </AuthGuard>
+      </AuthProvider>
+    </div>
   );
 }
