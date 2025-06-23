@@ -5,6 +5,19 @@ import { getOAuthConfig } from "./config/oauth";
 
 export { AppAgent };
 
+// Add type definitions at the top of the file
+interface UserInfo {
+  id: string;
+  email: string;
+  credits: number;
+  payment_method: string;
+}
+
+interface TokenData {
+  access_token: string;
+  user_info: UserInfo;
+}
+
 /**
  * Worker entry point that routes incoming requests to the appropriate handler
  */
@@ -67,7 +80,63 @@ export default {
 
     try {
       // Try to route to agent first
-      const agentResponse = await routeAgentRequest(request, env, { cors: true });
+      const agentResponse = await routeAgentRequest(request, env, {
+        cors: true,
+        onBeforeConnect: async (request) => {
+          const url = new URL(request.url);
+          const token = url.searchParams.get("token");
+
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
+
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
+
+          const userId = extractUserIdFromPath(url.pathname);
+          if (userId !== userInfo.id) {
+            return new Response("User ID mismatch", { status: 403 });
+          }
+
+          const agentId = env.AppAgent.idFromName(userId);
+          const agentStub = env.AppAgent.get(agentId);
+
+          await agentStub.fetch(
+            new Request("http://internal/store-user-info", {
+              method: "POST",
+              body: JSON.stringify({
+                user_id: userInfo.id,
+                api_key: token,
+                email: userInfo.email,
+                credits: userInfo.credits,
+                payment_method: userInfo.payment_method || 'credits',
+              }),
+            })
+          );
+
+          return undefined;
+        },
+        onBeforeRequest: async (request) => {
+          const url = new URL(request.url);
+          const token =
+            url.searchParams.get("token") ||
+            request.headers.get("Authorization")?.replace("Bearer ", "");
+
+          if (!token) {
+            return new Response("Missing auth token", { status: 401 });
+          }
+
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response("Invalid auth token", { status: 403 });
+          }
+
+          return undefined;
+        },
+      });
+
       if (agentResponse) {
         return agentResponse;
       }
@@ -105,6 +174,36 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
+async function verifyOAuthToken(token: string, env: Env): Promise<UserInfo | null> {
+  try {
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      return {
+        id: "dev-user-" + token.slice(-8),
+        email: "dev@example.com",
+        credits: 50,
+        payment_method: 'credits'
+      };
+    }
+
+    const response = await fetch(`${env.GATEWAY_BASE_URL}/api/oauth/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) return null;
+
+    const userInfo = await response.json() as UserInfo;
+    return userInfo;
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return null;
+  }
+}
+
+function extractUserIdFromPath(pathname: string): string | null {
+  const match = pathname.match(/\/agents\/app-agent\/([^\/\?]+)/);
+  return match ? match[1] : null;
+}
+
 /**
  * Handle OAuth callback directly on the server
  */
@@ -137,58 +236,31 @@ async function handleOAuthCallback(request: Request, env: Env): Promise<Response
   try {
     console.log("[OAuth Callback] Exchanging authorization code for token...");
 
-    const config = getOAuthConfig(env);
-    const response = await fetch(config.token_url, {
+    // Exchange code for token using our API endpoint
+    const tokenResponse = await fetch(`${url.origin}/api/oauth/token-exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code,
-        client_id: config.client_id,
-        client_secret: config.client_secret,
-        grant_type: "authorization_code",
-      }),
+      body: JSON.stringify({ code, state }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Token exchange failed: ${response.status} - ${errorText}`);
-      return new Response(
-        getCallbackHTML("Authentication failed: Token exchange error", null),
-        {
-          headers: { "Content-Type": "text/html" },
-        }
-      );
+    if (!tokenResponse.ok) {
+      throw new Error(`Token exchange failed: ${tokenResponse.status}`);
     }
 
-    const tokenData = await response.json() as {
-      access_token: string;
-      user_info: {
-        id: string;
-        email: string;
-        credits: number;
-      };
-    };
+    const tokenData = await tokenResponse.json() as TokenData;
 
-    console.log(
-      "[OAuth Callback] Token exchange successful for user:",
-      tokenData.user_info?.id
-    );
+    console.log(`[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`);
 
-    // Return HTML that stores auth data and redirects to main app
     return new Response(
-      getCallbackHTML(null, {
-        type: "atyourservice",
-        apiKey: tokenData.access_token,
-        userInfo: tokenData.user_info,
-      }),
+      getCallbackHTML(null, tokenData),
       {
         headers: { "Content-Type": "text/html" },
       }
     );
-  } catch (error) {
-    console.error("[OAuth Callback] Error:", error);
+  } catch (err) {
+    console.error("Token exchange failed:", err);
     return new Response(
-      getCallbackHTML("Authentication failed: Internal error", null),
+      getCallbackHTML("Authentication failed: Could not exchange token", null),
       {
         headers: { "Content-Type": "text/html" },
       }
@@ -199,24 +271,26 @@ async function handleOAuthCallback(request: Request, env: Env): Promise<Response
 /**
  * Generate HTML for OAuth callback handling
  */
-function getCallbackHTML(error: string | null, authData: any): string {
+function getCallbackHTML(error: string | null, tokenData: TokenData | null): string {
   if (error) {
     return `
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Authentication Error</title>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: system-ui, sans-serif; padding: 2rem; text-align: center; background: #1e293b; color: white; }
-        .error { background: #dc2626; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
-        .button { background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; text-decoration: none; display: inline-block; margin-top: 1rem; }
-    </style>
+  <title>Authentication Failed</title>
+  <style>
+    body { font-family: system-ui; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+    .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+    .error { color: #e53e3e; margin-bottom: 1rem; }
+    button { background: #3182ce; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+  </style>
 </head>
 <body>
-    <h1>🤖 App Agent Template</h1>
-    <div class="error">${error}</div>
-    <a href="/" class="button">Try Again</a>
+  <div class="container">
+    <h2>Authentication Failed</h2>
+    <p class="error">${error}</p>
+    <button onclick="window.location.href = '/'">Try Again</button>
+  </div>
 </body>
 </html>`;
   }
@@ -225,23 +299,34 @@ function getCallbackHTML(error: string | null, authData: any): string {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Authentication Complete</title>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: system-ui, sans-serif; padding: 2rem; text-align: center; background: #1e293b; color: white; }
-        .success { background: #059669; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
-    </style>
+  <title>Authentication Successful</title>
+  <style>
+    body { font-family: system-ui; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+    .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+    .success { color: #38a169; margin-bottom: 1rem; }
+    .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #3182ce; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-    <h1>🤖 App Agent Template</h1>
-    <div class="success">Authentication successful! Redirecting...</div>
-    <script>
-        // Store auth data and redirect
-        localStorage.setItem('auth_method', JSON.stringify(${JSON.stringify(authData)}));
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1000);
-    </script>
+  <div class="container">
+    <div class="spinner"></div>
+    <h2>Authentication Successful!</h2>
+    <p class="success">Redirecting to your agent...</p>
+  </div>
+  <script>
+    // Store auth data and redirect
+    localStorage.setItem('auth_method', JSON.stringify({
+      type: 'atyourservice',
+      apiKey: ${JSON.stringify(tokenData?.access_token)},
+      userInfo: ${JSON.stringify(tokenData?.user_info)}
+    }));
+
+    // Redirect to main app
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1500);
+  </script>
 </body>
 </html>`;
 }

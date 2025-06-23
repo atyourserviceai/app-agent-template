@@ -33,9 +33,9 @@ import type {
 } from "./types/generic";
 
 // AI @ Your Service Gateway configuration
-const getOpenAI = (env: Env) => {
+const getOpenAI = (env: Env, apiKey?: string) => {
   return createOpenAI({
-    apiKey: env.GATEWAY_API_KEY,
+    apiKey: apiKey || env.GATEWAY_API_KEY,
     baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
   });
 };
@@ -101,6 +101,15 @@ export interface AppAgentState {
     operators: Operator[];
     adminContact: AdminContact;
     currentUser?: string; // ID of the current operator
+  };
+
+  // User authentication info (from OAuth)
+  userInfo?: {
+    id: string;
+    email: string;
+    credits: number;
+    payment_method: string;
+    api_key?: string; // User's AtYourService.ai API key
   };
 
   // Onboarding mode state
@@ -187,6 +196,22 @@ export class AppAgent extends AIChatAgent<Env> {
     this.initialize().catch((error) => {
       console.error("Failed to initialize database:", error);
     });
+  }
+
+  /**
+   * Get AI provider using user-specific API key if available
+   */
+  getAIProvider() {
+    const state = this.state as AppAgentState;
+    const userApiKey = state.userInfo?.api_key;
+
+    if (userApiKey) {
+      console.log(`[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`);
+      return getOpenAI(this.env, userApiKey);
+    } else {
+      console.log("[AppAgent] Using default API key");
+      return getOpenAI(this.env);
+    }
   }
 
   /**
@@ -315,7 +340,7 @@ export class AppAgent extends AIChatAgent<Env> {
         // Filter out empty messages for AI provider compatibility
         const filteredMessages = filterEmptyMessages(processedMessages);
 
-        const openai = getOpenAI(this.env);
+        const openai = this.getAIProvider();
         const model = openai("gpt-4.1-2025-04-14");
         /*
         const anthropic = getAnthropic(this.env);
@@ -439,6 +464,41 @@ export class AppAgent extends AIChatAgent<Env> {
       url: url.toString(),
       pathname: url.pathname,
     });
+
+    // Handle internal user info storage request
+    if (url.pathname === "/store-user-info" && request.method === "POST") {
+      try {
+        const userInfo = await request.json() as {
+          user_id: string;
+          api_key: string;
+          email: string;
+          credits: number;
+          payment_method: string;
+        };
+
+        console.log(`[AppAgent] Storing user info for user: ${userInfo.user_id}`);
+
+        // Update agent state with user info
+        const currentState = this.state as AppAgentState;
+        const updatedState: AppAgentState = {
+          ...currentState,
+          userInfo: {
+            id: userInfo.user_id,
+            email: userInfo.email,
+            credits: userInfo.credits,
+            payment_method: userInfo.payment_method,
+            api_key: userInfo.api_key,
+          },
+        };
+
+        this.setState(updatedState);
+
+        return new Response("OK");
+      } catch (error) {
+        console.error("[AppAgent] Error storing user info:", error);
+        return new Response("Error storing user info", { status: 500 });
+      }
+    }
 
     // Handle mode change requests
     if (url.pathname.includes("/set-mode")) {
