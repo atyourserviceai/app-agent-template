@@ -2,6 +2,7 @@ import { Button } from "@/components/button/Button";
 import { Toggle } from "@/components/toggle/Toggle";
 import { Bug, Moon, Sun, Trash } from "@phosphor-icons/react";
 import type { AgentMode } from "../../agent/AppAgent";
+import { UserProfile } from "../auth/UserProfile";
 
 type ChatHeaderProps = {
   theme: "dark" | "light";
@@ -93,6 +94,9 @@ export function ChatHeader({
       >
         <Trash size={20} />
       </Button>
+
+      {/* User Profile */}
+      <UserProfile />
     </div>
   );
 }
