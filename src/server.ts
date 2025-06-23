@@ -39,12 +39,7 @@ export default {
       return handleTokenExchange(request, env);
     }
 
-    if (url.pathname === "/check-open-ai-key") {
-      const hasApiKey = !!env.GATEWAY_API_KEY;
-      return Response.json({
-        success: hasApiKey,
-      });
-    }
+
 
     if (!env.GATEWAY_API_KEY) {
       console.error(
