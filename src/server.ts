@@ -4,7 +4,6 @@ import { handleTokenExchange } from "./api/oauth-token-exchange";
 
 export { AppAgent };
 
-// Add type definitions at the top of the file
 interface UserInfo {
   id: string;
   email: string;
@@ -36,13 +35,6 @@ export default {
     // Handle OAuth token exchange
     if (url.pathname === "/api/oauth/token-exchange") {
       return handleTokenExchange(request, env);
-    }
-
-    if (!env.GATEWAY_API_KEY) {
-      console.error(
-        "GATEWAY_API_KEY is not set, don't forget to set it locally in .dev.vars, and use `wrangler secret bulk .dev.vars` to upload it to production"
-      );
-      return new Response("GATEWAY_API_KEY is not set", { status: 500 });
     }
 
     // Check if this is a request for an unknown agent namespace before routing

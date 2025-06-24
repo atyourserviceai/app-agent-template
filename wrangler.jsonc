@@ -29,7 +29,7 @@
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
-    "OAUTH_CLIENT_SECRET": "app-agent-template-secret-dev",
+    "ATYOURSERVICE_OAUTH_CLIENT_SECRET": "app-agent-template-secret-dev",
   },
   "env": {
     "staging": {
@@ -39,7 +39,7 @@
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "OAUTH_CLIENT_SECRET": "app-agent-template-secret-staging",
+        "ATYOURSERVICE_OAUTH_CLIENT_SECRET": "app-agent-template-secret-staging",
       },
       "routes": [
         {
@@ -55,7 +55,7 @@
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "OAUTH_CLIENT_SECRET": "app-agent-template-secret-production",
+        "ATYOURSERVICE_OAUTH_CLIENT_SECRET": "app-agent-template-secret-production",
       },
       "routes": [
         {

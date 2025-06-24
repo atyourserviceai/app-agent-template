@@ -19,7 +19,7 @@ function getServerOAuthConfig(env: Env) {
   return {
     client_id: "app-agent-template",
     token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-    client_secret: env.OAUTH_CLIENT_SECRET, // OAuth client secret from environment
+    client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET, // OAuth client secret from environment
   };
 }
 
