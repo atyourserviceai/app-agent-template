@@ -121,6 +121,7 @@ export default {
           const url = new URL(request.url);
           const token = url.searchParams.get("token");
 
+          // CRITICAL SECURITY: Always require authentication for WebSocket connections
           if (!token) {
             return new Response(
               JSON.stringify({ error: "Authentication required" }),
@@ -180,41 +181,50 @@ export default {
         onBeforeRequest: async (request) => {
           const url = new URL(request.url);
 
-          // Skip auth for API routes and static assets
-          if (
-            url.pathname.startsWith("/api/") ||
-            url.pathname.startsWith("/assets/") ||
-            url.pathname === "/"
-          ) {
-            return undefined;
+          // CRITICAL SECURITY: All HTTP requests to agent endpoints MUST be authenticated
+          // Extract token from Authorization header or query params
+          const authHeader = request.headers.get("authorization");
+          const token = authHeader?.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : url.searchParams.get("token");
+
+          if (!token) {
+            return new Response(
+              JSON.stringify({ error: "Authentication required" }),
+              {
+                status: 401,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*",
+                },
+              }
+            );
           }
 
-          const token =
-            url.searchParams.get("token") ||
-            request.headers.get("Authorization")?.replace("Bearer ", "");
+          // Verify the token
+          const userInfo = await verifyOAuthToken(token, env);
+          if (!userInfo) {
+            return new Response(
+              JSON.stringify({ error: "Invalid auth token" }),
+              {
+                status: 403,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*",
+                },
+              }
+            );
+          }
 
-          // Require auth for all agent requests
+          // Ensure user can only access their own agent instance
           const pathMatch = url.pathname.match(
             /\/agents\/([^\/]+)\/([^\/\?]+)/
           );
           if (pathMatch) {
-            if (!token) {
+            const [, , roomName] = pathMatch;
+            if (roomName !== userInfo.id) {
               return new Response(
-                JSON.stringify({ error: "Authentication required" }),
-                {
-                  status: 401,
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                  },
-                }
-              );
-            }
-
-            const userInfo = await verifyOAuthToken(token, env);
-            if (!userInfo) {
-              return new Response(
-                JSON.stringify({ error: "Invalid auth token" }),
+                JSON.stringify({ error: "Access denied: User ID mismatch" }),
                 {
                   status: 403,
                   headers: {
@@ -223,17 +233,6 @@ export default {
                   },
                 }
               );
-            }
-
-            const [, , roomName] = pathMatch;
-            if (userInfo.id !== roomName) {
-              return new Response(JSON.stringify({ error: "Access denied" }), {
-                status: 403,
-                headers: {
-                  "Content-Type": "application/json",
-                  "Access-Control-Allow-Origin": "*",
-                },
-              });
             }
           }
 

@@ -10,7 +10,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const { authMethod, login, isLoading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Check for auth errors in URL
+  // Check for auth errors in URL and localStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get("error");
@@ -27,6 +27,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
       }
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Check for invalid token flag
+    const invalidToken = localStorage.getItem("auth_invalid_token");
+    if (invalidToken) {
+      setAuthError(
+        "You were automatically signed out due to an invalid token. Please sign in again."
+      );
+      localStorage.removeItem("auth_invalid_token");
     }
   }, []);
 

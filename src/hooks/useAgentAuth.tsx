@@ -18,12 +18,9 @@ export function useAgentAuth() {
         },
       } as const;
     }
-    // Unauthenticated users get demo/default agent
-    return {
-      agent: "app-agent",
-      name: "default-room", // Default demo room
-      // No query params needed for demo mode
-    } as const;
+    // SECURITY: No fallback for unauthenticated users - return null
+    // This ensures the app shows login screen instead of trying to connect
+    return null;
   }, [authMethod]);
 
   return agentConfig;

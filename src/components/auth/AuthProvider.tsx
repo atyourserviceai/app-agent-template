@@ -63,7 +63,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (stored) {
         try {
           const parsedAuth = JSON.parse(stored);
-          setAuthMethod(parsedAuth);
+
+          // Validate the token if it exists
+          if (parsedAuth?.apiKey) {
+            try {
+              const response = await fetch("/api/user/info", {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${parsedAuth.apiKey}`,
+                },
+              });
+
+              if (response.ok) {
+                // Token is valid, use the stored auth
+                setAuthMethod(parsedAuth);
+              } else {
+                // Token is invalid, clear it and show sign-in with message
+                console.log("Stored token is invalid, clearing auth");
+                localStorage.removeItem("auth_method");
+                localStorage.setItem("auth_invalid_token", "true");
+              }
+            } catch (error) {
+              // Network error, assume stored auth is potentially valid
+              console.log(
+                "Could not validate token due to network error, keeping stored auth"
+              );
+              setAuthMethod(parsedAuth);
+            }
+          } else {
+            // No API key, invalid auth
+            localStorage.removeItem("auth_method");
+          }
         } catch (e) {
           console.error("Invalid stored auth:", e);
           localStorage.removeItem("auth_method");
