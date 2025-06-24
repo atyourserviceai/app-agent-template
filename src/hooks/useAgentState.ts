@@ -4,11 +4,11 @@ import { useAgent } from "agents/react";
 
 export function useAgentState(
   initialMode: AgentMode = "onboarding",
-  externalConfig?: {
+  externalConfig: {
     agent: string;
     name: string;
     query?: Record<string, string>;
-  } | null
+  }
 ) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
   const [agentMode, setAgentMode] = useState<AgentMode>(initialMode);
@@ -16,26 +16,9 @@ export function useAgentState(
   // Add ref to track initial agent state load
   const initialStateLoaded = useRef(false);
 
-  // Move getNameFromURL to a useCallback to avoid dependency issues
-  const getNameFromURL = useCallback(() => {
-    // Extract name from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("room");
-  }, []);
-
   const [agentConfig] = useState(() => {
-    if (externalConfig) {
-      console.log(`[UI] Using external agent config: ${externalConfig.name}`);
-      return externalConfig;
-    }
-
-    // Fallback to URL-based config for development
-    const name = getNameFromURL() || "default-room";
-    console.log(`[UI] Using URL-based agent config: ${name}`);
-    return {
-      agent: "app-agent",
-      name,
-    };
+    console.log(`[UI] Using external agent config: ${externalConfig.name}`);
+    return externalConfig;
   });
 
   // Update agent configuration with proper typing
@@ -49,21 +32,6 @@ export function useAgentState(
     },
     []
   );
-
-  // Listen for URL changes and update agent config when room param changes
-  useEffect(() => {
-    const handleURLChange = () => {
-      const newName = getNameFromURL();
-      if (newName !== agentConfig.name) {
-        changeAgentConfig(agentConfig.agent, newName);
-      }
-    };
-
-    window.addEventListener("popstate", handleURLChange);
-    return () => {
-      window.removeEventListener("popstate", handleURLChange);
-    };
-  }, [agentConfig.agent, agentConfig.name, changeAgentConfig, getNameFromURL]);
 
   // Initialize the agent with authentication if available
   const agent = useAgent({

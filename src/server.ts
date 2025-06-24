@@ -129,29 +129,8 @@ export default {
           const url = new URL(request.url);
           const token = url.searchParams.get("token");
 
-          // If no token provided, check if this is an authenticated agent path
           if (!token) {
-            // Allow unauthenticated access to default agent patterns
-            // Only require auth for user-specific agent instances
-            const pathMatch = url.pathname.match(
-              /\/agents\/([^\/]+)\/([^\/\?]+)/
-            );
-            if (pathMatch) {
-              const [, , roomName] = pathMatch;
-              // If room name looks like a user ID (not "default-room" or similar), require auth
-              if (
-                roomName !== "default-room" &&
-                roomName !== "onboarding" &&
-                roomName.length > 10
-              ) {
-                return new Response(
-                  "Authentication required for user-specific agents",
-                  { status: 401 }
-                );
-              }
-            }
-            // Allow connection to default/demo agent without auth
-            return undefined;
+            return new Response("Authentication required", { status: 401 });
           }
 
           // If token provided, verify it
@@ -191,25 +170,23 @@ export default {
             url.searchParams.get("token") ||
             request.headers.get("Authorization")?.replace("Bearer ", "");
 
-          // Only require auth for user-specific agent requests
+          // Require auth for all agent requests
           const pathMatch = url.pathname.match(
             /\/agents\/([^\/]+)\/([^\/\?]+)/
           );
           if (pathMatch) {
-            const [, , roomName] = pathMatch;
-            if (
-              roomName !== "default-room" &&
-              roomName !== "onboarding" &&
-              roomName.length > 10
-            ) {
-              if (!token) {
-                return new Response("Authentication required", { status: 401 });
-              }
+            if (!token) {
+              return new Response("Authentication required", { status: 401 });
+            }
 
-              const userInfo = await verifyOAuthToken(token, env);
-              if (!userInfo || userInfo.id !== roomName) {
-                return new Response("Access denied", { status: 403 });
-              }
+            const userInfo = await verifyOAuthToken(token, env);
+            if (!userInfo) {
+              return new Response("Invalid auth token", { status: 403 });
+            }
+
+            const [, , roomName] = pathMatch;
+            if (userInfo.id !== roomName) {
+              return new Response("Access denied", { status: 403 });
             }
           }
 
