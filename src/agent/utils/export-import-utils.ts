@@ -144,6 +144,7 @@ export async function exportAgentData(
 
   // Define table names and their queries
   const tableQueries = [
+    // Core system tables
     {
       name: "cf_agents_state",
       schemaQuery: agent.sql`PRAGMA table_info(cf_agents_state)`,
@@ -158,6 +159,27 @@ export async function exportAgentData(
       name: "cf_agents_schedules",
       schemaQuery: agent.sql`PRAGMA table_info(cf_agents_schedules)`,
       dataQuery: agent.sql`SELECT * FROM cf_agents_schedules`,
+    },
+    // Custom tables
+    {
+      name: "settings",
+      schemaQuery: agent.sql`PRAGMA table_info(settings)`,
+      dataQuery: agent.sql`SELECT * FROM settings`,
+    },
+    {
+      name: "user_info",
+      schemaQuery: agent.sql`PRAGMA table_info(user_info)`,
+      dataQuery: agent.sql`SELECT * FROM user_info`,
+    },
+    {
+      name: "tasks",
+      schemaQuery: agent.sql`PRAGMA table_info(tasks)`,
+      dataQuery: agent.sql`SELECT * FROM tasks`,
+    },
+    {
+      name: "interaction_history",
+      schemaQuery: agent.sql`PRAGMA table_info(interaction_history)`,
+      dataQuery: agent.sql`SELECT * FROM interaction_history`,
     },
   ];
 

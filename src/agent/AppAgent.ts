@@ -45,9 +45,12 @@ const getOpenAI = (env: Env, apiKey?: string) => {
 
 /*
 // AI @ Your Service Gateway configuration for Anthropic
-const getAnthropic = (env: Env) => {
+const getAnthropic = (env: Env, apiKey?: string) => {
+  if (!apiKey) {
+    throw new Error("API key is required for AI requests");
+  }
   return createAnthropic({
-    apiKey: env.GATEWAY_API_KEY,
+    apiKey: apiKey,
     baseURL: `${env.GATEWAY_BASE_URL}/v1/anthropic`,
   });
 };
@@ -55,9 +58,12 @@ const getAnthropic = (env: Env) => {
 
 /*
 // AI @ Your Service Gateway configuration for Gemini
-const getGemini = (env: Env) => {
+const getGemini = (env: Env, apiKey?: string) => {
+  if (!apiKey) {
+    throw new Error("API key is required for AI requests");
+  }
   return createGoogleGenerativeAI({
-    apiKey: env.GATEWAY_API_KEY,
+    apiKey: apiKey,
     baseURL: `${env.GATEWAY_BASE_URL}/v1/google-ai-studio`,
   });
 };
@@ -195,9 +201,14 @@ export class AppAgent extends AIChatAgent<Env> {
     const updatedState = this.ensureStateSchema(state);
     this.setState(updatedState);
 
-    // Initialize database tables
+    // Initialize database tables and load user info
     this.initialize().catch((error) => {
       console.error("Failed to initialize database:", error);
+    });
+
+    // Load user info from database on startup
+    this.loadUserInfo().catch((error) => {
+      console.error("Failed to load user info:", error);
     });
   }
 
@@ -431,6 +442,19 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
+      // User authentication and billing info table
+      await this.sql`
+        CREATE TABLE IF NOT EXISTS user_info (
+          user_id TEXT PRIMARY KEY,
+          api_key TEXT NOT NULL,
+          email TEXT NOT NULL,
+          credits REAL NOT NULL,
+          payment_method TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+
       // Example: Custom tasks/work items table
       await this.sql`
         CREATE TABLE IF NOT EXISTS tasks (
@@ -471,8 +495,22 @@ export class AppAgent extends AIChatAgent<Env> {
       pathname: url.pathname,
     });
 
+    // Extract OAuth token from request and ensure user info is loaded
+    const token = url.searchParams.get("token");
+    const currentState = this.state as AppAgentState;
+
+    if (token && !currentState.userInfo) {
+      console.log(
+        "[AppAgent] No user info in state, attempting to load from database or OAuth"
+      );
+      await this.loadUserInfo(token);
+    }
+
     // Handle internal user info storage request
-    if (url.pathname === "/store-user-info" && request.method === "POST") {
+    if (
+      url.pathname.endsWith("/store-user-info") &&
+      request.method === "POST"
+    ) {
       try {
         const userInfo = (await request.json()) as {
           user_id: string;
@@ -486,8 +524,21 @@ export class AppAgent extends AIChatAgent<Env> {
           `[AppAgent] Storing user info for user: ${userInfo.user_id}`
         );
 
-        // Update agent state with user info
-        const currentState = this.state as AppAgentState;
+        // Store user info in database for persistence
+        await this.sql`
+          INSERT OR REPLACE INTO user_info (
+            user_id, api_key, email, credits, payment_method, updated_at
+          ) VALUES (
+            ${userInfo.user_id},
+            ${userInfo.api_key},
+            ${userInfo.email},
+            ${userInfo.credits},
+            ${userInfo.payment_method},
+            ${new Date().toISOString()}
+          )
+        `;
+
+        // Also update agent state for immediate use
         const updatedState: AppAgentState = {
           ...currentState,
           userInfo: {
@@ -501,6 +552,9 @@ export class AppAgent extends AIChatAgent<Env> {
 
         this.setState(updatedState);
 
+        console.log(
+          `[AppAgent] Successfully stored user info in database for user: ${userInfo.user_id}`
+        );
         return new Response("OK");
       } catch (error) {
         console.error("[AppAgent] Error storing user info:", error);
@@ -806,7 +860,16 @@ export class AppAgent extends AIChatAgent<Env> {
    * Get Browser API key for the external browser rendering service
    */
   getBrowserApiKey() {
-    return this.env.GATEWAY_API_KEY;
+    const state = this.state as AppAgentState;
+    const userApiKey = state.userInfo?.api_key;
+
+    if (userApiKey) {
+      return userApiKey;
+    }
+
+    throw new Error(
+      "No user API key available for browser rendering service. User must be authenticated."
+    );
   }
 
   /**
@@ -828,5 +891,138 @@ export class AppAgent extends AIChatAgent<Env> {
       interaction_history: "Stores history of interactions",
     };
     return descriptions[tableName] || "Unknown table";
+  }
+
+  /**
+   * Fetch user info from OAuth provider
+   */
+  async fetchUserInfoFromOAuth(token: string): Promise<void> {
+    try {
+      // Use the OAuth provider URL (website) for token verification
+      const oauthProviderUrl =
+        this.env.OAUTH_PROVIDER_BASE_URL || "https://atyourservice.ai";
+      const verifyEndpoint = `${oauthProviderUrl}/oauth/verify`;
+
+      console.log(
+        `[AppAgent] Fetching user info from OAuth provider: ${verifyEndpoint}`
+      );
+
+      const response = await fetch(verifyEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[AppAgent] OAuth verification failed: ${response.status} - ${errorText}`
+        );
+        return;
+      }
+
+      const userInfo = (await response.json()) as {
+        id: string;
+        email: string;
+        credits: number;
+        payment_method: string;
+      };
+
+      console.log(
+        `[AppAgent] Fetched user info from OAuth for user: ${userInfo.id}`
+      );
+
+      // Store in database for future use
+      // OAuth token IS the gateway API key
+      await this.sql`
+        INSERT OR REPLACE INTO user_info (
+          user_id, api_key, email, credits, payment_method, updated_at
+        ) VALUES (
+          ${userInfo.id},
+          ${token},
+          ${userInfo.email},
+          ${userInfo.credits},
+          ${userInfo.payment_method},
+          ${new Date().toISOString()}
+        )
+      `;
+
+      // Update agent state
+      const state = this.state as AppAgentState;
+      const updatedState: AppAgentState = {
+        ...state,
+        userInfo: {
+          id: userInfo.id,
+          api_key: token,
+          email: userInfo.email,
+          credits: userInfo.credits,
+          payment_method: userInfo.payment_method,
+        },
+      };
+
+      this.setState(updatedState);
+      console.log(
+        `[AppAgent] Successfully fetched and stored user info for user: ${userInfo.id}`
+      );
+    } catch (error) {
+      console.error("[AppAgent] Error fetching user info from OAuth:", error);
+    }
+  }
+
+  /**
+   * Load user info from database if available, or fetch from OAuth if needed
+   */
+  async loadUserInfo(oauthToken?: string) {
+    try {
+      const userInfoResults = await this.sql`
+        SELECT * FROM user_info LIMIT 1
+      `;
+
+      if (userInfoResults && userInfoResults.length > 0) {
+        const userInfo = userInfoResults[0] as {
+          user_id: string;
+          api_key: string;
+          email: string;
+          credits: number;
+          payment_method: string;
+        };
+
+        // Check if the stored API key matches the current OAuth token
+        if (oauthToken && userInfo.api_key !== oauthToken) {
+          console.log(
+            "[AppAgent] Stored API key doesn't match current token, fetching fresh user info from OAuth"
+          );
+          await this.fetchUserInfoFromOAuth(oauthToken);
+          return;
+        }
+
+        const state = this.state as AppAgentState;
+        const updatedState: AppAgentState = {
+          ...state,
+          userInfo: {
+            id: userInfo.user_id,
+            api_key: userInfo.api_key,
+            email: userInfo.email,
+            credits: userInfo.credits,
+            payment_method: userInfo.payment_method,
+          },
+        };
+
+        this.setState(updatedState);
+        console.log(
+          `[AppAgent] Loaded user info from database for user: ${userInfo.user_id}`
+        );
+      } else {
+        console.log("[AppAgent] No user info found in database");
+
+        if (oauthToken) {
+          await this.fetchUserInfoFromOAuth(oauthToken);
+        }
+      }
+    } catch (error) {
+      console.error("[AppAgent] Error loading user info from database:", error);
+    }
   }
 }

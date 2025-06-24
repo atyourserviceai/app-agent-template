@@ -144,6 +144,12 @@ export default {
             }
           }
 
+          // Store user info in agent state (includes OAuth token as API key)
+          // User info will be loaded by the agent when it initializes using the OAuth token
+          console.log(
+            `[Auth] Authentication successful for user: ${userInfo.id}`
+          );
+
           return undefined; // Continue to agent
         },
         onBeforeRequest: async (request) => {
@@ -322,6 +328,40 @@ async function handleOAuthCallback(
     console.log(
       `[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`
     );
+
+    // Store user info persistently in the agent's database
+    try {
+      const agentBaseUrl = `${url.origin}/agents/app-agent/${tokenData.user_info.id}`;
+      console.log(
+        `[OAuth Callback] Storing user info in agent database for user: ${tokenData.user_info.id}`
+      );
+
+      const storeResponse = await fetch(`${agentBaseUrl}/store-user-info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: tokenData.user_info.id,
+          api_key: tokenData.access_token, // OAuth token IS the gateway API key
+          email: tokenData.user_info.email,
+          credits: tokenData.user_info.credits,
+          payment_method: tokenData.user_info.payment_method,
+        }),
+      });
+
+      if (storeResponse.ok) {
+        console.log(
+          `[OAuth Callback] Successfully stored user info for user: ${tokenData.user_info.id}`
+        );
+      } else {
+        console.warn(
+          `[OAuth Callback] Failed to store user info: ${storeResponse.status}`
+        );
+        // Don't fail the OAuth flow if storage fails - user can still authenticate
+      }
+    } catch (error) {
+      console.warn("[OAuth Callback] Error storing user info:", error);
+      // Don't fail the OAuth flow if storage fails
+    }
 
     return new Response(getCallbackHTML(null, tokenData), {
       headers: { "Content-Type": "text/html" },
