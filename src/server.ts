@@ -122,13 +122,31 @@ export default {
           const token = url.searchParams.get("token");
 
           if (!token) {
-            return new Response("Authentication required", { status: 401 });
+            return new Response(
+              JSON.stringify({ error: "Authentication required" }),
+              {
+                status: 401,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*",
+                },
+              }
+            );
           }
 
           // If token provided, verify it
           const userInfo = await verifyOAuthToken(token, env);
           if (!userInfo) {
-            return new Response("Invalid auth token", { status: 403 });
+            return new Response(
+              JSON.stringify({ error: "Invalid auth token" }),
+              {
+                status: 403,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*",
+                },
+              }
+            );
           }
 
           // Ensure user can only access their own agent instance
@@ -138,9 +156,16 @@ export default {
           if (pathMatch) {
             const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {
-              return new Response("Access denied: User ID mismatch", {
-                status: 403,
-              });
+              return new Response(
+                JSON.stringify({ error: "Access denied: User ID mismatch" }),
+                {
+                  status: 403,
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                  },
+                }
+              );
             }
           }
 
@@ -174,17 +199,41 @@ export default {
           );
           if (pathMatch) {
             if (!token) {
-              return new Response("Authentication required", { status: 401 });
+              return new Response(
+                JSON.stringify({ error: "Authentication required" }),
+                {
+                  status: 401,
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                  },
+                }
+              );
             }
 
             const userInfo = await verifyOAuthToken(token, env);
             if (!userInfo) {
-              return new Response("Invalid auth token", { status: 403 });
+              return new Response(
+                JSON.stringify({ error: "Invalid auth token" }),
+                {
+                  status: 403,
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                  },
+                }
+              );
             }
 
             const [, , roomName] = pathMatch;
             if (userInfo.id !== roomName) {
-              return new Response("Access denied", { status: 403 });
+              return new Response(JSON.stringify({ error: "Access denied" }), {
+                status: 403,
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*",
+                },
+              });
             }
           }
 
@@ -210,7 +259,13 @@ export default {
       }
 
       // For other requests, return 404
-      return new Response("Not found", { status: 404 });
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     } catch (error) {
       console.error("Error routing request:", error);
 
