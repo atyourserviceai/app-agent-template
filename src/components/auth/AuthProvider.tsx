@@ -127,10 +127,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Capture current auth method before clearing it
+    const currentAuth = authMethod;
+
+    // Clear local storage and state first
     setAuthMethod(null);
     localStorage.removeItem("auth_method");
     localStorage.removeItem("oauth_state");
+
+    // Also clear the agent's cached user data if we have valid auth info
+    if (currentAuth?.userInfo?.id && currentAuth?.apiKey) {
+      try {
+        console.log("[Auth] Clearing agent cached data on logout...");
+        const clearResponse = await fetch(
+          `/agents/app-agent/${currentAuth.userInfo.id}/clear-user-info`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${currentAuth.apiKey}`,
+            },
+          }
+        );
+
+        if (clearResponse.ok) {
+          console.log("[Auth] Successfully cleared agent cached data");
+        } else {
+          console.warn(
+            "[Auth] Failed to clear agent cached data:",
+            clearResponse.status
+          );
+        }
+      } catch (error) {
+        console.warn("[Auth] Error clearing agent cached data:", error);
+      }
+    }
   };
 
   const switchToBYOK = (keys: { openai?: string; anthropic?: string }) => {

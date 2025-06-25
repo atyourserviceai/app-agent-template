@@ -562,6 +562,33 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
+    // Handle user info clearing request (for logout)
+    if (
+      url.pathname.endsWith("/clear-user-info") &&
+      request.method === "POST"
+    ) {
+      try {
+        console.log("[AppAgent] Clearing cached user info");
+
+        // Clear user info from database
+        await this.sql`DELETE FROM user_info`;
+
+        // Clear user info from agent state
+        const updatedState: AppAgentState = {
+          ...currentState,
+          userInfo: undefined,
+        };
+
+        this.setState(updatedState);
+
+        console.log("[AppAgent] Successfully cleared cached user info");
+        return new Response("OK");
+      } catch (error) {
+        console.error("[AppAgent] Error clearing user info:", error);
+        return new Response("Error clearing user info", { status: 500 });
+      }
+    }
+
     // Handle mode change requests
     if (url.pathname.includes("/set-mode")) {
       console.log(`[AppAgent] Detected set-mode request: ${url.pathname}`);

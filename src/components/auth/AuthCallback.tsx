@@ -84,6 +84,41 @@ export default function AuthCallback() {
         // Clean up OAuth state
         localStorage.removeItem("oauth_state");
 
+        // Notify the agent about the new user info
+        try {
+          console.log("[OAuth Callback] Notifying agent of new user info...");
+          const agentResponse = await fetch(
+            `/agents/app-agent/${tokenData.user_info.id}/store-user-info`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${tokenData.access_token}`,
+              },
+              body: JSON.stringify({
+                user_id: tokenData.user_info.id,
+                api_key: tokenData.access_token,
+                email: tokenData.user_info.email,
+                credits: tokenData.user_info.credits,
+                payment_method: tokenData.user_info.payment_method,
+              }),
+            }
+          );
+
+          if (agentResponse.ok) {
+            console.log(
+              "[OAuth Callback] Successfully notified agent of new user info"
+            );
+          } else {
+            console.warn(
+              "[OAuth Callback] Failed to notify agent of new user info:",
+              agentResponse.status
+            );
+          }
+        } catch (error) {
+          console.warn("[OAuth Callback] Error notifying agent:", error);
+        }
+
         console.log(
           "[OAuth Callback] Authentication successful, redirecting to app..."
         );
