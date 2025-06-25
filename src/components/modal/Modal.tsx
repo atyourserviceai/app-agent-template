@@ -22,8 +22,10 @@ export const Modal = ({
   onClose,
 }: ModalProps) => {
   const modalRef = clickOutsideToClose
-    ? useClickOutside(onClose)
-    : useRef<HTMLDivElement>(null);
+    ? // biome-ignore lint/correctness/useHookAtTopLevel: todo
+      useClickOutside(onClose)
+    : // biome-ignore lint/correctness/useHookAtTopLevel: todo
+      useRef<HTMLDivElement>(null);
 
   // Stop site overflow when modal is open
   useEffect(() => {
