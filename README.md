@@ -6,12 +6,15 @@
 
 A starter template for building **app agents** using Cloudflare's Agent platform, powered by [`agents`](https://www.pnpmjs.com/package/agents). An app agent is a React application that has access to the agent's state, allowing you to build rich user interfaces around AI conversation.
 
+Integrated with **[AI@YourService](https://atyourservice.ai)** for authentication and LLM Gateway access, so users pay for their own AI usage instead of you footing the bill.
+
 Based on Cloudflare's [agents-starter](https://github.com/cloudflare/agents-starter) with additional features:
 
 - Enhanced chat functionality (message editing, retrying, error handling)
 - Improved error display and user feedback
 - Four-mode agent architecture (onboarding/integration/plan/act)
 - Better TypeScript types and organization
+- **AI@YourService integration** for user authentication and cost-effective LLM access
 
 ## App Agent Architecture
 
@@ -134,8 +137,32 @@ The agent automatically adapts its behavior, available tools, and responses base
 
 ## Prerequisites
 
-- Cloudflare account
-- OpenAI API key (or access to AtYourService.ai Gateway)
+- **Cloudflare Account**
+- **OpenAI API key** (or access to [AI@YourService](https://atyourservice.ai) Gateway)
+
+### Authentication Options
+
+This template uses **AI@YourService** for user authentication by default, but you have flexibility in your authentication approach:
+
+#### Option 1: Full AI@YourService Integration (As implemented)
+
+- Use AI@YourService for both user authentication and LLM Gateway access
+- Users pay for their own AI usage through their AI@YourService account
+- Seamless integration with built-in billing and usage tracking
+
+#### Option 2: Custom Authentication + AI@YourService Gateway
+
+- Implement your own user authentication system
+- Still use AI@YourService OAuth flow for LLM Gateway authentication
+- Users connect their AI@YourService account for AI usage billing
+- You maintain control over user management while leveraging AI@YourService for AI costs
+
+#### Option 3: Fully Custom
+
+- Implement your own authentication and AI provider integration
+- You handle all billing and usage management
+
+> **💡 Recommended Approach**: Use AI@YourService OAuth for the LLM Gateway even with custom auth, so users pay for their own AI usage rather than you absorbing those costs.
 
 ## Quick Start
 
