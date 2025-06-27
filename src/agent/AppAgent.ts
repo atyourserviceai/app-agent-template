@@ -202,14 +202,14 @@ export class AppAgent extends AIChatAgent<Env> {
     this.setState(updatedState);
 
     // Initialize database tables and load user info
-    this.initialize().catch((error) => {
-      console.error("Failed to initialize database:", error);
-    });
-
-    // Load user info from database on startup
-    this.loadUserInfo().catch((error) => {
-      console.error("Failed to load user info:", error);
-    });
+    this.initialize()
+      .then(() => {
+        // Only load user info after database is initialized
+        return this.loadUserInfo();
+      })
+      .catch((error) => {
+        console.error("Failed to initialize database or load user info:", error);
+      });
   }
 
   /**
