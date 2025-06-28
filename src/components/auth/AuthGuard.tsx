@@ -37,6 +37,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
       );
       localStorage.removeItem("auth_invalid_token");
     }
+
+    // Check for expired token flag
+    const expiredToken = localStorage.getItem("auth_expired_token");
+    if (expiredToken) {
+      setAuthError(
+        "Your session has expired. Please sign in again to continue using the application."
+      );
+      localStorage.removeItem("auth_expired_token");
+    }
   }, []);
 
   // Show loading spinner while checking authentication

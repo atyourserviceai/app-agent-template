@@ -208,20 +208,28 @@ export class AppAgent extends AIChatAgent<Env> {
         return this.loadUserInfo();
       })
       .catch((error) => {
-        console.error("Failed to initialize database or load user info:", error);
+        console.error(
+          "Failed to initialize database or load user info:",
+          error
+        );
       });
   }
 
   /**
    * Get AI provider using user-specific API key if available
+   * Includes retry logic for token refresh on 403 errors
    */
   getAIProvider() {
     const state = this.state as AppAgentState;
     const userApiKey = state.userInfo?.api_key;
 
     if (userApiKey) {
+      const redactedApiKey = `${userApiKey.substring(0, 20)}...${userApiKey.substring(-8)}`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
+      );
+      console.log(
+        `[AppAgent] API key being used for AI requests: ${redactedApiKey}`
       );
       return getOpenAI(this.env, userApiKey);
     }
@@ -229,6 +237,49 @@ export class AppAgent extends AIChatAgent<Env> {
       "No user API key available. User must be authenticated to use AI features.";
     console.error(`[AppAgent] ${errorMsg}`);
     throw new Error(errorMsg);
+  }
+
+  /**
+   * Refresh token from OAuth provider when 403 errors occur
+   * This handles the case where the database token is stale
+   */
+  async refreshTokenOnError() {
+    try {
+      const state = this.state as AppAgentState;
+      const currentApiKey = state.userInfo?.api_key;
+
+      if (!currentApiKey) {
+        console.log("[AppAgent] No current API key to refresh");
+        return false;
+      }
+
+      console.log(
+        "[AppAgent] Attempting to refresh user info due to API error"
+      );
+
+      // Try to fetch fresh user info with current token
+      // This will detect if the token is invalid and handle accordingly
+      await this.fetchUserInfoFromOAuth(currentApiKey);
+
+      // Check if token was actually updated
+      const newState = this.state as AppAgentState;
+      const newApiKey = newState.userInfo?.api_key;
+
+      if (newApiKey && newApiKey !== currentApiKey) {
+        const redactedOld = `${currentApiKey.substring(0, 20)}...${currentApiKey.substring(-8)}`;
+        const redactedNew = `${newApiKey.substring(0, 20)}...${newApiKey.substring(-8)}`;
+        console.log(
+          `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
+        );
+        return true;
+      } else {
+        console.log("[AppAgent] Token refresh did not result in new token");
+        return false;
+      }
+    } catch (error) {
+      console.error("[AppAgent] Error during token refresh:", error);
+      return false;
+    }
   }
 
   /**
@@ -357,40 +408,77 @@ export class AppAgent extends AIChatAgent<Env> {
         // Filter out empty messages for AI provider compatibility
         const filteredMessages = filterEmptyMessages(processedMessages);
 
-        const openai = this.getAIProvider();
-        const model = openai("gpt-4.1-2025-04-14");
-        /*
-        const anthropic = getAnthropic(this.env);
-        const model = anthropic("claude-3-5-sonnet-20241022");
-        const gemini = getGemini(this.env);
-        const model = gemini("gemini-2.0-flash");
-        */
-
         // Get system prompt based on current mode
         const systemPrompt = this.getSystemPrompt();
 
-        // Stream the AI response
-        const result = streamText({
-          model,
-          system: systemPrompt,
-          messages: filteredMessages,
-          tools: allTools,
-          onFinish: async (args) => {
-            // Log a message indicating the completion of the request
-            console.log(
-              `[AppAgent] Completed processing message in ${currentMode} mode`
-            );
+        // Retry logic for handling token refresh on 403 errors
+        let retryCount = 0;
+        const maxRetries = 1;
+        let result: any;
 
-            // Pass args directly to onFinish callback
-            onFinish(
-              args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
-            );
-          },
-          onError: (error) => {
-            console.error("Error while streaming:", error);
-          },
-          maxSteps: 10,
-        });
+        while (retryCount <= maxRetries) {
+          try {
+            const openai = this.getAIProvider();
+            const model = openai("gpt-4.1-2025-04-14");
+
+            // Stream the AI response
+            result = streamText({
+              model,
+              system: systemPrompt,
+              messages: filteredMessages,
+              tools: allTools,
+              onFinish: async (args) => {
+                // Log a message indicating the completion of the request
+                console.log(
+                  `[AppAgent] Completed processing message in ${currentMode} mode`
+                );
+
+                // Pass args directly to onFinish callback
+                onFinish(
+                  args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+                );
+              },
+              onError: async (error: any) => {
+                console.error("Error while streaming:", error);
+                if (error?.status === 403 && retryCount < maxRetries) {
+                  console.log(
+                    "[AppAgent] Got 403 error, attempting token refresh"
+                  );
+                  const refreshed = await this.refreshTokenOnError();
+                  if (refreshed) {
+                    console.log(
+                      "[AppAgent] Token refreshed, will retry request"
+                    );
+                    return; // This will cause the outer loop to retry
+                  }
+                }
+                throw error;
+              },
+              maxSteps: 10,
+            });
+            break; // Success, exit retry loop
+          } catch (error: any) {
+            console.error("[AppAgent] Error in onChatMessage:", error);
+
+            // Handle 403 errors with token refresh retry
+            if (error?.status === 403 && retryCount < maxRetries) {
+              console.log(
+                "[AppAgent] Got 403 error in catch block, attempting token refresh"
+              );
+              const refreshed = await this.refreshTokenOnError();
+              if (refreshed) {
+                retryCount++;
+                console.log(
+                  `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
+                );
+                continue; // Retry the request
+              }
+            }
+
+            // If not a 403 error or retry failed, throw error
+            throw error;
+          }
+        }
 
         // Merge the AI response stream with tool execution outputs
         result.mergeIntoDataStream(dataStream);
@@ -833,6 +921,20 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   async onConnect(connection: Connection) {
     console.log(`[AppAgent] New client connection: ${connection.id}`);
+
+    console.log(`[AppAgent] Connection established`, {
+      connectionId: connection.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // SOLUTION: Load user info from database and rely on retry logic for token refresh
+    try {
+      console.log(`[AppAgent] Loading user info from database...`);
+      await this.loadUserInfo();
+      console.log(`[AppAgent] ✅ User info loaded from database`);
+    } catch (error) {
+      console.error("[AppAgent] Error loading user info:", error);
+    }
 
     // Send a connection-ready event to signal that setup is complete
     // The client can listen for this to know when to check for messages

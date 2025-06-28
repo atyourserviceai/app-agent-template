@@ -22,7 +22,7 @@ import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 // Auth components
-import { AuthProvider } from "./components/auth/AuthProvider";
+import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 
@@ -191,6 +191,9 @@ function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
+
+  // Add auth context for token expiration checks
+  const auth = useAuth();
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -455,6 +458,38 @@ function Chat() {
     handleRetryLastUserMessage,
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
 
+  // Token expiration wrapper functions
+  const handleRetryWithTokenCheck = (index: number) => {
+    if (auth && auth.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    handleRetry(index);
+  };
+
+  const handleRetryLastUserMessageWithTokenCheck = () => {
+    if (auth && auth.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    handleRetryLastUserMessage();
+  };
+
+  // Update handleSubmitWithRetry to check token expiration
+  const handleSubmitWithRetry = (e: React.FormEvent) => {
+    if (auth && auth.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    setIsRetrying(false); // Clear retrying state when sending a new message
+    handleAgentSubmit(e);
+  };
+
+  // Add token expiration check to reload function wrapper
+  const reloadWithTokenCheck = () => {
+    if (auth && auth.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    reload();
+  };
+
   // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
@@ -510,6 +545,11 @@ function Chat() {
 
         // For non-Other options, directly add a user message with the selected text
         if (selectedText) {
+          // Check token expiration before proceeding
+          if (auth && auth.checkTokenExpiration()) {
+            return; // Token expired, user will be redirected to login
+          }
+
           // Set the input value first (needed for compatibility with input validation)
           setInput(selectedText);
 
@@ -535,9 +575,9 @@ function Chat() {
             // Clear the input field
             setInput("");
 
-            // Trigger the agent to respond
+            // Trigger the agent to respond with token check
             setTimeout(() => {
-              reload();
+              reloadWithTokenCheck();
             }, 50);
           }, 10);
         }
@@ -557,7 +597,7 @@ function Chat() {
         handleActionButtonClick as EventListener
       );
     };
-  }, [setMessages, agentMessages, setInput, reload]);
+  }, [setMessages, agentMessages, setInput, auth, reloadWithTokenCheck]);
 
   // Reset textarea height when input is empty
   useEffect(() => {
@@ -604,7 +644,7 @@ function Chat() {
           <div key={message.id}>
             <ErrorMessage
               errorData={errorData}
-              onRetry={() => handleRetry(index)}
+              onRetry={() => handleRetryWithTokenCheck(index)}
               isLoading={isLoading}
               formatTime={formatTime}
               createdAt={message.createdAt}
@@ -714,7 +754,7 @@ function Chat() {
         messageElements.push(
           <div key="missing-response">
             <MissingResponseIndicator
-              onTryAgain={handleRetryLastUserMessage}
+              onTryAgain={handleRetryLastUserMessageWithTokenCheck}
               isLoading={isLoading}
               formatTime={formatTime}
             />
@@ -788,7 +828,7 @@ function Chat() {
         key="suggested-actions"
         messages={agentMessages}
         addToolResult={addToolResult}
-        reload={reload}
+        reload={reloadWithTokenCheck}
       />
     );
 
@@ -821,12 +861,6 @@ function Chat() {
       // - Without this flag, clearing history would leave an empty chat with no welcome message
       changeAgentMode(agentMode, true, true);
     }
-  };
-
-  // Update handleSubmitWithRetry to properly handle options
-  const handleSubmitWithRetry = (e: React.FormEvent) => {
-    setIsRetrying(false); // Clear retrying state when sending a new message
-    handleAgentSubmit(e);
   };
 
   // Handle empty chat state with a loading indicator
@@ -873,11 +907,11 @@ function Chat() {
             `[UI] Auto-triggering AI response for ${messageData.modeType} message`
           );
           // Trigger AI response just like a user sent a message
-          reload();
+          reloadWithTokenCheck();
         }
       }
     }
-  }, [agentMessages, isLoading, temporaryLoading, reload]);
+  }, [agentMessages, isLoading, temporaryLoading, reloadWithTokenCheck]);
 
   return (
     <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">

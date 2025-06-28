@@ -8,17 +8,6 @@ export function UserProfile() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  if (!authMethod || !authMethod.userInfo) {
-    return null;
-  }
-
-  const { userInfo } = authMethod;
-
-  // Extract base URL from OAuth auth_url and construct account URL
-  const accountUrl = oauthConfig
-    ? new URL("/account", oauthConfig.auth_url).toString()
-    : "https://atyourservice.ai/account"; // fallback
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,6 +25,17 @@ export function UserProfile() {
         document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showDropdown]);
+
+  if (!authMethod || !authMethod.userInfo) {
+    return null;
+  }
+
+  const { userInfo } = authMethod;
+
+  // Extract base URL from OAuth auth_url and construct account URL
+  const accountUrl = oauthConfig
+    ? new URL("/account", oauthConfig.auth_url).toString()
+    : "https://atyourservice.ai/account"; // fallback
 
   const handleLogout = () => {
     logout();

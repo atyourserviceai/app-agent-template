@@ -170,11 +170,15 @@ export default {
             }
           }
 
-          // Store user info in agent state (includes OAuth token as API key)
-          // User info will be loaded by the agent when it initializes using the OAuth token
           console.log(
-            `[Auth] Authentication successful for user: ${userInfo.id}`
+            `[Auth] WebSocket authentication successful for user: ${userInfo.id}`
           );
+          console.log(
+            `[Auth] Current token: ${token.substring(0, 20)}...${token.substring(-8)}`
+          );
+
+          // No need to store token - the agent can access it from the database
+          // The token is already stored in user_info table and will be accessed in onConnect
 
           return undefined; // Continue to agent
         },

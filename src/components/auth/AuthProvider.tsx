@@ -2,6 +2,34 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
+// JWT Token utility functions
+function isJWTToken(token: string): boolean {
+  if (!token) return false;
+  const parts = token.split(".");
+  return parts.length === 3;
+}
+
+function isJWTTokenExpired(token: string): boolean {
+  if (!token || !isJWTToken(token)) return true;
+
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+
+    // Use atob for client-side base64 decoding
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp;
+
+    if (!exp) return true;
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    return currentTime >= exp;
+  } catch (error) {
+    console.error("Error checking JWT token expiration:", error);
+    return true;
+  }
+}
+
 export interface UserInfo {
   id: string;
   email: string;
@@ -28,6 +56,7 @@ export interface AuthContextType {
   switchToBYOK: (keys: { openai?: string; anthropic?: string }) => void;
   switchToCredits: () => void;
   refreshUserInfo: () => Promise<void>;
+  checkTokenExpiration: () => boolean; // Returns true if token is expired
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -49,6 +78,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
+  // Function to sync token with agent database
+  const syncTokenWithAgent = async (authData: AuthMethod) => {
+    if (!authData.userInfo?.id || !authData.apiKey) return;
+
+    try {
+      console.log(
+        `[Auth] Syncing token with agent for user: ${authData.userInfo.id}`
+      );
+
+      const response = await fetch(
+        `/agents/app-agent/${authData.userInfo.id}/store-user-info`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authData.apiKey}`,
+          },
+          body: JSON.stringify({
+            user_id: authData.userInfo.id,
+            api_key: authData.apiKey,
+            email: authData.userInfo.email,
+            credits: authData.userInfo.credits,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        console.log(
+          `[Auth] ✅ Token synced with agent for user: ${authData.userInfo.id}`
+        );
+      } else {
+        console.warn(
+          `[Auth] Failed to sync token with agent:`,
+          response.status
+        );
+      }
+    } catch (error) {
+      console.warn(`[Auth] Error syncing token with agent:`, error);
+    }
+  };
+
   useEffect(() => {
     // Load OAuth config and check for stored auth on component mount
     const init = async () => {
@@ -64,6 +134,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const parsedAuth = JSON.parse(stored);
 
+          // Check for expired JWT tokens first
+          if (
+            parsedAuth?.apiKey &&
+            isJWTToken(parsedAuth.apiKey) &&
+            isJWTTokenExpired(parsedAuth.apiKey)
+          ) {
+            console.log("Stored JWT token is expired, clearing auth");
+            localStorage.removeItem("auth_method");
+            localStorage.setItem("auth_expired_token", "true");
+            setIsLoading(false);
+            return;
+          }
+
+          // For old format tokens, check if they're expired too
+          if (
+            parsedAuth?.apiKey &&
+            isJWTToken(parsedAuth.apiKey) &&
+            isJWTTokenExpired(parsedAuth.apiKey)
+          ) {
+            console.log("Stored JWT token is expired, clearing auth");
+            localStorage.removeItem("auth_method");
+            localStorage.setItem("auth_expired_token", "true");
+            setIsLoading(false);
+            return;
+          }
+
           // Validate the token if it exists
           if (parsedAuth?.apiKey) {
             try {
@@ -75,8 +171,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               });
 
               if (response.ok) {
-                // Token is valid, use the stored auth
+                // Token is valid, use the stored auth and sync with agent
                 setAuthMethod(parsedAuth);
+                await syncTokenWithAgent(parsedAuth);
               } else {
                 // Token is invalid, clear it and show sign-in with message
                 console.log("Stored token is invalid, clearing auth");
@@ -235,6 +332,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const checkTokenExpiration = () => {
+    if (!authMethod?.apiKey) return false;
+
+    if (isJWTToken(authMethod.apiKey) && isJWTTokenExpired(authMethod.apiKey)) {
+      console.log("[Auth] Token is expired, clearing auth");
+      setAuthMethod(null);
+      localStorage.removeItem("auth_method");
+      localStorage.setItem("auth_expired_token", "true");
+      return true;
+    }
+
+    return false;
+  };
+
   const value: AuthContextType = {
     authMethod,
     isAuthenticated: !!authMethod,
@@ -245,6 +356,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     switchToBYOK,
     switchToCredits,
     refreshUserInfo,
+    checkTokenExpiration,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
