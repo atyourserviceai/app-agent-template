@@ -201,13 +201,11 @@ CREATE TABLE IF NOT EXISTS user_info (
 ### Common Issues
 
 1. **"No user API key available"**
-
    - User not authenticated
    - OAuth flow incomplete
    - Check WebSocket connection parameters
 
 2. **403 Forbidden on AI requests**
-
    - Token expired or invalid
    - Automatic refresh should handle this
    - Check logs for refresh attempt results
