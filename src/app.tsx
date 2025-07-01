@@ -437,6 +437,22 @@ function Chat() {
   });
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
+  // Also detect API errors and throw proper auth errors for the Error Boundary to catch
+  const hasApiError =
+    agentMessagesRaw &&
+    typeof agentMessagesRaw === "object" &&
+    !Array.isArray(agentMessagesRaw) &&
+    "error" in agentMessagesRaw;
+
+  if (hasApiError) {
+    const errorMessage =
+      (agentMessagesRaw as any)?.error || "Unknown API error";
+    const authError = new Error(`Authentication failed: ${errorMessage}`);
+    (authError as any).isAuthError = true; // Mark as auth error
+    throw authError; // Throw immediately - prevents .map() from being called
+  }
+
+  // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
   // Use the message editing hook to manage message editing and retry logic

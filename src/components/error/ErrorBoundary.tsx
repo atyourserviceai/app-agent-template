@@ -46,6 +46,9 @@ export class ErrorBoundary extends React.Component<
         return this.props.fallback(this.state.error, this.state.errorInfo);
       }
 
+      // Check if this is an authentication error
+      const isAuthError = (this.state.error as any)?.isAuthError === true;
+
       // Default fallback UI
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
@@ -70,18 +73,20 @@ export class ErrorBoundary extends React.Component<
               </div>
               <div className="ml-3">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Something went wrong
+                  {isAuthError ? "Session Expired" : "Something went wrong"}
                 </h3>
               </div>
             </div>
 
             <div className="mb-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {this.state.error?.message ||
-                  "An unexpected error occurred. This might be due to authentication issues or a network problem."}
+                {isAuthError
+                  ? "Your session has expired. Please sign in again to continue."
+                  : this.state.error?.message ||
+                    "An unexpected error occurred. This might be due to authentication issues or a network problem."}
               </p>
 
-              {this.state.error?.message?.includes("JSON") && (
+              {!isAuthError && this.state.error?.message?.includes("JSON") && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   This error is often caused by authentication issues. Try
                   refreshing the page or re-authenticating.
@@ -90,20 +95,36 @@ export class ErrorBoundary extends React.Component<
             </div>
 
             <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={this.handleReset}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Try Again
-              </button>
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Refresh Page
-              </button>
+              {isAuthError ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Clear authentication and reload
+                    localStorage.removeItem("auth_method");
+                    window.location.reload();
+                  }}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Sign In Again
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={this.handleReset}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  >
+                    Refresh Page
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Show error details in development */}

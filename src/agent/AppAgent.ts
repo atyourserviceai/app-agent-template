@@ -743,15 +743,32 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
-    // For API endpoints requesting messages
+    // For API endpoints requesting messages - ALWAYS return an array to prevent .map() errors
     if (url.pathname.endsWith("/get-messages")) {
       console.log("[AppAgent] Handling /get-messages request");
-      const messageCount = Array.isArray(this.messages)
-        ? this.messages.length
-        : 0;
-      console.log(
-        `[AppAgent] /get-messages returning ${messageCount} messages`
-      );
+
+      try {
+        // Try to get messages normally
+        const messages = (
+          this.sql`select * from cf_ai_chat_agent_messages` || []
+        ).map((row) => {
+          return JSON.parse(row.message as string);
+        });
+
+        const messageCount = Array.isArray(messages) ? messages.length : 0;
+        console.log(
+          `[AppAgent] /get-messages returning ${messageCount} messages`
+        );
+
+        return Response.json(messages);
+      } catch (error) {
+        // If there's any error (auth, db, etc.), return empty array instead of error object
+        console.error(
+          "[AppAgent] Error in /get-messages, returning empty array:",
+          error
+        );
+        return Response.json([]);
+      }
     }
 
     // Export endpoint to export the entire Agent data
