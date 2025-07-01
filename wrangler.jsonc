@@ -24,7 +24,7 @@
     },
   ],
   "vars": {
-    "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
+    "GATEWAY_BASE_URL": "https://gateway.atyourservice..ai",
     "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
@@ -34,7 +34,7 @@
   "env": {
     "staging": {
       "vars": {
-        "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
+        "GATEWAY_BASE_URL": "https://gateway.atyourservice..ai",
         "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
@@ -50,7 +50,7 @@
     },
     "production": {
       "vars": {
-        "GATEWAY_BASE_URL": "https://api.atyourservice.ai",
+        "GATEWAY_BASE_URL": "https://gateway.atyourservice..ai",
         "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
