@@ -151,9 +151,7 @@ export default {
           }
 
           // Ensure user can only access their own agent instance
-          const pathMatch = url.pathname.match(
-            /\/agents\/([^/]+)\/([^/?]+)/
-          );
+          const pathMatch = url.pathname.match(/\/agents\/([^/]+)\/([^/?]+)/);
           if (pathMatch) {
             const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {
@@ -221,9 +219,7 @@ export default {
           }
 
           // Ensure user can only access their own agent instance
-          const pathMatch = url.pathname.match(
-            /\/agents\/([^/]+)\/([^/?]+)/
-          );
+          const pathMatch = url.pathname.match(/\/agents\/([^/]+)\/([^/?]+)/);
           if (pathMatch) {
             const [, , roomName] = pathMatch;
             if (roomName !== userInfo.id) {

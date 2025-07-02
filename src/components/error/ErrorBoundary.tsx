@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component<
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     // Update state so the next render will show the fallback UI
-    return { error , hasError: true};
+    return { error, hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<
   }
 
   handleReset = () => {
-    this.setState({ error: undefined, errorInfo: undefined , hasError: false});
+    this.setState({ error: undefined, errorInfo: undefined, hasError: false });
   };
 
   render() {

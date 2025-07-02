@@ -28,7 +28,7 @@ export const saveSettings = tool({
     try {
       const currentState = agent.state as AppAgentState;
       const currentSettings = currentState.settings || {
-        adminContact: { email: "" , name: ""},
+        adminContact: { email: "", name: "" },
         language: "en",
         operators: [],
       };

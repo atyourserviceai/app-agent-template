@@ -186,7 +186,7 @@ export class AppAgent extends AIChatAgent<Env> {
         state.settings.operators = this.initialState.settings?.operators || [];
       if (!state.settings.adminContact)
         state.settings.adminContact = this.initialState.settings
-          ?.adminContact || { email: "" , name: ""};
+          ?.adminContact || { email: "", name: "" };
     }
 
     return state;
@@ -299,7 +299,6 @@ export class AppAgent extends AIChatAgent<Env> {
 
     // Base tools available in all modes
     const baseTools = {
-
       // Browser tools
       browseWebPage: tools.browseWebPage,
       browseWithBrowserbase: tools.browseWithBrowserbase,

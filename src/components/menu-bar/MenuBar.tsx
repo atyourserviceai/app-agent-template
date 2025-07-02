@@ -55,7 +55,7 @@ export const MenuBar = ({
 }: MenuBarProps) => {
   const menuRef = useRef<HTMLElement | null>(null);
 
-  useMenuNavigation({ direction: "horizontal" , menuRef});
+  useMenuNavigation({ direction: "horizontal", menuRef });
 
   return (
     <nav

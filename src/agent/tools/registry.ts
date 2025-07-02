@@ -132,7 +132,6 @@ console.log(
  * This is useful for tools that need them all in a single object
  */
 export const tools = {
-
   // Browser tools
   browseWebPage: browserTools.browseWebPage,
   browseWithBrowserbase: browserbaseTools.browseWithBrowserbase,

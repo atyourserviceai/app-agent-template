@@ -160,7 +160,7 @@ async function processUrl(
     }
 
     // Take a screenshot if requested
-    let screenshotData: string | undefined ;
+    let screenshotData: string | undefined;
     if (takeScreenshot && contentResult.sessionId) {
       const screenshotResult = await takePageScreenshot(
         contentResult.sessionId,

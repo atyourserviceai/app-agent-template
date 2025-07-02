@@ -41,7 +41,6 @@ interface ToolMetadata {
  * This provides a single source of truth for tool names, categories, and other metadata
  */
 export const toolRegistry: Record<string, ToolMetadata> = {
-
   // Browser tools
   browseWebPage: {
     category: ToolCategory.BROWSER,

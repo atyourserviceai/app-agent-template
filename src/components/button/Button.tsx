@@ -42,7 +42,6 @@ const ButtonComponent = ({
         "btn add-focus group interactive flex w-max shrink-0 items-center font-medium select-none",
 
         {
-
           "add-disable": disabled,
           "add-size-base gap-2": size === "base",
           "add-size-md gap-1.5": size === "md",
