@@ -1,6 +1,6 @@
 import type { Message } from "@ai-sdk/react";
 import { useAgentChat } from "agents/ai-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
 // Component imports
@@ -41,7 +41,7 @@ const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
 function SuggestedActions({
   messages,
   addToolResult,
-  reload,
+  reload: _reload,
 }: {
   messages: Message[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
@@ -216,22 +216,9 @@ function Chat() {
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
 
-  // Use the agent configuration (only available when authenticated)
-  if (!agentConfig) {
-    // This should never happen inside AuthGuard, but just in case
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-black to-blue-900 dark:from-blue-900 dark:via-black dark:to-blue-900">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
-        </div>
-      </div>
-    );
-  }
-
-  // Use the agent state hook with authenticated config
+  // Use the agent state hook (must be called before any conditional returns)
   const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig!, // Non-null assertion: agentConfig is guaranteed to exist here due to AuthGuard
+    agentConfig || { agent: "", name: "" }, // Provide fallback to avoid null
     "onboarding"
   );
 
@@ -498,12 +485,12 @@ function Chat() {
   };
 
   // Add token expiration check to reload function wrapper
-  const reloadWithTokenCheck = () => {
+  const reloadWithTokenCheck = useCallback(() => {
     if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
     reload();
-  };
+  }, [auth, reload]);
 
   // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
@@ -620,6 +607,68 @@ function Chat() {
       textareaRef.current.style.height = "auto";
     }
   }, [agentInput]);
+
+  // Handle empty chat state with a loading indicator
+  useEffect(() => {
+    // If we have no messages but the agent is connected, show a loading indicator
+    // This helps with the initial loading experience for new chatrooms
+    if (
+      agent &&
+      Array.isArray(agentMessages) &&
+      agentMessages.length === 0 &&
+      !isLoading
+    ) {
+      setTemporaryLoading(true);
+
+      // Set a timeout to clear the loading state if no messages arrive
+      const timeout = setTimeout(() => {
+        setTemporaryLoading(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [agent, agentMessages, isLoading]);
+
+  // Single simplified auto-response for system messages (welcome or transition)
+  useEffect(() => {
+    if (
+      Array.isArray(agentMessages) &&
+      agentMessages.length > 0 &&
+      !isLoading &&
+      !temporaryLoading
+    ) {
+      const lastMessage = agentMessages[agentMessages.length - 1];
+
+      // Check if last message is a system message with isModeMessage data
+      if (lastMessage.role === "system") {
+        const messageData = lastMessage.data;
+        const isModeMessage =
+          messageData &&
+          typeof messageData === "object" &&
+          "isModeMessage" in messageData;
+
+        if (isModeMessage) {
+          console.log(
+            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
+          );
+          // Trigger AI response just like a user sent a message
+          reloadWithTokenCheck();
+        }
+      }
+    }
+  }, [agentMessages, isLoading, temporaryLoading, reloadWithTokenCheck]);
+
+  // Early return for missing agent config (after all hooks are called)
+  if (!agentConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-black to-blue-900 dark:from-blue-900 dark:via-black dark:to-blue-900">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
     m.parts?.some(
@@ -877,56 +926,6 @@ function Chat() {
       changeAgentMode(agentMode, true, true);
     }
   };
-
-  // Handle empty chat state with a loading indicator
-  useEffect(() => {
-    // If we have no messages but the agent is connected, show a loading indicator
-    // This helps with the initial loading experience for new chatrooms
-    if (
-      agent &&
-      Array.isArray(agentMessages) &&
-      agentMessages.length === 0 &&
-      !isLoading
-    ) {
-      setTemporaryLoading(true);
-
-      // Set a timeout to clear the loading state if no messages arrive
-      const timeout = setTimeout(() => {
-        setTemporaryLoading(false);
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [agent, agentMessages, isLoading]);
-
-  // Single simplified auto-response for system messages (welcome or transition)
-  useEffect(() => {
-    if (
-      Array.isArray(agentMessages) &&
-      agentMessages.length > 0 &&
-      !isLoading &&
-      !temporaryLoading
-    ) {
-      const lastMessage = agentMessages[agentMessages.length - 1];
-
-      // Check if last message is a system message with isModeMessage data
-      if (lastMessage.role === "system") {
-        const messageData = lastMessage.data;
-        const isModeMessage =
-          messageData &&
-          typeof messageData === "object" &&
-          "isModeMessage" in messageData;
-
-        if (isModeMessage) {
-          console.log(
-            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
-          );
-          // Trigger AI response just like a user sent a message
-          reloadWithTokenCheck();
-        }
-      }
-    }
-  }, [agentMessages, isLoading, temporaryLoading, reloadWithTokenCheck]);
 
   return (
     <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">

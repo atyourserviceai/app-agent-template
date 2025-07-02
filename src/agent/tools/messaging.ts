@@ -11,7 +11,7 @@ import { z } from "zod";
 export const messagingTools = {
   sendEmail: tool({
     description: "Send an email to a recipient",
-    execute: async ({ to, from, subject, body }) => {
+    execute: async ({ to, from: _from, subject, body: _body }) => {
       console.log(
         `Placeholder: sendEmail called to ${to} with subject "${subject}"`
       );
@@ -29,7 +29,7 @@ export const messagingTools = {
 
   sendLinkedInMessage: tool({
     description: "Send a message on LinkedIn",
-    execute: async ({ profileUrl, message }) => {
+    execute: async ({ profileUrl, message: _message }) => {
       console.log(
         `Placeholder: sendLinkedInMessage called for profile ${profileUrl}`
       );

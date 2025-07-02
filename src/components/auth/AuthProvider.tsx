@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
 // JWT Token utility functions
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   // Function to sync token with agent database
-  const syncTokenWithAgent = async (authData: AuthMethod) => {
+  const syncTokenWithAgent = useCallback(async (authData: AuthMethod) => {
     if (!authData.userInfo?.id || !authData.apiKey) return;
 
     try {
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.warn(`[Auth] Error syncing token with agent:`, error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Load OAuth config and check for stored auth on component mount

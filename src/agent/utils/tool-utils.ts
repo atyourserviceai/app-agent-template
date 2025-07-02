@@ -210,13 +210,13 @@ export async function processToolCallsWithModeValidation<
 >({
   messages,
   dataStream,
-  tools,
+  tools: _tools,
   executions,
   mode,
 }: {
   messages: Message[];
   dataStream: DataStreamWriter;
-  tools: Tools;
+  tools: Tools; // unused but needed for type inference
   executions: Record<
     string,
     (args: unknown, context: ToolExecutionOptions) => Promise<unknown>
