@@ -1,12 +1,7 @@
 import type { Message } from "@ai-sdk/react";
 import { useAgentChat } from "agents/ai-react";
 import { useEffect, useRef, useState } from "react";
-import type { ToolTypes } from "./agent/tools/types";
-import { useAgentState } from "./hooks/useAgentState";
-import { useAgentAuth } from "./hooks/useAgentAuth";
-import { useErrorHandling } from "./hooks/useErrorHandling";
-import { useMessageEditing } from "./hooks/useMessageEditing";
-
+import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
 // Component imports
 import { Card } from "@/components/card/Card";
@@ -20,11 +15,15 @@ import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndic
 import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
-import { ActionButtons } from "@/components/action-buttons/ActionButtons";
+import type { ToolTypes } from "./agent/tools/types";
+import { AuthGuard } from "./components/auth/AuthGuard";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
-import { AuthGuard } from "./components/auth/AuthGuard";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
+import { useAgentAuth } from "./hooks/useAgentAuth";
+import { useAgentState } from "./hooks/useAgentState";
+import { useErrorHandling } from "./hooks/useErrorHandling";
+import { useMessageEditing } from "./hooks/useMessageEditing";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -121,21 +120,21 @@ function SuggestedActions({
           // Complete the tool call only if it's still in call state
           if (toolInvocation.state === "call") {
             addToolResult({
-              toolCallId: toolInvocation.toolCallId,
               result: JSON.stringify({
-                success: true,
-                selectedAction: value,
-                message: "User selected an action",
                 actions,
+                message: "User selected an action",
+                selectedAction: value,
+                success: true,
               }),
+              toolCallId: toolInvocation.toolCallId,
             });
           }
 
           // Then dispatch the event for the app to handle
           const event = new CustomEvent("action-button-clicked", {
             detail: {
-              text: value,
               isOther: isOther,
+              text: value,
             },
           });
           window.dispatchEvent(event);
@@ -325,16 +324,16 @@ function Chat() {
           `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
         );
         currentMessages.push({
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          createdAt: new Date(),
           content: editedMessageText,
+          createdAt: new Date(),
+          id: crypto.randomUUID(),
           parts: [
             {
-              type: "text" as const,
               text: editedMessageText,
+              type: "text" as const,
             },
           ],
+          role: "user" as const,
         });
 
         // Reset original refs
@@ -363,16 +362,16 @@ function Chat() {
             `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
           );
           currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            createdAt: new Date(),
             content: editedMessageText,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
             parts: [
               {
-                type: "text" as const,
                 text: editedMessageText,
+                type: "text" as const,
               },
             ],
+            role: "user" as const,
           });
         }
 
@@ -391,32 +390,32 @@ function Chat() {
           );
           // Add the user message that caused the error
           currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            createdAt: new Date(),
             content: lastUserInput,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
             parts: [
               {
-                type: "text" as const,
                 text: lastUserInput,
+                type: "text" as const,
               },
             ],
+            role: "user" as const,
           });
         }
       }
 
       // Create a new error message with required format
       const newErrorMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        createdAt: new Date(),
         content: errorMessage,
+        createdAt: new Date(),
+        id: crypto.randomUUID(),
         parts: [
           {
-            type: "text" as const,
             text: errorMessage,
+            type: "text" as const,
           },
         ],
+        role: "assistant" as const,
       };
 
       console.log(
@@ -476,14 +475,14 @@ function Chat() {
 
   // Token expiration wrapper functions
   const handleRetryWithTokenCheck = (index: number) => {
-    if (auth && auth.checkTokenExpiration()) {
+    if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
     handleRetry(index);
   };
 
   const handleRetryLastUserMessageWithTokenCheck = () => {
-    if (auth && auth.checkTokenExpiration()) {
+    if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
     handleRetryLastUserMessage();
@@ -491,7 +490,7 @@ function Chat() {
 
   // Update handleSubmitWithRetry to check token expiration
   const handleSubmitWithRetry = (e: React.FormEvent) => {
-    if (auth && auth.checkTokenExpiration()) {
+    if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
     setIsRetrying(false); // Clear retrying state when sending a new message
@@ -500,7 +499,7 @@ function Chat() {
 
   // Add token expiration check to reload function wrapper
   const reloadWithTokenCheck = () => {
-    if (auth && auth.checkTokenExpiration()) {
+    if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
     reload();
@@ -562,7 +561,7 @@ function Chat() {
         // For non-Other options, directly add a user message with the selected text
         if (selectedText) {
           // Check token expiration before proceeding
-          if (auth && auth.checkTokenExpiration()) {
+          if (auth?.checkTokenExpiration()) {
             return; // Token expired, user will be redirected to login
           }
 
@@ -573,16 +572,16 @@ function Chat() {
           setTimeout(() => {
             // Create a new user message
             const newMessage = {
-              id: crypto.randomUUID(),
-              role: "user" as const,
-              createdAt: new Date(),
               content: selectedText,
+              createdAt: new Date(),
+              id: crypto.randomUUID(),
               parts: [
                 {
-                  type: "text" as const,
                   text: selectedText,
+                  type: "text" as const,
                 },
               ],
+              role: "user" as const,
             };
 
             // Add the message to the chat

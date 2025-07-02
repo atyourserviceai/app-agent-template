@@ -1,8 +1,8 @@
+import { PaperPlaneRight } from "@phosphor-icons/react";
+import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/button/Button";
 import { Textarea } from "@/components/textarea/Textarea";
-import { PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef } from "react";
-import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 
 type ChatInputProps = {
   value: string;

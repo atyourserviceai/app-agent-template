@@ -1,5 +1,5 @@
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { Modal } from "@/components/modal/Modal";
-import { type ReactNode, createContext, useContext, useState } from "react";
 
 type ModalContextType = {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ModalContext.Provider value={{ isOpen, content, openModal, closeModal }}>
+    <ModalContext.Provider value={{ closeModal , content, isOpen, openModal}}>
       {children}
       {isOpen && (
         <Modal isOpen={isOpen} onClose={closeModal}>

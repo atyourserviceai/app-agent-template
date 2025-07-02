@@ -9,7 +9,6 @@ import type { AgentMode, AppAgent, AppAgentState } from "../AppAgent";
 export const getAgentState = tool({
   description:
     "Get the current agent state including mode and general settings",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -23,17 +22,18 @@ export const getAgentState = tool({
 
       // Return only the relevant fields to avoid large payloads
       return {
-        mode: currentState.mode,
-        settings: currentState.settings || {},
-        isOnboardingComplete: currentState.isOnboardingComplete || false,
         isIntegrationComplete: currentState.isIntegrationComplete || false,
+        isOnboardingComplete: currentState.isOnboardingComplete || false,
+        mode: currentState.mode,
         onboardingStep: currentState.onboardingStep || "start",
+        settings: currentState.settings || {},
       };
     } catch (error) {
       console.error("Error getting agent state:", error);
       return `Error getting agent state: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -42,7 +42,6 @@ export const getAgentState = tool({
 export const getAgentConfig = tool({
   description:
     "Get the agent configuration data including settings and preferences",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -56,15 +55,16 @@ export const getAgentConfig = tool({
 
       // Return only the configuration
       return {
-        settings: currentState.settings || {},
         isOnboardingComplete: currentState.isOnboardingComplete || false,
         onboardingStep: currentState.onboardingStep || "start",
+        settings: currentState.settings || {},
       };
     } catch (error) {
       console.error("Error getting agent configuration:", error);
       return `Error getting agent configuration: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -73,7 +73,6 @@ export const getAgentConfig = tool({
 export const getIntegrationState = tool({
   description:
     "Get the integration progress, results, and tool documentation for integration mode",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -103,10 +102,6 @@ export const getIntegrationState = tool({
       // Return testing state with progress summary
       return {
         progress: {
-          totalTests,
-          successCount,
-          failedTests,
-          documentedTools,
           completionPercentage:
             totalTests > 0
               ? Math.round(
@@ -114,12 +109,16 @@ export const getIntegrationState = tool({
                     (documentedTools / Math.max(totalTests, 1)) * 50
                 )
               : 0,
+          documentedTools,
+          failedTests,
           isComplete:
             (totalTests > 0 && currentState.isIntegrationComplete) || false,
+          successCount,
+          totalTests,
         },
+        testReport: currentState.testReport || null,
         testResults,
         toolDocumentation,
-        testReport: currentState.testReport || null,
         transitionRecommendation: currentState.transitionRecommendation || null,
       };
     } catch (error) {
@@ -127,6 +126,7 @@ export const getIntegrationState = tool({
       return `Error getting integration state: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -135,7 +135,6 @@ export const getIntegrationState = tool({
 export const getModeInfo = tool({
   description:
     "Get information about the current mode and available mode transitions",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -150,13 +149,13 @@ export const getModeInfo = tool({
 
       // Define mode progression and available transitions
       const modeInfo = {
-        currentMode,
         availableTransitions: [] as string[],
+        currentMode,
         modeDescriptions: {
-          onboarding: "Configure agent settings and initial setup",
-          integration: "Test tools and integrations before deployment",
-          plan: "Analyze tasks and create strategic plans",
           act: "Execute tasks and take concrete actions",
+          integration: "Test tools and integrations before deployment",
+          onboarding: "Configure agent settings and initial setup",
+          plan: "Analyze tasks and create strategic plans",
         },
       };
 
@@ -191,6 +190,7 @@ export const getModeInfo = tool({
       return `Error getting mode info: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -199,15 +199,6 @@ export const getModeInfo = tool({
 export const setMode = tool({
   description:
     "Set the agent's operating mode (onboarding, integration, plan, act)",
-  parameters: z.object({
-    mode: z
-      .enum(["onboarding", "integration", "plan", "act"])
-      .describe("The mode to switch to"),
-    force: z
-      .boolean()
-      .optional()
-      .describe("Force the mode change even if conditions aren't met"),
-  }),
   execute: async ({
     mode,
     force = false,
@@ -224,14 +215,23 @@ export const setMode = tool({
     try {
       const result = await agent.setMode(mode, force);
       return {
-        success: true,
+        currentMode: result.currentMode,
         message: `Successfully switched to ${mode} mode`,
         previousMode: result.previousMode,
-        currentMode: result.currentMode,
+        success: true,
       };
     } catch (error) {
       console.error("Error setting mode:", error);
       return `Error setting mode: ${error}`;
     }
   },
+  parameters: z.object({
+    force: z
+      .boolean()
+      .optional()
+      .describe("Force the mode change even if conditions aren't met"),
+    mode: z
+      .enum(["onboarding", "integration", "plan", "act"])
+      .describe("The mode to switch to"),
+  }),
 });

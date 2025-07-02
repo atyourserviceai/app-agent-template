@@ -13,10 +13,6 @@ import { z } from "zod";
 export const runResearch = tool({
   description:
     "Gather additional information via external sources (web search, etc.)",
-  parameters: z.object({
-    query: z.string(),
-    sources: z.array(z.string()).optional().default(["web"]), // e.g., web, linkedin, clearbit
-  }),
   execute: async ({ query, sources }) => {
     console.log(
       `Placeholder: runResearch called for query "${query}" using sources: ${sources.join(", ")}`
@@ -25,6 +21,10 @@ export const runResearch = tool({
     // Implement web scraping or API integration (e.g., Google Search API)
     return `Placeholder: Research results for "${query}".`;
   },
+  parameters: z.object({
+    query: z.string(),
+    sources: z.array(z.string()).optional().default(["web"]), // e.g., web, linkedin, clearbit
+  }),
 });
 
 // Export searchTools for backward compatibility

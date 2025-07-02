@@ -23,7 +23,7 @@ export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
 
@@ -45,18 +45,18 @@ export default {
       if (agentName && agentName !== "app-agent") {
         return new Response(
           JSON.stringify({
+            availableAgents: ["app-agent"],
             error: "Agent not found",
             message: `Agent '${agentName}' does not exist. Available agent: 'app-agent'`,
-            availableAgents: ["app-agent"],
           }),
           {
-            status: 404,
             headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
               "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+              "Access-Control-Allow-Origin": "*",
+              "Content-Type": "application/json",
             },
+            status: 404,
           }
         );
       }
@@ -66,8 +66,8 @@ export default {
     if (url.pathname === "/api/oauth/config") {
       return new Response(
         JSON.stringify({
-          client_id: "app-agent-template",
           auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+          client_id: "app-agent-template",
           token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
         }),
         {
@@ -83,8 +83,8 @@ export default {
         return new Response(
           JSON.stringify({ error: "Missing Authorization header" }),
           {
-            status: 401,
             headers: { "Content-Type": "application/json" },
+            status: 401,
           }
         );
       }
@@ -93,23 +93,23 @@ export default {
       const gatewayResponse = await fetch(
         `${env.GATEWAY_BASE_URL}/v1/user/info`,
         {
-          method: "GET",
           headers: {
             Authorization: authHeader,
           },
+          method: "GET",
         }
       );
 
       // Return the gateway response
       const responseData = await gatewayResponse.text();
       return new Response(responseData, {
-        status: gatewayResponse.status,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
         },
+        status: gatewayResponse.status,
       });
     }
 
@@ -126,11 +126,11 @@ export default {
             return new Response(
               JSON.stringify({ error: "Authentication required" }),
               {
-                status: 401,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 401,
               }
             );
           }
@@ -141,18 +141,18 @@ export default {
             return new Response(
               JSON.stringify({ error: "Invalid auth token" }),
               {
-                status: 403,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 403,
               }
             );
           }
 
           // Ensure user can only access their own agent instance
           const pathMatch = url.pathname.match(
-            /\/agents\/([^\/]+)\/([^\/\?]+)/
+            /\/agents\/([^/]+)\/([^/?]+)/
           );
           if (pathMatch) {
             const [, , roomName] = pathMatch;
@@ -160,11 +160,11 @@ export default {
               return new Response(
                 JSON.stringify({ error: "Access denied: User ID mismatch" }),
                 {
-                  status: 403,
                   headers: {
-                    "Content-Type": "application/json",
                     "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
                   },
+                  status: 403,
                 }
               );
             }
@@ -196,11 +196,11 @@ export default {
             return new Response(
               JSON.stringify({ error: "Authentication required" }),
               {
-                status: 401,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 401,
               }
             );
           }
@@ -211,18 +211,18 @@ export default {
             return new Response(
               JSON.stringify({ error: "Invalid auth token" }),
               {
-                status: 403,
                 headers: {
-                  "Content-Type": "application/json",
                   "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json",
                 },
+                status: 403,
               }
             );
           }
 
           // Ensure user can only access their own agent instance
           const pathMatch = url.pathname.match(
-            /\/agents\/([^\/]+)\/([^\/\?]+)/
+            /\/agents\/([^/]+)\/([^/?]+)/
           );
           if (pathMatch) {
             const [, , roomName] = pathMatch;
@@ -230,11 +230,11 @@ export default {
               return new Response(
                 JSON.stringify({ error: "Access denied: User ID mismatch" }),
                 {
-                  status: 403,
                   headers: {
-                    "Content-Type": "application/json",
                     "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json",
                   },
+                  status: 403,
                 }
               );
             }
@@ -255,19 +255,19 @@ export default {
       ) {
         return new Response(getMainHTML(), {
           headers: {
-            "Content-Type": "text/html",
             "Access-Control-Allow-Origin": "*",
+            "Content-Type": "text/html",
           },
         });
       }
 
       // For other requests, return 404
       return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
         headers: {
-          "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
         },
+        status: 404,
       });
     } catch (error) {
       console.error("Error routing request:", error);
@@ -279,11 +279,11 @@ export default {
           message: "An unexpected error occurred while processing the request",
         }),
         {
-          status: 500,
           headers: {
-            "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
           },
+          status: 500,
         }
       );
     }
@@ -303,11 +303,11 @@ async function verifyOAuthToken(
     console.log(`[Auth] Verifying token at: ${verifyEndpoint}`);
 
     const response = await fetch(verifyEndpoint, {
-      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      method: "POST",
     });
 
     console.log(`[Auth] Verification response status: ${response.status}`);
@@ -334,7 +334,7 @@ async function verifyOAuthToken(
  */
 async function handleOAuthCallback(
   request: Request,
-  env: Env
+  _env: Env
 ): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -368,12 +368,12 @@ async function handleOAuthCallback(
     const tokenResponse = await fetch(
       `${url.origin}/api/oauth/token-exchange`,
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
           grant_type: "authorization_code",
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       }
     );
 
@@ -395,15 +395,15 @@ async function handleOAuthCallback(
       );
 
       const storeResponse = await fetch(`${agentBaseUrl}/store-user-info`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: tokenData.user_info.id,
-          api_key: tokenData.access_token, // OAuth token IS the gateway API key
+          api_key: tokenData.access_token,
+          credits: tokenData.user_info.credits, // OAuth token IS the gateway API key
           email: tokenData.user_info.email,
-          credits: tokenData.user_info.credits,
           payment_method: tokenData.user_info.payment_method,
+          user_id: tokenData.user_info.id,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
 
       if (storeResponse.ok) {

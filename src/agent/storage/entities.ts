@@ -8,7 +8,7 @@ import type { GenericEntity } from "../types/generic";
 
 // Placeholder functions for entity data access
 export async function storeEntity(
-  agent: AppAgent,
+  _agent: AppAgent,
   entity: GenericEntity
 ): Promise<void> {
   console.log(`Placeholder: Storing entity ${entity.id}`);
@@ -17,7 +17,7 @@ export async function storeEntity(
 }
 
 export async function getEntity(
-  agent: AppAgent,
+  _agent: AppAgent,
   entityId: string
 ): Promise<GenericEntity | null> {
   console.log(`Placeholder: Getting entity ${entityId}`);

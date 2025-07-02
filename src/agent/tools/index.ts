@@ -20,40 +20,40 @@ import * as stateTools from "./state";
  * These will be provided to the AI model to describe available capabilities
  */
 export const tools = {
-  // Context tools
-  getWeatherInformation: contextTools.getWeatherInformation,
-  getLocalTime: contextTools.getLocalTime,
   browseWebPage: browserTools.browseWebPage,
   browseWithBrowserbase: browserbaseTools.browseWithBrowserbase,
-  fetchWebPage: simpleFetchTools.fetchWebPage,
-
-  // Scheduling tools
-  scheduleTask: schedulingTools.scheduleTask,
-  getScheduledTasks: schedulingTools.getScheduledTasks,
   cancelScheduledTask: schedulingTools.cancelScheduledTask,
-
-  // Onboarding tools
-  saveSettings: onboardingTools.saveSettings,
-  completeOnboarding: onboardingTools.completeOnboarding,
   checkExistingConfig: onboardingTools.checkExistingConfig,
-  getOnboardingStatus: onboardingTools.getOnboardingStatus,
-
-  // Integration tools
-  recordTestResult: integrationTools.recordTestResult,
-  documentTool: integrationTools.documentTool,
-  generateTestReport: integrationTools.generateTestReport,
   completeIntegrationTesting: integrationTools.completeIntegrationTesting,
-  testErrorTool: integrationTools.testErrorTool,
+  completeOnboarding: onboardingTools.completeOnboarding,
+  documentTool: integrationTools.documentTool,
+  fetchWebPage: simpleFetchTools.fetchWebPage,
+  generateTestReport: integrationTools.generateTestReport,
 
   // State access tools
   getAgentState: stateTools.getAgentState,
+  getLocalTime: contextTools.getLocalTime,
+  getOnboardingStatus: onboardingTools.getOnboardingStatus,
+  getScheduledTasks: schedulingTools.getScheduledTasks,
+  // Context tools
+  getWeatherInformation: contextTools.getWeatherInformation,
+
+  // Integration tools
+  recordTestResult: integrationTools.recordTestResult,
+
+  // Search tools
+  runResearch: searchTools.runResearch,
+
+  // Onboarding tools
+  saveSettings: onboardingTools.saveSettings,
+
+  // Scheduling tools
+  scheduleTask: schedulingTools.scheduleTask,
   setMode: stateTools.setMode,
 
   // Messaging tools
   suggestActions: messagingTools.suggestActions,
-
-  // Search tools
-  runResearch: searchTools.runResearch,
+  testErrorTool: integrationTools.testErrorTool,
 };
 
 /**
@@ -65,14 +65,14 @@ export const executions = {
   // For now, all tools have built-in execute functions
 };
 
-// Re-export all individual tools directly as well
-export * from "./scheduling";
-export * from "./context";
-export * from "./onboarding";
-export * from "./integration";
 export * from "./browser";
 export * from "./browserbase";
-export * from "./simpleFetch";
+export * from "./context";
+export * from "./integration";
 export * from "./messaging";
+export * from "./onboarding";
+// Re-export all individual tools directly as well
+export * from "./scheduling";
 export * from "./search";
+export * from "./simpleFetch";
 export * from "./state";

@@ -13,13 +13,13 @@ export type ScheduleInput = {
 
 // Define our own schedule schema based on what we need
 const scheduleSchema = z.object({
+  description: z.string(),
   when: z.object({
-    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]),
+    cron: z.string().optional(),
     date: z.date().optional(),
     delayInSeconds: z.number().optional(),
-    cron: z.string().optional(),
+    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]),
   }),
-  description: z.string(),
 });
 
 /**
@@ -27,7 +27,6 @@ const scheduleSchema = z.object({
  */
 export const scheduleTask = tool({
   description: "Schedule a task to be executed at a later time",
-  parameters: scheduleSchema,
   execute: async ({
     when,
     description,
@@ -69,6 +68,7 @@ export const scheduleTask = tool({
       return `Error scheduling task: ${error}`;
     }
   },
+  parameters: scheduleSchema,
 });
 
 /**
@@ -76,7 +76,6 @@ export const scheduleTask = tool({
  */
 export const getScheduledTasks = tool({
   description: "Get all scheduled tasks for the agent",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
     if (!agent) {
@@ -94,6 +93,7 @@ export const getScheduledTasks = tool({
       return `Error retrieving tasks: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -101,9 +101,6 @@ export const getScheduledTasks = tool({
  */
 export const cancelScheduledTask = tool({
   description: "Cancel a previously scheduled task",
-  parameters: z.object({
-    taskId: z.string(),
-  }),
   execute: async ({ taskId }: { taskId: string }) => {
     const { agent } = getCurrentAgent<AppAgent>();
     if (!agent) {
@@ -119,4 +116,7 @@ export const cancelScheduledTask = tool({
       return `Error canceling task: ${error}`;
     }
   },
+  parameters: z.object({
+    taskId: z.string(),
+  }),
 });

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 export function useMessageEditing(
   messages: Message[],
   setMessages: (messages: Message[]) => void,
-  input: string,
+  _input: string,
   reload: () => Promise<string | null | undefined>
 ) {
   // Editing state
@@ -65,16 +65,16 @@ export function useMessageEditing(
 
       // Create new user message with edited content
       const newUserMessage = {
-        id: crypto.randomUUID(),
-        role: "user" as const,
-        createdAt: new Date(),
         content: editedText,
+        createdAt: new Date(),
+        id: crypto.randomUUID(),
         parts: [
           {
-            type: "text" as const,
             text: editedText,
+            type: "text" as const,
           },
         ],
+        role: "user" as const,
       };
 
       // Set messages with both the previous messages and the new edited message
@@ -153,16 +153,16 @@ export function useMessageEditing(
 
         // Create a new user message with the same content
         const newUserMessage = {
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          createdAt: new Date(),
           content: userMessageContent,
+          createdAt: new Date(),
+          id: crypto.randomUUID(),
           parts: [
             {
-              type: "text" as const,
               text: userMessageContent,
+              type: "text" as const,
             },
           ],
+          role: "user" as const,
         };
 
         // Set messages with both the previous messages and the user message
@@ -286,25 +286,25 @@ export function useMessageEditing(
   };
 
   return {
+    cancelEditing,
+    currentEditIndex,
+    editedMessageContentRef,
     // State
     editingMessageId,
     editingValue,
-    currentEditIndex,
-    isRetrying,
-
-    // Refs (exposed for error handling)
-    originalMessagesLengthRef,
-    originalEditIndexRef,
-    editedMessageContentRef,
-
-    // Actions
-    setEditingValue,
-    setCurrentEditIndex,
-    setIsRetrying,
-    startEditing,
-    cancelEditing,
     handleEditMessage,
     handleRetry,
     handleRetryLastUserMessage,
+    isRetrying,
+    originalEditIndexRef,
+
+    // Refs (exposed for error handling)
+    originalMessagesLengthRef,
+    setCurrentEditIndex,
+
+    // Actions
+    setEditingValue,
+    setIsRetrying,
+    startEditing,
   };
 }

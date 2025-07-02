@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
 // JWT Token utility functions
@@ -90,17 +90,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await fetch(
         `/agents/app-agent/${authData.userInfo.id}/store-user-info`,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authData.apiKey}`,
-          },
           body: JSON.stringify({
-            user_id: authData.userInfo.id,
             api_key: authData.apiKey,
-            email: authData.userInfo.email,
             credits: authData.userInfo.credits,
+            email: authData.userInfo.email,
+            user_id: authData.userInfo.id,
           }),
+          headers: {
+            Authorization: `Bearer ${authData.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          method: "POST",
         }
       );
 
@@ -164,10 +164,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (parsedAuth?.apiKey) {
             try {
               const response = await fetch("/api/user/info", {
-                method: "GET",
                 headers: {
                   Authorization: `Bearer ${parsedAuth.apiKey}`,
                 },
+                method: "GET",
               });
 
               if (response.ok) {
@@ -180,7 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 localStorage.removeItem("auth_method");
                 localStorage.setItem("auth_invalid_token", "true");
               }
-            } catch (error) {
+            } catch (_error) {
               // Network error, assume stored auth is potentially valid
               console.log(
                 "Could not validate token due to network error, keeping stored auth"
@@ -200,7 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, []);
+  }, [syncTokenWithAgent]);
 
   const login = async () => {
     try {
@@ -240,11 +240,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const clearResponse = await fetch(
           `/agents/app-agent/${currentAuth.userInfo.id}/clear-user-info`,
           {
-            method: "POST",
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${currentAuth.apiKey}`,
+              "Content-Type": "application/json",
             },
+            method: "POST",
           }
         );
 
@@ -266,10 +266,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!authMethod || authMethod.type !== "atyourservice") return;
 
     const newAuth: AuthMethod = {
+      apiKey: authMethod.apiKey,
+      byokKeys: keys, // Keep AtYourService.ai API key for verification
       type: "byok",
-      apiKey: authMethod.apiKey, // Keep AtYourService.ai API key for verification
       userInfo: authMethod.userInfo,
-      byokKeys: keys,
     };
 
     setAuthMethod(newAuth);
@@ -280,8 +280,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!authMethod || authMethod.type !== "byok") return;
 
     const newAuth: AuthMethod = {
-      type: "atyourservice",
       apiKey: authMethod.apiKey,
+      type: "atyourservice",
       userInfo: authMethod.userInfo,
     };
 
@@ -295,10 +295,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Call the local server endpoint that proxies to the gateway
       const response = await fetch("/api/user/info", {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${authMethod.apiKey}`,
         },
+        method: "GET",
       });
 
       if (response.ok) {
@@ -312,9 +312,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const updatedAuth = {
           ...authMethod,
           userInfo: {
-            id: userInfo.id,
-            email: userInfo.email,
             credits: userInfo.credits,
+            email: userInfo.email,
+            id: userInfo.id,
           },
         };
 
@@ -348,15 +348,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const value: AuthContextType = {
     authMethod,
+    checkTokenExpiration,
     isAuthenticated: !!authMethod,
     isLoading,
-    oauthConfig,
     login,
     logout,
+    oauthConfig,
+    refreshUserInfo,
     switchToBYOK,
     switchToCredits,
-    refreshUserInfo,
-    checkTokenExpiration,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

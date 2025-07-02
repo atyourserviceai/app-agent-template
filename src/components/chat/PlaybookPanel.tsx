@@ -1,7 +1,7 @@
-import { Card } from "@/components/card/Card";
-import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ClipboardText } from "@phosphor-icons/react";
 import { useState } from "react";
+import { Card } from "@/components/card/Card";
+import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
 interface PlaybookPanelProps {

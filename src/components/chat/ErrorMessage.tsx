@@ -1,7 +1,7 @@
+import { ArrowClockwise, WarningOctagon } from "@phosphor-icons/react";
 import { Avatar } from "@/components/avatar/Avatar";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
-import { ArrowClockwise, WarningOctagon } from "@phosphor-icons/react";
 
 type ErrorMessageProps = {
   errorData: {

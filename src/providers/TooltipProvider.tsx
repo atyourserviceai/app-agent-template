@@ -60,7 +60,7 @@ export const TooltipProvider = ({
 
   return (
     <TooltipContext.Provider
-      value={{ activeTooltip, showTooltip, hideTooltip }}
+      value={{ activeTooltip, hideTooltip , showTooltip}}
     >
       {children}
     </TooltipContext.Provider>

@@ -12,14 +12,6 @@ import type { AppAgent, AppAgentState } from "../AppAgent";
  */
 export const recordTestResult = tool({
   description: "Record the result of testing a tool or integration",
-  parameters: z.object({
-    toolName: z.string().describe("Name of the tool that was tested"),
-    status: z.enum(["passed", "failed", "skipped"]).describe("Test result"),
-    input: z.unknown().optional().describe("Input provided to the tool"),
-    output: z.unknown().optional().describe("Output received from the tool"),
-    error: z.string().optional().describe("Error message if the test failed"),
-    notes: z.string().optional().describe("Additional notes about the test"),
-  }),
   execute: async ({ toolName, status, input, output, error, notes }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -32,16 +24,16 @@ export const recordTestResult = tool({
       const testResults = currentState.testResults || {};
 
       const testResult = {
-        id: generateId(),
-        toolName,
-        status,
-        startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
-        input,
-        output,
         error,
+        id: generateId(),
+        input,
         notes,
+        output,
+        startTime: new Date().toISOString(),
+        status,
         success: status === "passed",
+        toolName,
       };
 
       await agent.setState({
@@ -58,6 +50,14 @@ export const recordTestResult = tool({
       return `Error recording test result: ${error}`;
     }
   },
+  parameters: z.object({
+    error: z.string().optional().describe("Error message if the test failed"),
+    input: z.unknown().optional().describe("Input provided to the tool"),
+    notes: z.string().optional().describe("Additional notes about the test"),
+    output: z.unknown().optional().describe("Output received from the tool"),
+    status: z.enum(["passed", "failed", "skipped"]).describe("Test result"),
+    toolName: z.string().describe("Name of the tool that was tested"),
+  }),
 });
 
 /**
@@ -65,16 +65,6 @@ export const recordTestResult = tool({
  */
 export const documentTool = tool({
   description: "Document a tool's purpose, parameters, and usage examples",
-  parameters: z.object({
-    toolName: z.string().describe("Name of the tool to document"),
-    description: z.string().describe("Description of what the tool does"),
-    parameters: z.record(z.unknown()).describe("Tool parameters schema"),
-    examples: z.array(z.string()).optional().describe("Usage examples"),
-    status: z
-      .enum(["working", "issues", "unknown"])
-      .optional()
-      .describe("Current status of the tool"),
-  }),
   execute: async ({ toolName, description, parameters, examples, status }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -87,11 +77,11 @@ export const documentTool = tool({
       const toolDocumentation = currentState.toolDocumentation || {};
 
       const documentation = {
-        name: toolName,
         description,
-        parameters,
         examples,
         lastTested: new Date().toISOString(),
+        name: toolName,
+        parameters,
         status: status || "unknown",
       };
 
@@ -109,6 +99,16 @@ export const documentTool = tool({
       return `Error documenting tool: ${error}`;
     }
   },
+  parameters: z.object({
+    description: z.string().describe("Description of what the tool does"),
+    examples: z.array(z.string()).optional().describe("Usage examples"),
+    parameters: z.record(z.unknown()).describe("Tool parameters schema"),
+    status: z
+      .enum(["working", "issues", "unknown"])
+      .optional()
+      .describe("Current status of the tool"),
+    toolName: z.string().describe("Name of the tool to document"),
+  }),
 });
 
 /**
@@ -116,7 +116,6 @@ export const documentTool = tool({
  */
 export const generateTestReport = tool({
   description: "Generate a comprehensive test report for all tested tools",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -164,15 +163,15 @@ export const generateTestReport = tool({
       }
 
       const testReport = {
-        id: generateId(),
-        generatedAt: new Date().toISOString(),
-        totalTests,
-        passedTests,
-        failedTests,
-        skippedTests: totalTests - passedTests - failedTests,
         documentedTools,
-        recommendations,
+        failedTests,
+        generatedAt: new Date().toISOString(),
+        id: generateId(),
         issues,
+        passedTests,
+        recommendations,
+        skippedTests: totalTests - passedTests - failedTests,
+        totalTests,
       };
 
       await agent.setState({
@@ -181,15 +180,16 @@ export const generateTestReport = tool({
       });
 
       return {
-        success: true,
-        report: testReport,
         message: `Test report generated: ${passedTests}/${totalTests} tests passed`,
+        report: testReport,
+        success: true,
       };
     } catch (error) {
       console.error("Error generating test report:", error);
       return `Error generating test report: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -197,12 +197,6 @@ export const generateTestReport = tool({
  */
 export const completeIntegrationTesting = tool({
   description: "Mark the integration testing phase as complete",
-  parameters: z.object({
-    force: z
-      .boolean()
-      .optional()
-      .describe("Force completion even if tests failed"),
-  }),
   execute: async ({ force = false }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -243,6 +237,12 @@ export const completeIntegrationTesting = tool({
       return `Error completing integration testing: ${error}`;
     }
   },
+  parameters: z.object({
+    force: z
+      .boolean()
+      .optional()
+      .describe("Force completion even if tests failed"),
+  }),
 });
 
 /**
@@ -250,13 +250,6 @@ export const completeIntegrationTesting = tool({
  */
 export const testErrorTool = tool({
   description: "Generate a controlled error for testing error handling",
-  parameters: z.object({
-    errorType: z
-      .enum(["simple", "timeout", "network"])
-      .optional()
-      .default("simple"),
-    message: z.string().optional().default("Test error message"),
-  }),
   execute: async ({ errorType, message }) => {
     console.log(`[TEST] Generating ${errorType} error: ${message}`);
 
@@ -269,4 +262,11 @@ export const testErrorTool = tool({
         throw new Error(`Test error: ${message}`);
     }
   },
+  parameters: z.object({
+    errorType: z
+      .enum(["simple", "timeout", "network"])
+      .optional()
+      .default("simple"),
+    message: z.string().optional().default("Test error message"),
+  }),
 });

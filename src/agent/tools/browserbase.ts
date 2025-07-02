@@ -11,18 +11,6 @@ import type { AppAgent } from "../AppAgent";
 export const browseWithBrowserbase = tool({
   description:
     "Browse a web page using Browserbase and extract its content. Useful for research, getting information from websites, and collecting data.",
-  parameters: z.object({
-    url: z
-      .string()
-      .url()
-      .describe("URL to browse (e.g. 'https://example.com')"),
-    selector: z
-      .string()
-      .optional()
-      .describe(
-        "Optional CSS selector to extract specific content from (defaults to 'body')"
-      ),
-  }),
   execute: async ({ url, selector = "body" }) => {
     try {
       // Get the agent context through getCurrentAgent
@@ -54,6 +42,18 @@ export const browseWithBrowserbase = tool({
       return `Failed to browse web page: ${error}`;
     }
   },
+  parameters: z.object({
+    selector: z
+      .string()
+      .optional()
+      .describe(
+        "Optional CSS selector to extract specific content from (defaults to 'body')"
+      ),
+    url: z
+      .string()
+      .url()
+      .describe("URL to browse (e.g. 'https://example.com')"),
+  }),
 });
 
 /**
@@ -101,7 +101,7 @@ export async function browsePage(
         selector,
         (el) => el.textContent || el.innerHTML
       );
-    } catch (e) {
+    } catch (_e) {
       console.log(
         `[Browserbase] Selector '${selector}' not found, extracting full page content.`
       );
@@ -118,10 +118,10 @@ export async function browsePage(
     await browser.close();
 
     return {
-      url: currentUrl,
-      title,
       content,
       screenshot: `data:image/png;base64,${screenshot}`,
+      title,
+      url: currentUrl,
     };
   } catch (error) {
     console.error(`[Browserbase] Error browsing ${url}:`, error);
@@ -155,10 +155,10 @@ export async function fetchWebPageContentWithBrowserbase(
       error
     );
     return new Response(JSON.stringify({ error: String(error) }), {
-      status: 500,
       headers: {
         "Content-Type": "application/json",
       },
+      status: 500,
     });
   }
 }

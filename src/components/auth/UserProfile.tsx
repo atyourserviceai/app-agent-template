@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import { useAuth } from "./AuthProvider";
 import { SignOut } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "./AuthProvider";
 
 export function UserProfile() {
   const { authMethod, logout, refreshUserInfo, oauthConfig } = useAuth();

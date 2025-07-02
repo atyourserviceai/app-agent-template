@@ -1,9 +1,9 @@
-import { type Message, formatDataStreamPart } from "@ai-sdk/ui-utils";
+import { formatDataStreamPart, type Message } from "@ai-sdk/ui-utils";
 import {
+  convertToCoreMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
   type ToolSet,
-  convertToCoreMessages,
 } from "ai";
 import type { z } from "zod";
 import { APPROVAL } from "../../shared";
@@ -180,8 +180,8 @@ export async function processToolCalls<
       // Forward updated tool result to the client.
       dataStream.write(
         formatDataStreamPart("tool_result", {
-          toolCallId: toolInvocation.toolCallId,
           result,
+          toolCallId: toolInvocation.toolCallId,
         })
       );
 
@@ -243,8 +243,8 @@ export async function processToolCallsWithModeValidation<
         // Forward error to the client
         dataStream.write(
           formatDataStreamPart("tool_result", {
-            toolCallId: toolInvocation.toolCallId,
             result: errorResult,
+            toolCallId: toolInvocation.toolCallId,
           })
         );
 
@@ -254,8 +254,8 @@ export async function processToolCallsWithModeValidation<
           ...part,
           toolInvocation: {
             ...toolInvocation,
-            state: "result",
             result: errorResult,
+            state: "result",
           },
         };
       }
@@ -287,8 +287,8 @@ export async function processToolCallsWithModeValidation<
         // Forward updated tool result to the client
         dataStream.write(
           formatDataStreamPart("tool_result", {
-            toolCallId: toolInvocation.toolCallId,
             result,
+            toolCallId: toolInvocation.toolCallId,
           })
         );
 
@@ -388,15 +388,15 @@ export function processToolCallsFromContent(
       })
     ) {
       const toolInvocationPart = {
-        type: "tool-invocation" as const,
         toolInvocation: {
-          state: "result" as const,
+          args: toolCall.args,
           result: toolCall.output || "",
+          state: "result" as const,
           step: undefined,
           toolCallId: toolCall.id,
           toolName: toolCall.name,
-          args: toolCall.args,
         },
+        type: "tool-invocation" as const,
       };
       processedParts.push(toolInvocationPart);
     }

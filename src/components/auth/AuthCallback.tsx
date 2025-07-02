@@ -43,13 +43,13 @@ export default function AuthCallback() {
 
         const config = await getOAuthConfig();
         const response = await fetch(config.token_url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            code,
             client_id: config.client_id,
+            code,
             grant_type: "authorization_code",
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         if (!response.ok) {
@@ -63,19 +63,19 @@ export default function AuthCallback() {
         const tokenData = (await response.json()) as TokenResponse;
 
         console.log("[OAuth Callback] Token exchange successful, user info:", {
-          userId: tokenData.user_info?.id,
-          email: tokenData.user_info?.email,
           credits: tokenData.user_info?.credits,
+          email: tokenData.user_info?.email,
+          userId: tokenData.user_info?.id,
         });
 
         // Store the AtYourService.ai API key and user info
         const authMethod = {
-          type: "atyourservice" as const,
           apiKey: tokenData.access_token,
+          type: "atyourservice" as const,
           userInfo: {
-            id: tokenData.user_info.id,
-            email: tokenData.user_info.email,
             credits: tokenData.user_info.credits,
+            email: tokenData.user_info.email,
+            id: tokenData.user_info.id,
           },
         };
 
@@ -90,18 +90,18 @@ export default function AuthCallback() {
           const agentResponse = await fetch(
             `/agents/app-agent/${tokenData.user_info.id}/store-user-info`,
             {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${tokenData.access_token}`,
-              },
               body: JSON.stringify({
-                user_id: tokenData.user_info.id,
                 api_key: tokenData.access_token,
-                email: tokenData.user_info.email,
                 credits: tokenData.user_info.credits,
+                email: tokenData.user_info.email,
                 payment_method: tokenData.user_info.payment_method,
+                user_id: tokenData.user_info.id,
               }),
+              headers: {
+                Authorization: `Bearer ${tokenData.access_token}`,
+                "Content-Type": "application/json",
+              },
+              method: "POST",
             }
           );
 

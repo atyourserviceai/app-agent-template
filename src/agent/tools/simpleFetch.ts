@@ -9,15 +9,6 @@ import { z } from "zod";
 export const fetchWebPage = tool({
   description:
     "Fetch a web page and extract its content using simple HTTP requests. Useful for basic research and information gathering.",
-  parameters: z.object({
-    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')"),
-    selector: z
-      .string()
-      .optional()
-      .describe(
-        "Optional CSS selector to extract specific content (defaults to 'body')"
-      ),
-  }),
   execute: async ({ url, selector = "body" }) => {
     try {
       console.log(`[simpleFetch] Fetching ${url} with selector "${selector}"`);
@@ -25,11 +16,11 @@ export const fetchWebPage = tool({
       // Simple fetch request
       const response = await fetch(url, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
           Accept:
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.5",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
         },
       });
 
@@ -51,9 +42,9 @@ export const fetchWebPage = tool({
             : text;
 
         return {
-          url,
-          contentType,
           content: truncatedText,
+          contentType,
+          url,
         };
       }
 
@@ -79,16 +70,25 @@ export const fetchWebPage = tool({
           : cleanText;
 
       return {
-        url: response.url, // This may differ from input URL if redirects occurred
-        title,
+        content: truncatedText, // This may differ from input URL if redirects occurred
         contentType,
-        content: truncatedText,
+        title,
+        url: response.url,
       };
     } catch (error) {
       console.error(`[simpleFetch] Error fetching ${url}:`, error);
       return `Failed to fetch web page: ${error}`;
     }
   },
+  parameters: z.object({
+    selector: z
+      .string()
+      .optional()
+      .describe(
+        "Optional CSS selector to extract specific content (defaults to 'body')"
+      ),
+    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')"),
+  }),
 });
 
 /**
@@ -97,7 +97,7 @@ export const fetchWebPage = tool({
  */
 export async function fetchPageContent(
   url: string,
-  selector = "body"
+  _selector = "body"
 ): Promise<Response> {
   try {
     console.log(`[simpleFetch] Direct fetching ${url}`);
@@ -137,10 +137,10 @@ export async function fetchPageContent(
         : text;
 
     return Response.json({
-      url: response.url,
-      title,
-      contentType,
       content: truncatedContent,
+      contentType,
+      title,
+      url: response.url,
     });
   } catch (error) {
     console.error("[simpleFetch] Error in direct fetch:", error);

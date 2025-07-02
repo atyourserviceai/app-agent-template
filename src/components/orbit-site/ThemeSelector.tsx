@@ -1,7 +1,7 @@
-import useTheme from "@/hooks/useTheme";
-import { cn } from "@/lib/utils";
 import { Moon, Sun } from "@phosphor-icons/react";
 import { useState } from "react";
+import useTheme from "@/hooks/useTheme";
+import { cn } from "@/lib/utils";
 
 const ThemeSelector = () => {
   const [theme, setTheme] = useState<"dark" | "light">("light");

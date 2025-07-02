@@ -12,25 +12,6 @@ import type { AppAgent, AppAgentState } from "../AppAgent";
  */
 export const saveSettings = tool({
   description: "Save basic agent settings during the onboarding process",
-  parameters: z.object({
-    language: z.string().optional().describe("Agent language preference"),
-    operatorName: z
-      .string()
-      .optional()
-      .describe("Name of the primary operator"),
-    operatorEmail: z
-      .string()
-      .optional()
-      .describe("Email of the primary operator"),
-    adminContactName: z
-      .string()
-      .optional()
-      .describe("Name of the admin contact"),
-    adminContactEmail: z
-      .string()
-      .optional()
-      .describe("Email of the admin contact"),
-  }),
   execute: async ({
     language,
     operatorName,
@@ -47,25 +28,25 @@ export const saveSettings = tool({
     try {
       const currentState = agent.state as AppAgentState;
       const currentSettings = currentState.settings || {
+        adminContact: { email: "" , name: ""},
         language: "en",
         operators: [],
-        adminContact: { name: "", email: "" },
       };
 
       // Update settings with provided values
       const updatedSettings = {
         ...currentSettings,
-        language: language || currentSettings.language,
         adminContact: {
-          name: adminContactName || currentSettings.adminContact.name,
           email: adminContactEmail || currentSettings.adminContact.email,
+          name: adminContactName || currentSettings.adminContact.name,
         },
+        language: language || currentSettings.language,
         operators: operatorName
           ? [
               {
+                email: operatorEmail,
                 name: operatorName,
                 role: "primary",
-                email: operatorEmail,
               },
               ...currentSettings.operators.filter(
                 (op) => op.role !== "primary"
@@ -85,6 +66,25 @@ export const saveSettings = tool({
       return `Error saving settings: ${error}`;
     }
   },
+  parameters: z.object({
+    adminContactEmail: z
+      .string()
+      .optional()
+      .describe("Email of the admin contact"),
+    adminContactName: z
+      .string()
+      .optional()
+      .describe("Name of the admin contact"),
+    language: z.string().optional().describe("Agent language preference"),
+    operatorEmail: z
+      .string()
+      .optional()
+      .describe("Email of the primary operator"),
+    operatorName: z
+      .string()
+      .optional()
+      .describe("Name of the primary operator"),
+  }),
 });
 
 /**
@@ -92,7 +92,6 @@ export const saveSettings = tool({
  */
 export const completeOnboarding = tool({
   description: "Mark the onboarding process as complete",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -114,6 +113,7 @@ export const completeOnboarding = tool({
       return `Error completing onboarding: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -121,7 +121,6 @@ export const completeOnboarding = tool({
  */
 export const getOnboardingStatus = tool({
   description: "Get the current onboarding status and configuration",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -135,20 +134,21 @@ export const getOnboardingStatus = tool({
 
       return {
         isComplete: currentState.isOnboardingComplete,
-        settings: {
-          language: settings?.language || "en",
-          hasOperators: (settings?.operators?.length || 0) > 0,
-          hasAdminContact: !!settings?.adminContact?.name,
-        },
         message: currentState.isOnboardingComplete
           ? "Onboarding is complete"
           : "Onboarding is in progress",
+        settings: {
+          hasAdminContact: !!settings?.adminContact?.name,
+          hasOperators: (settings?.operators?.length || 0) > 0,
+          language: settings?.language || "en",
+        },
       };
     } catch (error) {
       console.error("Error getting onboarding status:", error);
       return `Error getting onboarding status: ${error}`;
     }
   },
+  parameters: z.object({}),
 });
 
 /**
@@ -156,7 +156,6 @@ export const getOnboardingStatus = tool({
  */
 export const checkExistingConfig = tool({
   description: "Check if the agent has existing configuration",
-  parameters: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -181,4 +180,5 @@ export const checkExistingConfig = tool({
       return `Error checking existing config: ${error}`;
     }
   },
+  parameters: z.object({}),
 });

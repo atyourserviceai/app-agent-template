@@ -5,9 +5,12 @@
  * All tools are wrapped with error handling here to ensure consistent behavior.
  */
 
+import { tool } from "ai";
+import { z } from "zod";
 // Import raw, unwrapped tools from their source modules
 import * as rawBrowserTools from "./browser";
 import * as rawBrowserbaseTools from "./browserbase";
+import { getGmailTools as getRawGmailTools } from "./composio";
 import * as rawContextTools from "./context";
 import * as rawIntegrationTools from "./integration";
 import * as rawMessagingTools from "./messaging";
@@ -17,9 +20,6 @@ import * as rawSchedulingTools from "./scheduling";
 import * as rawSearchTools from "./search";
 import * as rawSimpleFetchTools from "./simpleFetch";
 import * as rawStateTools from "./state";
-import { getGmailTools as getRawGmailTools } from "./composio";
-import { z } from "zod";
-import { tool } from "ai";
 
 // Import the wrapper function
 import {
@@ -35,13 +35,13 @@ type ToolCollection<T = unknown, R = unknown> = Record<string, Tool<T, R>>;
  */
 const rawTestErrorTool = tool({
   description: "Debug tool that always fails to show error formatting",
-  parameters: z.object({
-    message: z.string().describe("Any message to echo back"),
-  }),
   execute: async ({ message }: { message: string }) => {
     console.log("[testErrorTool] About to throw error with message:", message);
     throw new Error(`Test error: ${message}`);
   },
+  parameters: z.object({
+    message: z.string().describe("Any message to echo back"),
+  }),
 });
 
 // Wrap all tools with error handling
@@ -110,8 +110,8 @@ const toolCounts = {
   scheduling: countTools(schedulingTools),
   search: countTools(searchTools),
   simpleFetch: countTools(simpleFetchTools),
-  state: countTools(stateTools),
-  special: 2, // testErrorTool and suggestActions
+  special: 2,
+  state: countTools(stateTools), // testErrorTool and suggestActions
 };
 
 const totalTools = Object.values(toolCounts).reduce(
@@ -132,34 +132,34 @@ console.log(
  * This is useful for tools that need them all in a single object
  */
 export const tools = {
-  // Context tools
-  getWeatherInformation: contextTools.getWeatherInformation,
-  getLocalTime: contextTools.getLocalTime,
 
   // Browser tools
   browseWebPage: browserTools.browseWebPage,
   browseWithBrowserbase: browserbaseTools.browseWithBrowserbase,
-  fetchWebPage: simpleFetchTools.fetchWebPage,
-
-  // Scheduling tools
-  scheduleTask: schedulingTools.scheduleTask,
-  getScheduledTasks: schedulingTools.getScheduledTasks,
   cancelScheduledTask: schedulingTools.cancelScheduledTask,
-
-  // Onboarding tools
-  saveSettings: onboardingTools.saveSettings,
-  completeOnboarding: onboardingTools.completeOnboarding,
   checkExistingConfig: onboardingTools.checkExistingConfig,
-  getOnboardingStatus: onboardingTools.getOnboardingStatus,
-
-  // Integration tools
-  recordTestResult: integrationTools.recordTestResult,
-  documentTool: integrationTools.documentTool,
-  generateTestReport: integrationTools.generateTestReport,
   completeIntegrationTesting: integrationTools.completeIntegrationTesting,
+  completeOnboarding: onboardingTools.completeOnboarding,
+  documentTool: integrationTools.documentTool,
+  fetchWebPage: simpleFetchTools.fetchWebPage,
+  generateTestReport: integrationTools.generateTestReport,
 
   // State access tools
   getAgentState: stateTools.getAgentState,
+  getLocalTime: contextTools.getLocalTime,
+  getOnboardingStatus: onboardingTools.getOnboardingStatus,
+  getScheduledTasks: schedulingTools.getScheduledTasks,
+  // Context tools
+  getWeatherInformation: contextTools.getWeatherInformation,
+
+  // Integration tools
+  recordTestResult: integrationTools.recordTestResult,
+
+  // Onboarding tools
+  saveSettings: onboardingTools.saveSettings,
+
+  // Scheduling tools
+  scheduleTask: schedulingTools.scheduleTask,
   setMode: stateTools.setMode,
 
   // Messaging tools

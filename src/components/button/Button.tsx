@@ -42,22 +42,22 @@ const ButtonComponent = ({
         "btn add-focus group interactive flex w-max shrink-0 items-center font-medium select-none",
 
         {
+
+          "add-disable": disabled,
+          "add-size-base gap-2": size === "base",
+          "add-size-md gap-1.5": size === "md",
+
+          "add-size-sm gap-1": size === "sm",
+          "btn-destructive": variant === "destructive",
+          "btn-ghost": variant === "ghost",
           "btn-primary": variant === "primary",
           "btn-secondary": variant === "secondary",
           "btn-tertiary": variant === "tertiary",
-          "btn-ghost": variant === "ghost",
-          "btn-destructive": variant === "destructive",
-
-          "add-size-sm gap-1": size === "sm",
-          "add-size-md gap-1.5": size === "md",
-          "add-size-base gap-2": size === "base",
-
-          square: shape === "square",
           circular: shape === "circular",
 
           "flex-row-reverse": displayContent === "items-first",
 
-          "add-disable": disabled,
+          square: shape === "square",
 
           toggle: toggled,
         },
@@ -74,11 +74,11 @@ const ButtonComponent = ({
       {loading ? (
         <span
           className={cn({
+            "ease-bounce transition-[width] duration-300 starting:w-0":
+              !children,
             "w-3": size === "sm",
             "w-3.5": size === "md",
             "w-4": size === "base",
-            "ease-bounce transition-[width] duration-300 starting:w-0":
-              !children,
           })}
         >
           <Loader size={size === "sm" ? 12 : size === "md" ? 14 : 16} />

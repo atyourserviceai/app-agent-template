@@ -1,5 +1,5 @@
-import { Card } from "@/components/card/Card";
 import { Robot } from "@phosphor-icons/react";
+import { Card } from "@/components/card/Card";
 
 type EmptyChatProps = {
   message?: string;
