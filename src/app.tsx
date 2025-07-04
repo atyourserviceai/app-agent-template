@@ -145,6 +145,28 @@ function SuggestedActions({
 }
 
 function Chat() {
+  // Mobile viewport height fix
+  useEffect(() => {
+    // Only run on mobile
+    if (window.innerWidth <= 768) {
+      const setViewportHeight = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      };
+
+      setViewportHeight();
+      window.addEventListener("resize", setViewportHeight);
+      window.addEventListener("orientationchange", () => {
+        setTimeout(setViewportHeight, 100);
+      });
+
+      return () => {
+        window.removeEventListener("resize", setViewportHeight);
+        window.removeEventListener("orientationchange", setViewportHeight);
+      };
+    }
+  }, []);
+
   // Add global error handlers for better error handling
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -928,9 +950,15 @@ function Chat() {
   };
 
   return (
-    <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">
+    <div
+      className="w-full p-4 flex justify-center items-center overflow-hidden"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       {/* Main Container - Responsive layout with chat and playbook */}
-      <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0">
+      <div
+        className="w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0"
+        style={{ height: "calc(var(--vh, 1vh) * 100 - 2rem)" }}
+      >
         {/* Chat UI */}
         <ChatContainer
           theme={theme}
@@ -978,7 +1006,10 @@ function Chat() {
 // Main App component with authentication
 export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900">
+    <div
+      className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       <ErrorBoundary>
         <AuthProvider>
           <AuthGuard>
