@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider";
 
 interface AuthGuardProps {
@@ -36,6 +36,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
         "You were automatically signed out due to an invalid token. Please sign in again."
       );
       localStorage.removeItem("auth_invalid_token");
+    }
+
+    // Check for expired token flag
+    const expiredToken = localStorage.getItem("auth_expired_token");
+    if (expiredToken) {
+      setAuthError(
+        "Your session has expired. Please sign in again to continue using the application."
+      );
+      localStorage.removeItem("auth_expired_token");
     }
   }, []);
 

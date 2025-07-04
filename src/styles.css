@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* Basic reset */
+html,
+body {
+  height: 100vh;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Mobile-only: Use calculated viewport height */
+@media screen and (max-width: 768px) {
+  :root {
+    --vh: 1vh;
+  }
+
+  html,
+  body,
+  #root {
+    height: calc(var(--vh, 1vh) * 100) !important;
+    overflow: hidden !important;
+  }
+
+  /* Prevent auto-zoom on input focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Markdown Table Styling (Tailwind @apply) */
 .markdown-body table {
   @apply w-full border-collapse my-4 text-[0.95em];

@@ -1,6 +1,6 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTooltip } from "@/providers/TooltipProvider";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export type TooltipProps = {
   children: React.ReactNode;
@@ -56,6 +56,7 @@ export const Tooltip = ({ children, className, content, id }: TooltipProps) => {
   }, [isVisible]);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: it's fine, but todo fix
     <div
       aria-describedby={isVisible ? tooltipId : undefined}
       className={cn("relative inline-block", className)}
@@ -88,11 +89,11 @@ export const Tooltip = ({ children, className, content, id }: TooltipProps) => {
           className={cn(
             "bg-ob-base-1000 text-ob-inverted absolute w-max rounded-md px-2 py-1 text-sm shadow before:absolute before:top-0 before:left-0 before:size-full before:scale-[1.5] before:bg-transparent",
             {
-              "left-0 translate-x-0": positionX === "left",
-              "right-0 translate-x-0": positionX === "right",
-              "left-1/2 -translate-x-1/2": positionX === "center",
               "-bottom-7": positionY === "bottom",
               "-top-7": positionY === "top",
+              "left-0 translate-x-0": positionX === "left",
+              "left-1/2 -translate-x-1/2": positionX === "center",
+              "right-0 translate-x-0": positionX === "right",
             }
           )}
           id={tooltipId}

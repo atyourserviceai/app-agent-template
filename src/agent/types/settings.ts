@@ -2,7 +2,7 @@
  * Type definitions for agent settings.
  */
 
-import type { Operator, AdminContact } from "./company-config";
+import type { AdminContact, Operator } from "./company-config";
 
 /**
  * Settings configuration for the agent.

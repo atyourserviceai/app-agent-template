@@ -16,17 +16,17 @@ export interface ProcessingHistoryEntry {
 
 // Placeholder functions for history data access
 export async function addProcessingHistory(
-  agent: AppAgent,
+  _agent: AppAgent,
   entityId: string,
   action: string,
   result: string
 ): Promise<ProcessingHistoryEntry> {
   const entry: ProcessingHistoryEntry = {
-    id: crypto.randomUUID(), // Use crypto for ID generation
+    action, // Use crypto for ID generation
     entityId,
-    timestamp: new Date().toISOString(),
-    action,
+    id: crypto.randomUUID(),
     result,
+    timestamp: new Date().toISOString(),
   };
   console.log(`Placeholder: Adding processing history for entity ${entityId}`);
 
@@ -37,7 +37,7 @@ export async function addProcessingHistory(
 }
 
 export async function getEntityHistory(
-  agent: AppAgent,
+  _agent: AppAgent,
   entityId: string
 ): Promise<ProcessingHistoryEntry[]> {
   console.log(`Placeholder: Getting history for entity ${entityId}`);

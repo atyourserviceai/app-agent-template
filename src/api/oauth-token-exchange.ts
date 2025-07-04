@@ -18,8 +18,8 @@ interface TokenResponse {
 function getServerOAuthConfig(env: Env) {
   return {
     client_id: "app-agent-template",
-    token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-    client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET, // OAuth client secret from environment
+    client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET,
+    token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`, // OAuth client secret from environment
   };
 }
 
@@ -46,14 +46,14 @@ export async function handleTokenExchange(
 
     // Make the secure token exchange with the client secret
     const response = await fetch(config.token_url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        code,
         client_id: config.client_id,
         client_secret: config.client_secret,
+        code,
         grant_type: "authorization_code",
       }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
 
     if (!response.ok) {

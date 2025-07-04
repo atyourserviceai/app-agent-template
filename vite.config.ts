@@ -17,6 +17,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    sourcemap: true, // Enable source maps for better error debugging
+  },
   server: {
     port: 5273,
     strictPort: true,

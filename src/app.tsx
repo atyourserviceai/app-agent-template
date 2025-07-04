@@ -1,12 +1,7 @@
 import type { Message } from "@ai-sdk/react";
 import { useAgentChat } from "agents/ai-react";
-import { useEffect, useRef, useState } from "react";
-import type { ToolTypes } from "./agent/tools/types";
-import { useAgentState } from "./hooks/useAgentState";
-import { useAgentAuth } from "./hooks/useAgentAuth";
-import { useErrorHandling } from "./hooks/useErrorHandling";
-import { useMessageEditing } from "./hooks/useMessageEditing";
-
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
 // Component imports
 import { Card } from "@/components/card/Card";
@@ -20,11 +15,15 @@ import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndic
 import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
-import { ActionButtons } from "@/components/action-buttons/ActionButtons";
-// Auth components
-import { AuthProvider } from "./components/auth/AuthProvider";
+import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
+// Auth components
+import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
+import { useAgentAuth } from "./hooks/useAgentAuth";
+import { useAgentState } from "./hooks/useAgentState";
+import { useErrorHandling } from "./hooks/useErrorHandling";
+import { useMessageEditing } from "./hooks/useMessageEditing";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -42,7 +41,7 @@ const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
 function SuggestedActions({
   messages,
   addToolResult,
-  reload,
+  reload: _reload,
 }: {
   messages: Message[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
@@ -121,21 +120,21 @@ function SuggestedActions({
           // Complete the tool call only if it's still in call state
           if (toolInvocation.state === "call") {
             addToolResult({
-              toolCallId: toolInvocation.toolCallId,
               result: JSON.stringify({
-                success: true,
-                selectedAction: value,
-                message: "User selected an action",
                 actions,
+                message: "User selected an action",
+                selectedAction: value,
+                success: true,
               }),
+              toolCallId: toolInvocation.toolCallId,
             });
           }
 
           // Then dispatch the event for the app to handle
           const event = new CustomEvent("action-button-clicked", {
             detail: {
-              text: value,
               isOther: isOther,
+              text: value,
             },
           });
           window.dispatchEvent(event);
@@ -146,6 +145,28 @@ function SuggestedActions({
 }
 
 function Chat() {
+  // Mobile viewport height fix
+  useEffect(() => {
+    // Only run on mobile
+    if (window.innerWidth <= 768) {
+      const setViewportHeight = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      };
+
+      setViewportHeight();
+      window.addEventListener("resize", setViewportHeight);
+      window.addEventListener("orientationchange", () => {
+        setTimeout(setViewportHeight, 100);
+      });
+
+      return () => {
+        window.removeEventListener("resize", setViewportHeight);
+        window.removeEventListener("orientationchange", setViewportHeight);
+      };
+    }
+  }, []);
+
   // Add global error handlers for better error handling
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -192,6 +213,9 @@ function Chat() {
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
 
+  // Add auth context for token expiration checks
+  const auth = useAuth();
+
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
@@ -214,22 +238,9 @@ function Chat() {
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
 
-  // Use the agent configuration (only available when authenticated)
-  if (!agentConfig) {
-    // This should never happen inside AuthGuard, but just in case
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-black to-blue-900 dark:from-blue-900 dark:via-black dark:to-blue-900">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
-        </div>
-      </div>
-    );
-  }
-
-  // Use the agent state hook with authenticated config
+  // Use the agent state hook (must be called before any conditional returns)
   const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig!, // Non-null assertion: agentConfig is guaranteed to exist here due to AuthGuard
+    agentConfig || { agent: "", name: "" }, // Provide fallback to avoid null
     "onboarding"
   );
 
@@ -322,16 +333,16 @@ function Chat() {
           `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
         );
         currentMessages.push({
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          createdAt: new Date(),
           content: editedMessageText,
+          createdAt: new Date(),
+          id: crypto.randomUUID(),
           parts: [
             {
-              type: "text" as const,
               text: editedMessageText,
+              type: "text" as const,
             },
           ],
+          role: "user" as const,
         });
 
         // Reset original refs
@@ -360,16 +371,16 @@ function Chat() {
             `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
           );
           currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            createdAt: new Date(),
             content: editedMessageText,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
             parts: [
               {
-                type: "text" as const,
                 text: editedMessageText,
+                type: "text" as const,
               },
             ],
+            role: "user" as const,
           });
         }
 
@@ -388,32 +399,32 @@ function Chat() {
           );
           // Add the user message that caused the error
           currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            createdAt: new Date(),
             content: lastUserInput,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
             parts: [
               {
-                type: "text" as const,
                 text: lastUserInput,
+                type: "text" as const,
               },
             ],
+            role: "user" as const,
           });
         }
       }
 
       // Create a new error message with required format
       const newErrorMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        createdAt: new Date(),
         content: errorMessage,
+        createdAt: new Date(),
+        id: crypto.randomUUID(),
         parts: [
           {
-            type: "text" as const,
             text: errorMessage,
+            type: "text" as const,
           },
         ],
+        role: "assistant" as const,
       };
 
       console.log(
@@ -434,6 +445,22 @@ function Chat() {
   });
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
+  // Also detect API errors and throw proper auth errors for the Error Boundary to catch
+  const hasApiError =
+    agentMessagesRaw &&
+    typeof agentMessagesRaw === "object" &&
+    !Array.isArray(agentMessagesRaw) &&
+    "error" in agentMessagesRaw;
+
+  if (hasApiError) {
+    const errorMessage =
+      (agentMessagesRaw as any)?.error || "Unknown API error";
+    const authError = new Error(`Authentication failed: ${errorMessage}`);
+    (authError as any).isAuthError = true; // Mark as auth error
+    throw authError; // Throw immediately - prevents .map() from being called
+  }
+
+  // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
   // Use the message editing hook to manage message editing and retry logic
@@ -454,6 +481,38 @@ function Chat() {
     handleRetry,
     handleRetryLastUserMessage,
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
+  // Token expiration wrapper functions
+  const handleRetryWithTokenCheck = (index: number) => {
+    if (auth?.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    handleRetry(index);
+  };
+
+  const handleRetryLastUserMessageWithTokenCheck = () => {
+    if (auth?.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    handleRetryLastUserMessage();
+  };
+
+  // Update handleSubmitWithRetry to check token expiration
+  const handleSubmitWithRetry = (e: React.FormEvent) => {
+    if (auth?.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    setIsRetrying(false); // Clear retrying state when sending a new message
+    handleAgentSubmit(e);
+  };
+
+  // Add token expiration check to reload function wrapper
+  const reloadWithTokenCheck = useCallback(() => {
+    if (auth?.checkTokenExpiration()) {
+      return; // Token expired, user will be redirected to login
+    }
+    reload();
+  }, [auth, reload]);
 
   // Handle custom event for setting chat input from PlaybookPanel
   useEffect(() => {
@@ -510,6 +569,11 @@ function Chat() {
 
         // For non-Other options, directly add a user message with the selected text
         if (selectedText) {
+          // Check token expiration before proceeding
+          if (auth?.checkTokenExpiration()) {
+            return; // Token expired, user will be redirected to login
+          }
+
           // Set the input value first (needed for compatibility with input validation)
           setInput(selectedText);
 
@@ -517,16 +581,16 @@ function Chat() {
           setTimeout(() => {
             // Create a new user message
             const newMessage = {
-              id: crypto.randomUUID(),
-              role: "user" as const,
-              createdAt: new Date(),
               content: selectedText,
+              createdAt: new Date(),
+              id: crypto.randomUUID(),
               parts: [
                 {
-                  type: "text" as const,
                   text: selectedText,
+                  type: "text" as const,
                 },
               ],
+              role: "user" as const,
             };
 
             // Add the message to the chat
@@ -535,9 +599,9 @@ function Chat() {
             // Clear the input field
             setInput("");
 
-            // Trigger the agent to respond
+            // Trigger the agent to respond with token check
             setTimeout(() => {
-              reload();
+              reloadWithTokenCheck();
             }, 50);
           }, 10);
         }
@@ -557,7 +621,7 @@ function Chat() {
         handleActionButtonClick as EventListener
       );
     };
-  }, [setMessages, agentMessages, setInput, reload]);
+  }, [setMessages, agentMessages, setInput, auth, reloadWithTokenCheck]);
 
   // Reset textarea height when input is empty
   useEffect(() => {
@@ -565,6 +629,68 @@ function Chat() {
       textareaRef.current.style.height = "auto";
     }
   }, [agentInput]);
+
+  // Handle empty chat state with a loading indicator
+  useEffect(() => {
+    // If we have no messages but the agent is connected, show a loading indicator
+    // This helps with the initial loading experience for new chatrooms
+    if (
+      agent &&
+      Array.isArray(agentMessages) &&
+      agentMessages.length === 0 &&
+      !isLoading
+    ) {
+      setTemporaryLoading(true);
+
+      // Set a timeout to clear the loading state if no messages arrive
+      const timeout = setTimeout(() => {
+        setTemporaryLoading(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [agent, agentMessages, isLoading]);
+
+  // Single simplified auto-response for system messages (welcome or transition)
+  useEffect(() => {
+    if (
+      Array.isArray(agentMessages) &&
+      agentMessages.length > 0 &&
+      !isLoading &&
+      !temporaryLoading
+    ) {
+      const lastMessage = agentMessages[agentMessages.length - 1];
+
+      // Check if last message is a system message with isModeMessage data
+      if (lastMessage.role === "system") {
+        const messageData = lastMessage.data;
+        const isModeMessage =
+          messageData &&
+          typeof messageData === "object" &&
+          "isModeMessage" in messageData;
+
+        if (isModeMessage) {
+          console.log(
+            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
+          );
+          // Trigger AI response just like a user sent a message
+          reloadWithTokenCheck();
+        }
+      }
+    }
+  }, [agentMessages, isLoading, temporaryLoading, reloadWithTokenCheck]);
+
+  // Early return for missing agent config (after all hooks are called)
+  if (!agentConfig) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-black to-blue-900 dark:from-blue-900 dark:via-black dark:to-blue-900">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
     m.parts?.some(
@@ -604,7 +730,7 @@ function Chat() {
           <div key={message.id}>
             <ErrorMessage
               errorData={errorData}
-              onRetry={() => handleRetry(index)}
+              onRetry={() => handleRetryWithTokenCheck(index)}
               isLoading={isLoading}
               formatTime={formatTime}
               createdAt={message.createdAt}
@@ -714,7 +840,7 @@ function Chat() {
         messageElements.push(
           <div key="missing-response">
             <MissingResponseIndicator
-              onTryAgain={handleRetryLastUserMessage}
+              onTryAgain={handleRetryLastUserMessageWithTokenCheck}
               isLoading={isLoading}
               formatTime={formatTime}
             />
@@ -788,7 +914,7 @@ function Chat() {
         key="suggested-actions"
         messages={agentMessages}
         addToolResult={addToolResult}
-        reload={reload}
+        reload={reloadWithTokenCheck}
       />
     );
 
@@ -823,66 +949,16 @@ function Chat() {
     }
   };
 
-  // Update handleSubmitWithRetry to properly handle options
-  const handleSubmitWithRetry = (e: React.FormEvent) => {
-    setIsRetrying(false); // Clear retrying state when sending a new message
-    handleAgentSubmit(e);
-  };
-
-  // Handle empty chat state with a loading indicator
-  useEffect(() => {
-    // If we have no messages but the agent is connected, show a loading indicator
-    // This helps with the initial loading experience for new chatrooms
-    if (
-      agent &&
-      Array.isArray(agentMessages) &&
-      agentMessages.length === 0 &&
-      !isLoading
-    ) {
-      setTemporaryLoading(true);
-
-      // Set a timeout to clear the loading state if no messages arrive
-      const timeout = setTimeout(() => {
-        setTemporaryLoading(false);
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [agent, agentMessages, isLoading]);
-
-  // Single simplified auto-response for system messages (welcome or transition)
-  useEffect(() => {
-    if (
-      Array.isArray(agentMessages) &&
-      agentMessages.length > 0 &&
-      !isLoading &&
-      !temporaryLoading
-    ) {
-      const lastMessage = agentMessages[agentMessages.length - 1];
-
-      // Check if last message is a system message with isModeMessage data
-      if (lastMessage.role === "system") {
-        const messageData = lastMessage.data;
-        const isModeMessage =
-          messageData &&
-          typeof messageData === "object" &&
-          "isModeMessage" in messageData;
-
-        if (isModeMessage) {
-          console.log(
-            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
-          );
-          // Trigger AI response just like a user sent a message
-          reload();
-        }
-      }
-    }
-  }, [agentMessages, isLoading, temporaryLoading, reload]);
-
   return (
-    <div className="h-[100vh] w-full p-4 flex justify-center items-center overflow-hidden">
+    <div
+      className="w-full p-4 flex justify-center items-center overflow-hidden"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       {/* Main Container - Responsive layout with chat and playbook */}
-      <div className="h-[calc(100vh-2rem)] w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0">
+      <div
+        className="w-full mx-auto max-w-7xl flex flex-col md:flex-row md:space-x-4 pb-14 md:pb-0"
+        style={{ height: "calc(var(--vh, 1vh) * 100 - 2rem)" }}
+      >
         {/* Chat UI */}
         <ChatContainer
           theme={theme}
@@ -930,7 +1006,10 @@ function Chat() {
 // Main App component with authentication
 export default function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900">
+    <div
+      className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       <ErrorBoundary>
         <AuthProvider>
           <AuthGuard>

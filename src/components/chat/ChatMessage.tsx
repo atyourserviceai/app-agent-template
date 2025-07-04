@@ -1,9 +1,9 @@
+import type { Message } from "@ai-sdk/react";
 import { Avatar } from "@/components/avatar/Avatar";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
 import { CopyButton } from "@/components/chat/CopyButton";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
-import type { Message } from "@ai-sdk/react";
 
 // Custom type for mode message data
 interface ModeMessageData {
@@ -59,15 +59,15 @@ export function ChatMessage({
   if (isModeMessage) {
     // Different styling based on the type of mode message
     const bgColors = {
-      welcome:
-        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90",
       transition:
         "from-amber-50/90 to-amber-100/90 dark:from-amber-950/90 dark:to-amber-900/90",
+      welcome:
+        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90",
     };
 
     const borderColors = {
-      welcome: "border-blue-300 dark:border-blue-700",
       transition: "border-amber-300 dark:border-amber-700",
+      welcome: "border-blue-300 dark:border-blue-700",
     };
 
     return (

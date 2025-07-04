@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export type OptionProps = {
   value: string;
@@ -35,10 +35,10 @@ export const Select = ({
       className={cn(
         "btn btn-secondary interactive relative appearance-none truncate bg-no-repeat focus:outline-none",
         {
-          "add-size-sm !pr-6.5": size === "sm",
-          "add-size-md !pr-8": size === "md",
-          "add-size-base !pr-9": size === "base",
           "add-focus": isPointer === false,
+          "add-size-base !pr-9": size === "base",
+          "add-size-md !pr-8": size === "md",
+          "add-size-sm !pr-6.5": size === "sm",
         },
         className
       )}

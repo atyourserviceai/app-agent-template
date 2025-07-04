@@ -3,9 +3,9 @@
  */
 
 import type {
-  ExistingTool,
-  DesiredAutomation,
   AgentAction,
+  DesiredAutomation,
+  ExistingTool,
   ResearchMethod,
 } from "./company-config";
 

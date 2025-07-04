@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useState, useRef } from "react";
-import type { AgentMode, AppAgentState } from "../agent/AppAgent";
 import { useAgent } from "agents/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { AgentMode, AppAgentState } from "../agent/AppAgent";
 
 export function useAgentState(
   externalConfig: {
@@ -37,7 +37,6 @@ export function useAgentState(
   const agent = useAgent({
     agent: agentConfig.agent,
     name: agentConfig.name,
-    query: agentConfig.query, // Include query params for authentication
     onStateUpdate: (newState: AppAgentState) => {
       console.log("[UI] Agent state updated:", newState);
 
@@ -51,7 +50,8 @@ export function useAgentState(
       }
 
       setAgentState(newState);
-    },
+    }, // Include query params for authentication
+    query: agentConfig.query,
   });
 
   // Initialize agentMode from agent state when it changes
@@ -120,15 +120,15 @@ export function useAgentState(
         console.log(`[UI] Full absolute URL: ${fullUrl.toString()}`);
 
         const response = await fetch(setModeUrl, {
-          method: "POST",
+          body: JSON.stringify({
+            force,
+            isAfterClearHistory,
+            mode: newMode,
+          }),
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            mode: newMode,
-            force,
-            isAfterClearHistory,
-          }),
+          method: "POST",
         });
 
         console.log(
@@ -153,7 +153,7 @@ export function useAgentState(
             );
             setAgentMode(newMode);
           }
-        } catch (e) {
+        } catch (_e) {
           console.log("[UI] Unable to parse response as JSON");
         }
 
@@ -175,9 +175,9 @@ export function useAgentState(
 
   return {
     agent,
-    agentState,
-    agentMode,
     agentConfig,
+    agentMode,
+    agentState,
     changeAgentConfig,
     changeAgentMode,
     navigateToRoom,

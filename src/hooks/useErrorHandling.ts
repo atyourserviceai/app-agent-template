@@ -27,8 +27,8 @@ export function useErrorHandling() {
 
       if (!errorPart)
         return {
-          message: "Unknown error",
           details: "",
+          message: "Unknown error",
           timestamp: new Date().toISOString(),
         };
 
@@ -36,10 +36,10 @@ export function useErrorHandling() {
       const textPart = errorPart as { type: "text"; text: string };
       const errorJson = textPart.text.substring(9); // Remove __ERROR__ prefix
       return JSON.parse(errorJson);
-    } catch (e) {
+    } catch (_e) {
       return {
-        message: "Error parsing error message",
         details: "",
+        message: "Error parsing error message",
         timestamp: new Date().toISOString(),
       };
     }
@@ -51,8 +51,8 @@ export function useErrorHandling() {
   ): string => {
     const errorDetails = formatErrorMessage(error);
     const errorData: ErrorData = {
-      message: "The AI was unable to respond",
       details: errorDetails,
+      message: "The AI was unable to respond",
       timestamp: new Date().toISOString(),
     };
 
@@ -94,15 +94,15 @@ export function useErrorHandling() {
     // For complex objects, stringify with pretty-printing
     try {
       return JSON.stringify(error, null, 2);
-    } catch (e) {
+    } catch (_e) {
       return String(error);
     }
   };
 
   return {
-    isErrorMessage,
-    parseErrorData,
     formatErrorForMessage,
     formatErrorMessage,
+    isErrorMessage,
+    parseErrorData,
   };
 }

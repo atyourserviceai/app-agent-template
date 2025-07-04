@@ -1,36 +1,34 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import type { Message } from "@ai-sdk/ui-utils";
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { Schedule } from "agents";
-import type { AgentContext } from "agents";
-import type { Connection } from "agents";
+import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
-  type StreamTextOnFinishCallback,
-  type ToolSet,
   createDataStreamResponse,
   generateId,
+  type StreamTextOnFinishCallback,
   streamText,
+  type ToolSet,
 } from "ai";
-import type { Message } from "@ai-sdk/ui-utils";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
-import { processToolCalls } from "./utils/tool-utils";
-import {
-  exportAgentData,
-  importAgentData,
-  type ImportRequest,
-  type DatabaseExportResult,
-} from "./utils/export-import-utils";
 import type {
-  Operator,
   AdminContact,
+  Operator,
+  TestReport,
   TestResult,
   ToolDocumentation,
-  TestReport,
   TransitionRecommendation,
   TypedRecord,
 } from "./types/generic";
+import {
+  type DatabaseExportResult,
+  exportAgentData,
+  type ImportRequest,
+  importAgentData,
+} from "./utils/export-import-utils";
+import { processToolCalls } from "./utils/tool-utils";
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
@@ -143,21 +141,21 @@ export interface AppAgentState {
 export class AppAgent extends AIChatAgent<Env> {
   // Define initial agent state including the current mode
   initialState: AppAgentState = {
+    isIntegrationComplete: false,
+    isOnboardingComplete: false,
     mode: "onboarding" as AgentMode,
+    onboardingStep: "start",
     settings: {
+      adminContact: {
+        email: "",
+        name: "",
+      },
       language: "en",
       operators: [],
-      adminContact: {
-        name: "",
-        email: "",
-      },
     },
-    onboardingStep: "start",
-    isOnboardingComplete: false,
     // Integration state
     testResults: {},
     toolDocumentation: {},
-    isIntegrationComplete: false,
   };
 
   // Ensure the current state matches the latest schema, merging in any missing fields
@@ -188,7 +186,7 @@ export class AppAgent extends AIChatAgent<Env> {
         state.settings.operators = this.initialState.settings?.operators || [];
       if (!state.settings.adminContact)
         state.settings.adminContact = this.initialState.settings
-          ?.adminContact || { name: "", email: "" };
+          ?.adminContact || { email: "", name: "" };
     }
 
     return state;
@@ -202,26 +200,34 @@ export class AppAgent extends AIChatAgent<Env> {
     this.setState(updatedState);
 
     // Initialize database tables and load user info
-    this.initialize().catch((error) => {
-      console.error("Failed to initialize database:", error);
-    });
-
-    // Load user info from database on startup
-    this.loadUserInfo().catch((error) => {
-      console.error("Failed to load user info:", error);
-    });
+    this.initialize()
+      .then(() => {
+        // Only load user info after database is initialized
+        return this.loadUserInfo();
+      })
+      .catch((error) => {
+        console.error(
+          "Failed to initialize database or load user info:",
+          error
+        );
+      });
   }
 
   /**
    * Get AI provider using user-specific API key if available
+   * Includes retry logic for token refresh on 403 errors
    */
   getAIProvider() {
     const state = this.state as AppAgentState;
     const userApiKey = state.userInfo?.api_key;
 
     if (userApiKey) {
+      const redactedApiKey = `${userApiKey.substring(0, 20)}...${userApiKey.substring(-8)}`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
+      );
+      console.log(
+        `[AppAgent] API key being used for AI requests: ${redactedApiKey}`
       );
       return getOpenAI(this.env, userApiKey);
     }
@@ -229,6 +235,49 @@ export class AppAgent extends AIChatAgent<Env> {
       "No user API key available. User must be authenticated to use AI features.";
     console.error(`[AppAgent] ${errorMsg}`);
     throw new Error(errorMsg);
+  }
+
+  /**
+   * Refresh token from OAuth provider when 403 errors occur
+   * This handles the case where the database token is stale
+   */
+  async refreshTokenOnError() {
+    try {
+      const state = this.state as AppAgentState;
+      const currentApiKey = state.userInfo?.api_key;
+
+      if (!currentApiKey) {
+        console.log("[AppAgent] No current API key to refresh");
+        return false;
+      }
+
+      console.log(
+        "[AppAgent] Attempting to refresh user info due to API error"
+      );
+
+      // Try to fetch fresh user info with current token
+      // This will detect if the token is invalid and handle accordingly
+      await this.fetchUserInfoFromOAuth(currentApiKey);
+
+      // Check if token was actually updated
+      const newState = this.state as AppAgentState;
+      const newApiKey = newState.userInfo?.api_key;
+
+      if (newApiKey && newApiKey !== currentApiKey) {
+        const redactedOld = `${currentApiKey.substring(0, 20)}...${currentApiKey.substring(-8)}`;
+        const redactedNew = `${newApiKey.substring(0, 20)}...${newApiKey.substring(-8)}`;
+        console.log(
+          `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
+        );
+        return true;
+      } else {
+        console.log("[AppAgent] Token refresh did not result in new token");
+        return false;
+      }
+    } catch (error) {
+      console.error("[AppAgent] Error during token refresh:", error);
+      return false;
+    }
   }
 
   /**
@@ -250,29 +299,28 @@ export class AppAgent extends AIChatAgent<Env> {
 
     // Base tools available in all modes
     const baseTools = {
-      // Context tools
-      getWeatherInformation: tools.getWeatherInformation,
-      getLocalTime: tools.getLocalTime,
-
       // Browser tools
       browseWebPage: tools.browseWebPage,
       browseWithBrowserbase: tools.browseWithBrowserbase,
-      fetchWebPage: tools.fetchWebPage,
-
-      // Scheduling tools
-      scheduleTask: tools.scheduleTask,
-      getScheduledTasks: tools.getScheduledTasks,
       cancelScheduledTask: tools.cancelScheduledTask,
+      fetchWebPage: tools.fetchWebPage,
 
       // State tools
       getAgentState: tools.getAgentState,
+      getLocalTime: tools.getLocalTime,
+      getScheduledTasks: tools.getScheduledTasks,
+      // Context tools
+      getWeatherInformation: tools.getWeatherInformation,
+
+      // Search tools
+      runResearch: tools.runResearch,
+
+      // Scheduling tools
+      scheduleTask: tools.scheduleTask,
       setMode: tools.setMode,
 
       // Messaging tools
       suggestActions: tools.suggestActions,
-
-      // Search tools
-      runResearch: tools.runResearch,
     };
 
     // Mode-specific tools
@@ -281,20 +329,20 @@ export class AppAgent extends AIChatAgent<Env> {
         // Onboarding mode - enable configuration tools
         return {
           ...baseTools,
-          saveSettings: tools.saveSettings,
-          completeOnboarding: tools.completeOnboarding,
           checkExistingConfig: tools.checkExistingConfig,
+          completeOnboarding: tools.completeOnboarding,
           getOnboardingStatus: tools.getOnboardingStatus,
+          saveSettings: tools.saveSettings,
         } as ToolSet;
 
       case "integration":
         // Integration mode - enable testing and documentation tools
         return {
           ...baseTools,
-          recordTestResult: tools.recordTestResult,
+          completeIntegrationTesting: tools.completeIntegrationTesting,
           documentTool: tools.documentTool,
           generateTestReport: tools.generateTestReport,
-          completeIntegrationTesting: tools.completeIntegrationTesting,
+          recordTestResult: tools.recordTestResult,
           testErrorTool: tools.testErrorTool,
         } as ToolSet;
 
@@ -320,7 +368,7 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
-    options?: { abortSignal?: AbortSignal }
+    _options?: { abortSignal?: AbortSignal }
   ) {
     // const mcpConnection = await this.mcp.connect(
     //   "https://path-to-mcp-server/sse"
@@ -348,49 +396,86 @@ export class AppAgent extends AIChatAgent<Env> {
         // Process any pending tool calls from previous messages
         // This handles human-in-the-loop confirmations for tools
         const processedMessages = await processToolCalls({
-          messages: this.messages,
           dataStream,
-          tools: allTools,
           executions,
+          messages: this.messages,
+          tools: allTools,
         });
 
         // Filter out empty messages for AI provider compatibility
         const filteredMessages = filterEmptyMessages(processedMessages);
 
-        const openai = this.getAIProvider();
-        const model = openai("gpt-4.1-2025-04-14");
-        /*
-        const anthropic = getAnthropic(this.env);
-        const model = anthropic("claude-3-5-sonnet-20241022");
-        const gemini = getGemini(this.env);
-        const model = gemini("gemini-2.0-flash");
-        */
-
         // Get system prompt based on current mode
         const systemPrompt = this.getSystemPrompt();
 
-        // Stream the AI response
-        const result = streamText({
-          model,
-          system: systemPrompt,
-          messages: filteredMessages,
-          tools: allTools,
-          onFinish: async (args) => {
-            // Log a message indicating the completion of the request
-            console.log(
-              `[AppAgent] Completed processing message in ${currentMode} mode`
-            );
+        // Retry logic for handling token refresh on 403 errors
+        let retryCount = 0;
+        const maxRetries = 1;
+        let result: any;
 
-            // Pass args directly to onFinish callback
-            onFinish(
-              args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
-            );
-          },
-          onError: (error) => {
-            console.error("Error while streaming:", error);
-          },
-          maxSteps: 10,
-        });
+        while (retryCount <= maxRetries) {
+          try {
+            const openai = this.getAIProvider();
+            const model = openai("gpt-4.1-2025-04-14");
+
+            // Stream the AI response
+            result = streamText({
+              maxSteps: 10,
+              messages: filteredMessages,
+              model,
+              onError: async (error: any) => {
+                console.error("Error while streaming:", error);
+                if (error?.status === 403 && retryCount < maxRetries) {
+                  console.log(
+                    "[AppAgent] Got 403 error, attempting token refresh"
+                  );
+                  const refreshed = await this.refreshTokenOnError();
+                  if (refreshed) {
+                    console.log(
+                      "[AppAgent] Token refreshed, will retry request"
+                    );
+                    return; // This will cause the outer loop to retry
+                  }
+                }
+                throw error;
+              },
+              onFinish: async (args) => {
+                // Log a message indicating the completion of the request
+                console.log(
+                  `[AppAgent] Completed processing message in ${currentMode} mode`
+                );
+
+                // Pass args directly to onFinish callback
+                onFinish(
+                  args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+                );
+              },
+              system: systemPrompt,
+              tools: allTools,
+            });
+            break; // Success, exit retry loop
+          } catch (error: any) {
+            console.error("[AppAgent] Error in onChatMessage:", error);
+
+            // Handle 403 errors with token refresh retry
+            if (error?.status === 403 && retryCount < maxRetries) {
+              console.log(
+                "[AppAgent] Got 403 error in catch block, attempting token refresh"
+              );
+              const refreshed = await this.refreshTokenOnError();
+              if (refreshed) {
+                retryCount++;
+                console.log(
+                  `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
+                );
+                continue; // Retry the request
+              }
+            }
+
+            // If not a 403 error or retry failed, throw error
+            throw error;
+          }
+        }
 
         // Merge the AI response stream with tool execution outputs
         result.mergeIntoDataStream(dataStream);
@@ -404,14 +489,14 @@ export class AppAgent extends AIChatAgent<Env> {
   /**
    * Execute a scheduled task
    */
-  async executeTask(description: string, task: Schedule<string>) {
+  async executeTask(description: string, _task: Schedule<string>) {
     await this.saveMessages([
       ...this.messages,
       {
-        id: generateId(),
-        role: "user",
         content: `Running scheduled task: ${description}`,
         createdAt: new Date(),
+        id: generateId(),
+        role: "user",
       },
     ]);
   }
@@ -491,8 +576,8 @@ export class AppAgent extends AIChatAgent<Env> {
     const url = new URL(request.url);
 
     console.log("Incoming agent request", {
-      url: url.toString(),
       pathname: url.pathname,
+      url: url.toString(),
     });
 
     // Extract OAuth token from request and ensure user info is loaded
@@ -542,11 +627,11 @@ export class AppAgent extends AIChatAgent<Env> {
         const updatedState: AppAgentState = {
           ...currentState,
           userInfo: {
-            id: userInfo.user_id,
-            email: userInfo.email,
-            credits: userInfo.credits,
-            payment_method: userInfo.payment_method,
             api_key: userInfo.api_key,
+            credits: userInfo.credits,
+            email: userInfo.email,
+            id: userInfo.user_id,
+            payment_method: userInfo.payment_method,
           },
         };
 
@@ -559,6 +644,33 @@ export class AppAgent extends AIChatAgent<Env> {
       } catch (error) {
         console.error("[AppAgent] Error storing user info:", error);
         return new Response("Error storing user info", { status: 500 });
+      }
+    }
+
+    // Handle user info clearing request (for logout)
+    if (
+      url.pathname.endsWith("/clear-user-info") &&
+      request.method === "POST"
+    ) {
+      try {
+        console.log("[AppAgent] Clearing cached user info");
+
+        // Clear user info from database
+        await this.sql`DELETE FROM user_info`;
+
+        // Clear user info from agent state
+        const updatedState: AppAgentState = {
+          ...currentState,
+          userInfo: undefined,
+        };
+
+        this.setState(updatedState);
+
+        console.log("[AppAgent] Successfully cleared cached user info");
+        return new Response("OK");
+      } catch (error) {
+        console.error("[AppAgent] Error clearing user info:", error);
+        return new Response("Error clearing user info", { status: 500 });
       }
     }
 
@@ -575,8 +687,8 @@ export class AppAgent extends AIChatAgent<Env> {
           );
           return Response.json(
             {
-              success: false,
               error: "Method not allowed, use POST",
+              success: false,
             },
             { status: 405 }
           );
@@ -602,8 +714,8 @@ export class AppAgent extends AIChatAgent<Env> {
         ) {
           return Response.json(
             {
-              success: false,
               error: "Invalid mode specified",
+              success: false,
             },
             { status: 400 }
           );
@@ -620,23 +732,40 @@ export class AppAgent extends AIChatAgent<Env> {
         console.error("[AppAgent] Error processing mode change:", error);
         return Response.json(
           {
-            success: false,
             error: error instanceof Error ? error.message : String(error),
+            success: false,
           },
           { status: 500 }
         );
       }
     }
 
-    // For API endpoints requesting messages
+    // For API endpoints requesting messages - ALWAYS return an array to prevent .map() errors
     if (url.pathname.endsWith("/get-messages")) {
       console.log("[AppAgent] Handling /get-messages request");
-      const messageCount = Array.isArray(this.messages)
-        ? this.messages.length
-        : 0;
-      console.log(
-        `[AppAgent] /get-messages returning ${messageCount} messages`
-      );
+
+      try {
+        // Try to get messages normally
+        const messages = (
+          this.sql`select * from cf_ai_chat_agent_messages` || []
+        ).map((row) => {
+          return JSON.parse(row.message as string);
+        });
+
+        const messageCount = Array.isArray(messages) ? messages.length : 0;
+        console.log(
+          `[AppAgent] /get-messages returning ${messageCount} messages`
+        );
+
+        return Response.json(messages);
+      } catch (error) {
+        // If there's any error (auth, db, etc.), return empty array instead of error object
+        console.error(
+          "[AppAgent] Error in /get-messages, returning empty array:",
+          error
+        );
+        return Response.json([]);
+      }
     }
 
     // Export endpoint to export the entire Agent data
@@ -649,8 +778,8 @@ export class AppAgent extends AIChatAgent<Env> {
       // Return the full database export as pretty-formatted JSON
       return new Response(JSON.stringify(exportResult, null, 2), {
         headers: {
-          "Content-Type": "application/json",
           "Content-Disposition": `attachment; filename="agent-export-${Date.now()}.json"`,
+          "Content-Type": "application/json",
         },
       });
     }
@@ -661,8 +790,8 @@ export class AppAgent extends AIChatAgent<Env> {
       if (request.method !== "POST") {
         return Response.json(
           {
-            success: false,
             error: "Method not allowed, use POST",
+            success: false,
           },
           { status: 405 }
         );
@@ -684,9 +813,9 @@ export class AppAgent extends AIChatAgent<Env> {
         if (!file || !(file instanceof File)) {
           return Response.json(
             {
-              success: false,
               error:
                 "No file provided in the request. Please upload a backup file.",
+              success: false,
             },
             { status: 400 }
           );
@@ -698,12 +827,12 @@ export class AppAgent extends AIChatAgent<Env> {
 
         try {
           importData = JSON.parse(fileContent) as DatabaseExportResult;
-        } catch (parseError) {
+        } catch (_parseError) {
           return Response.json(
             {
-              success: false,
               error:
                 "Invalid JSON file format. Could not parse the backup file.",
+              success: false,
             },
             { status: 400 }
           );
@@ -713,9 +842,9 @@ export class AppAgent extends AIChatAgent<Env> {
         if (!importData.metadata || !importData.tables) {
           return Response.json(
             {
-              success: false,
               error:
                 "Invalid backup file structure. Missing metadata or tables.",
+              success: false,
             },
             { status: 400 }
           );
@@ -728,12 +857,12 @@ export class AppAgent extends AIChatAgent<Env> {
           formData.get("includeScheduledTasks") !== "false"; // Default to true
 
         importRequest = {
+          data: importData,
           options: {
-            preserveAgentId,
             includeMessages,
             includeScheduledTasks,
+            preserveAgentId,
           },
-          data: importData,
         };
       } else {
         console.log("[AppAgent] Processing JSON payload import");
@@ -760,17 +889,17 @@ export class AppAgent extends AIChatAgent<Env> {
         if (!body.data || !body.data.metadata || !body.data.tables) {
           return Response.json(
             {
-              success: false,
               error:
                 "Invalid import data format. Expected {options, data} structure.",
+              success: false,
             },
             { status: 400 }
           );
         }
 
         importRequest = {
-          options: body.options || {},
           data: body.data as unknown as DatabaseExportResult,
+          options: body.options || {},
         };
       }
 
@@ -793,11 +922,11 @@ export class AppAgent extends AIChatAgent<Env> {
       messageCount > 0 ? this.messages?.[messageCount - 1]?.id : "none";
 
     console.log("[AppAgent] State updated:", {
+      lastMessageId,
+      messageCount,
       mode: state?.mode,
       source: typeof source === "string" ? source : "client",
       timestamp: new Date().toISOString(),
-      messageCount,
-      lastMessageId,
     });
   }
 
@@ -807,12 +936,26 @@ export class AppAgent extends AIChatAgent<Env> {
   async onConnect(connection: Connection) {
     console.log(`[AppAgent] New client connection: ${connection.id}`);
 
+    console.log(`[AppAgent] Connection established`, {
+      connectionId: connection.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    // SOLUTION: Load user info from database and rely on retry logic for token refresh
+    try {
+      console.log(`[AppAgent] Loading user info from database...`);
+      await this.loadUserInfo();
+      console.log(`[AppAgent] ✅ User info loaded from database`);
+    } catch (error) {
+      console.error("[AppAgent] Error loading user info:", error);
+    }
+
     // Send a connection-ready event to signal that setup is complete
     // The client can listen for this to know when to check for messages
     connection.send(
       JSON.stringify({
-        type: "connection-ready",
         timestamp: new Date().toISOString(),
+        type: "connection-ready",
       })
     );
   }
@@ -824,7 +967,7 @@ export class AppAgent extends AIChatAgent<Env> {
    * @param force If true, will override validation checks
    * @param isAfterClearHistory If true, indicates this is after clearing history
    */
-  async setMode(mode: AgentMode, force = false, isAfterClearHistory = false) {
+  async setMode(mode: AgentMode, force = false, _isAfterClearHistory = false) {
     const currentState = this.state as AppAgentState;
     const previousMode = currentState.mode;
 
@@ -835,17 +978,17 @@ export class AppAgent extends AIChatAgent<Env> {
       // Simple state update, no message manipulation
       await this.setState({
         ...currentState,
-        mode,
         _lastModeChange: new Date().toISOString(),
+        mode,
       });
 
       console.log(`[AppAgent] Mode changed to ${mode}`);
     }
 
     return {
-      success: true,
-      previousMode,
       currentMode: mode,
+      previousMode,
+      success: true,
     };
   }
 
@@ -886,9 +1029,9 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   getTableDescription(tableName: string): string {
     const descriptions: Record<string, string> = {
+      interaction_history: "Stores history of interactions",
       settings: "Stores agent settings and configuration",
       tasks: "Stores task data",
-      interaction_history: "Stores history of interactions",
     };
     return descriptions[tableName] || "Unknown table";
   }
@@ -908,11 +1051,11 @@ export class AppAgent extends AIChatAgent<Env> {
       );
 
       const response = await fetch(verifyEndpoint, {
-        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        method: "POST",
       });
 
       if (!response.ok) {
@@ -954,10 +1097,10 @@ export class AppAgent extends AIChatAgent<Env> {
       const updatedState: AppAgentState = {
         ...state,
         userInfo: {
-          id: userInfo.id,
           api_key: token,
-          email: userInfo.email,
           credits: userInfo.credits,
+          email: userInfo.email,
+          id: userInfo.id,
           payment_method: userInfo.payment_method,
         },
       };
@@ -1002,10 +1145,10 @@ export class AppAgent extends AIChatAgent<Env> {
         const updatedState: AppAgentState = {
           ...state,
           userInfo: {
-            id: userInfo.user_id,
             api_key: userInfo.api_key,
-            email: userInfo.email,
             credits: userInfo.credits,
+            email: userInfo.email,
+            id: userInfo.user_id,
             payment_method: userInfo.payment_method,
           },
         };

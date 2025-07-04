@@ -1,8 +1,7 @@
 /**
  * Utility functions for exporting and importing Agent data
  */
-import type { AppAgent } from "../AppAgent";
-import type { AppAgentState } from "../AppAgent";
+import type { AppAgent, AppAgentState } from "../AppAgent";
 
 /**
  * Database schema column definition
@@ -135,8 +134,8 @@ export async function exportAgentData(
   // Prepare the result object
   const result: DatabaseExportResult = {
     metadata: {
-      exportedAt: new Date().toISOString(),
       agentId,
+      exportedAt: new Date().toISOString(),
       state: agent.state,
     },
     tables: {},
@@ -146,40 +145,40 @@ export async function exportAgentData(
   const tableQueries = [
     // Core system tables
     {
+      dataQuery: agent.sql`SELECT * FROM cf_agents_state`,
       name: "cf_agents_state",
       schemaQuery: agent.sql`PRAGMA table_info(cf_agents_state)`,
-      dataQuery: agent.sql`SELECT * FROM cf_agents_state`,
     },
     {
+      dataQuery: agent.sql`SELECT * FROM cf_ai_chat_agent_messages`,
       name: "cf_ai_chat_agent_messages",
       schemaQuery: agent.sql`PRAGMA table_info(cf_ai_chat_agent_messages)`,
-      dataQuery: agent.sql`SELECT * FROM cf_ai_chat_agent_messages`,
     },
     {
+      dataQuery: agent.sql`SELECT * FROM cf_agents_schedules`,
       name: "cf_agents_schedules",
       schemaQuery: agent.sql`PRAGMA table_info(cf_agents_schedules)`,
-      dataQuery: agent.sql`SELECT * FROM cf_agents_schedules`,
     },
     // Custom tables
     {
+      dataQuery: agent.sql`SELECT * FROM settings`,
       name: "settings",
       schemaQuery: agent.sql`PRAGMA table_info(settings)`,
-      dataQuery: agent.sql`SELECT * FROM settings`,
     },
     {
+      dataQuery: agent.sql`SELECT * FROM user_info`,
       name: "user_info",
       schemaQuery: agent.sql`PRAGMA table_info(user_info)`,
-      dataQuery: agent.sql`SELECT * FROM user_info`,
     },
     {
+      dataQuery: agent.sql`SELECT * FROM tasks`,
       name: "tasks",
       schemaQuery: agent.sql`PRAGMA table_info(tasks)`,
-      dataQuery: agent.sql`SELECT * FROM tasks`,
     },
     {
+      dataQuery: agent.sql`SELECT * FROM interaction_history`,
       name: "interaction_history",
       schemaQuery: agent.sql`PRAGMA table_info(interaction_history)`,
-      dataQuery: agent.sql`SELECT * FROM interaction_history`,
     },
   ];
 
@@ -193,20 +192,20 @@ export async function exportAgentData(
       // Convert schema to SchemaColumn type
       const schemaColumns: SchemaColumn[] = Array.isArray(schema)
         ? schema.map((col) => ({
-            name: String(col.name || ""),
-            type: String(col.type || "TEXT"),
-            notnull: Boolean(col.notnull),
-            pk: Boolean(col.pk),
+            cid: typeof col.cid === "number" ? col.cid : 0,
             dflt_value:
               col.dflt_value !== undefined ? String(col.dflt_value) : null,
-            cid: typeof col.cid === "number" ? col.cid : 0,
+            name: String(col.name || ""),
+            notnull: Boolean(col.notnull),
+            pk: Boolean(col.pk),
+            type: String(col.type || "TEXT"),
           }))
         : [];
 
       result.tables[table.name] = {
-        schema: schemaColumns,
-        rows,
         description: getTableDescription(table.name),
+        rows,
+        schema: schemaColumns,
       };
     } catch (error) {
       // If table doesn't exist or there's an error, record it but continue
@@ -215,10 +214,10 @@ export async function exportAgentData(
         error
       );
       result.tables[table.name] = {
-        schema: [],
-        rows: [],
         description: getTableDescription(table.name),
         error: error instanceof Error ? error.message : String(error),
+        rows: [],
+        schema: [],
       };
     }
   }
@@ -249,12 +248,12 @@ export async function importAgentData(
 
   // Prepare the result tracking
   const result: ImportResult = {
-    success: true,
     agentId,
-    tablesImported: [],
     recordsImported: 0,
-    warnings: [],
+    success: true,
+    tablesImported: [],
     updatedState: false,
+    warnings: [],
   };
 
   // Handle agent state import first
@@ -312,13 +311,13 @@ export async function importAgentData(
       // Convert the schema data to a proper SchemaColumn array
       const schemaColumns: SchemaColumn[] = Array.isArray(tableData.schema)
         ? tableData.schema.map((col) => ({
-            name: String(col.name || ""),
-            type: String(col.type || "TEXT"),
-            notnull: Boolean(col.notnull),
-            pk: Boolean(col.pk),
+            cid: typeof col.cid === "number" ? col.cid : 0,
             dflt_value:
               col.dflt_value !== undefined ? String(col.dflt_value) : null,
-            cid: typeof col.cid === "number" ? col.cid : 0,
+            name: String(col.name || ""),
+            notnull: Boolean(col.notnull),
+            pk: Boolean(col.pk),
+            type: String(col.type || "TEXT"),
           }))
         : [];
 
@@ -640,13 +639,13 @@ async function importRow(
 function getTableDescription(tableName: string): string {
   // Provide descriptions for known tables
   const tableDescriptions: Record<string, string> = {
+    cf_agents_schedules: "Stores scheduled tasks and their execution status",
     cf_agents_state: "Stores the Agent state data",
     cf_ai_chat_agent_messages:
       "Stores chat message history for the AI chat agent",
-    cf_agents_schedules: "Stores scheduled tasks and their execution status",
     companies: "Stores company information",
-    leads: "Stores lead data",
     interaction_history: "Stores history of lead interactions",
+    leads: "Stores lead data",
   };
 
   return (

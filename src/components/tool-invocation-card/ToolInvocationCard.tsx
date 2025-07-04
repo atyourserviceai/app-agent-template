@@ -1,7 +1,3 @@
-import { Button } from "@/components/button/Button";
-import { Card } from "@/components/card/Card";
-import { Tooltip } from "@/components/tooltip/Tooltip";
-import { APPROVAL } from "@/shared";
 import { CaretDown, Eye, Robot } from "@phosphor-icons/react";
 import { useState } from "react";
 import {
@@ -9,6 +5,10 @@ import {
   getToolCategory,
   ToolCategory,
 } from "@/agent/tools/utils";
+import { Button } from "@/components/button/Button";
+import { Card } from "@/components/card/Card";
+import { Tooltip } from "@/components/tooltip/Tooltip";
+import { APPROVAL } from "@/shared";
 import type { ToolInvocation } from "../../types/tool-invocation";
 
 interface ToolInvocationCardProps {
@@ -236,8 +236,8 @@ export function ToolInvocationCard({
                   size="sm"
                   onClick={() =>
                     addToolResult({
-                      toolCallId,
                       result: APPROVAL.NO,
+                      toolCallId,
                     })
                   }
                 >
@@ -249,8 +249,8 @@ export function ToolInvocationCard({
                     size="sm"
                     onClick={() =>
                       addToolResult({
-                        toolCallId,
                         result: APPROVAL.YES,
+                        toolCallId,
                       })
                     }
                   >

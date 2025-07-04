@@ -79,8 +79,8 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
         return result as TResult;
       }
       return {
-        success: true,
         result,
+        success: true,
       } as TResult;
     } catch (error) {
       console.error(
@@ -88,12 +88,12 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
         error
       );
       return {
-        success: false,
         error: {
-          message: error instanceof Error ? error.message : String(error),
           details: error instanceof Error ? error.stack : undefined,
+          message: error instanceof Error ? error.message : String(error),
           timestamp: new Date().toISOString(),
         },
+        success: false,
       } as TResult;
     }
   };
@@ -133,12 +133,12 @@ export function createToolErrorResult(
   details?: string
 ): ToolErrorResult {
   return {
-    success: false,
     error: {
-      message,
       details,
+      message,
       timestamp: new Date().toISOString(),
     },
+    success: false,
   };
 }
 
@@ -149,7 +149,7 @@ export function createToolErrorResult(
  */
 export function createToolSuccessResult<T>(result: T): ToolSuccessResult<T> {
   return {
-    success: true,
     result,
+    success: true,
   };
 }

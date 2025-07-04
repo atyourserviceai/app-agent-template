@@ -33,13 +33,13 @@ const AvatarComponent = ({
       className={cn(
         "btn btn-secondary circular add-focus relative overflow-hidden",
         {
-          "add-size-sm": size === "sm",
-          "add-size-md": size === "md",
           "add-size-base": size === "base",
-          interactive: as === "button",
+          "add-size-md": size === "md",
+          "add-size-sm": size === "sm",
           "after:absolute after:top-0 after:left-0 after:z-10 after:size-full after:bg-black/10 after:opacity-0 after:transition-opacity hover:after:opacity-100 dark:after:bg-white/10":
             image,
           "after:opacity-100": image && toggled,
+          interactive: as === "button",
           toggle: !image && toggled,
         },
         className

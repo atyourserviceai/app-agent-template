@@ -18,9 +18,9 @@ export function PlaybookContainer({
 }: PlaybookContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
+    isOnboardingComplete: false,
     mode: agentMode,
     onboardingStep: "start",
-    isOnboardingComplete: false,
   };
 
   // Use the provided state or the default state
