@@ -1,6 +1,6 @@
 # 🤖 App Agent Template
 
-![agents-header](https://github.com/user-attachments/assets/f6d99eeb-1803-4495-9c5e-3cf07a37b402)
+![app-agent-template-header](https://github.com/user-attachments/assets/b1cb68e1-7edc-405a-9c14-c5528f0d29be)
 
 <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/atyourserviceai/app-agent-template"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare"/></a>
 
