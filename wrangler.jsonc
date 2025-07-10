@@ -29,7 +29,6 @@
     "SETTINGS_ENVIRONMENT": "dev",
     "COMPOSIO_API_KEY": "",
     "BROWSERBASE_API_KEY": "",
-    "ATYOURSERVICE_OAUTH_CLIENT_ID": "app-agent-template--local--wk8p18",
     "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:5273/auth/callback",
   },
   "env": {
@@ -40,7 +39,6 @@
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_CLIENT_ID": "app-agent-template--staging-foo",
         "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://foo-agent-staging.atyourservice.ai/auth/callback",
       },
       "routes": [
@@ -57,7 +55,6 @@
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_CLIENT_ID": "app-agent-template--local--wk8p18",
         "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://foo-agent.atyourservice.ai/auth/callback",
       },
       "routes": [
