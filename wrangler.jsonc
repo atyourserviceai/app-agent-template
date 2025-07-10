@@ -33,6 +33,20 @@
   },
   "env": {
     "staging": {
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "AppAgent",
+            "class_name": "AppAgent",
+          },
+        ],
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["AppAgent"],
+        },
+      ],
       "vars": {
         "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
         "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
@@ -49,6 +63,20 @@
       ],
     },
     "production": {
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "AppAgent",
+            "class_name": "AppAgent",
+          },
+        ],
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["AppAgent"],
+        },
+      ],
       "vars": {
         "GATEWAY_BASE_URL": "https://gateway.atyourservice.ai",
         "OAUTH_PROVIDER_BASE_URL": "https://atyourservice.ai",
