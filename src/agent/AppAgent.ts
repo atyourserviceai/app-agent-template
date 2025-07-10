@@ -270,10 +270,9 @@ export class AppAgent extends AIChatAgent<Env> {
           `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
         );
         return true;
-      } else {
-        console.log("[AppAgent] Token refresh did not result in new token");
-        return false;
       }
+      console.log("[AppAgent] Token refresh did not result in new token");
+      return false;
     } catch (error) {
       console.error("[AppAgent] Error during token refresh:", error);
       return false;
@@ -411,7 +410,7 @@ export class AppAgent extends AIChatAgent<Env> {
         // Retry logic for handling token refresh on 403 errors
         let retryCount = 0;
         const maxRetries = 1;
-        let result: any;
+        let result: ReturnType<typeof streamText> | undefined;
 
         while (retryCount <= maxRetries) {
           try {
@@ -423,9 +422,15 @@ export class AppAgent extends AIChatAgent<Env> {
               maxSteps: 10,
               messages: filteredMessages,
               model,
-              onError: async (error: any) => {
+              onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
-                if (error?.status === 403 && retryCount < maxRetries) {
+                if (
+                  error &&
+                  typeof error === "object" &&
+                  "status" in error &&
+                  error.status === 403 &&
+                  retryCount < maxRetries
+                ) {
                   console.log(
                     "[AppAgent] Got 403 error, attempting token refresh"
                   );
@@ -454,11 +459,17 @@ export class AppAgent extends AIChatAgent<Env> {
               tools: allTools,
             });
             break; // Success, exit retry loop
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error("[AppAgent] Error in onChatMessage:", error);
 
             // Handle 403 errors with token refresh retry
-            if (error?.status === 403 && retryCount < maxRetries) {
+            if (
+              error &&
+              typeof error === "object" &&
+              "status" in error &&
+              error.status === 403 &&
+              retryCount < maxRetries
+            ) {
               console.log(
                 "[AppAgent] Got 403 error in catch block, attempting token refresh"
               );
@@ -478,7 +489,9 @@ export class AppAgent extends AIChatAgent<Env> {
         }
 
         // Merge the AI response stream with tool execution outputs
-        result.mergeIntoDataStream(dataStream);
+        if (result) {
+          result.mergeIntoDataStream(dataStream);
+        }
       },
       onError: getErrorMessage,
     });
@@ -936,16 +949,16 @@ export class AppAgent extends AIChatAgent<Env> {
   async onConnect(connection: Connection) {
     console.log(`[AppAgent] New client connection: ${connection.id}`);
 
-    console.log(`[AppAgent] Connection established`, {
+    console.log("[AppAgent] Connection established", {
       connectionId: connection.id,
       timestamp: new Date().toISOString(),
     });
 
     // SOLUTION: Load user info from database and rely on retry logic for token refresh
     try {
-      console.log(`[AppAgent] Loading user info from database...`);
+      console.log("[AppAgent] Loading user info from database...");
       await this.loadUserInfo();
-      console.log(`[AppAgent] ✅ User info loaded from database`);
+      console.log("[AppAgent] ✅ User info loaded from database");
     } catch (error) {
       console.error("[AppAgent] Error loading user info:", error);
     }

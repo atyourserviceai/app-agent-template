@@ -454,9 +454,15 @@ function Chat() {
 
   if (hasApiError) {
     const errorMessage =
-      (agentMessagesRaw as any)?.error || "Unknown API error";
-    const authError = new Error(`Authentication failed: ${errorMessage}`);
-    (authError as any).isAuthError = true; // Mark as auth error
+      agentMessagesRaw &&
+      typeof agentMessagesRaw === "object" &&
+      "error" in agentMessagesRaw
+        ? (agentMessagesRaw as { error: string }).error
+        : "Unknown API error";
+    const authError = new Error(
+      `Authentication failed: ${errorMessage}`
+    ) as Error & { isAuthError?: boolean };
+    authError.isAuthError = true; // Mark as auth error
     throw authError; // Throw immediately - prevents .map() from being called
   }
 

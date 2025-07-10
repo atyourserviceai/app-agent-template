@@ -116,12 +116,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       } else {
         console.warn(
-          `[Auth] Failed to sync token with agent:`,
+          "[Auth] Failed to sync token with agent:",
           response.status
         );
       }
     } catch (error) {
-      console.warn(`[Auth] Error syncing token with agent:`, error);
+      console.warn("[Auth] Error syncing token with agent:", error);
     }
   }, []);
 

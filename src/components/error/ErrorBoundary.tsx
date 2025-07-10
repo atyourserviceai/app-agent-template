@@ -47,7 +47,9 @@ export class ErrorBoundary extends React.Component<
       }
 
       // Check if this is an authentication error
-      const isAuthError = (this.state.error as any)?.isAuthError === true;
+      const isAuthError =
+        (this.state.error as Error & { isAuthError?: boolean })?.isAuthError ===
+        true;
 
       // Default fallback UI
       return (

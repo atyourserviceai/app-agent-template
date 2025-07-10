@@ -1,5 +1,5 @@
 import { ClipboardText } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useState, useId } from "react";
 import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
@@ -22,6 +22,7 @@ export function PlaybookPanel({
   showDebug,
 }: PlaybookPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const agentSettingsId = useId();
 
   // Function to copy text to clipboard
   const copyToClipboard = (text: string, section: string) => {
@@ -125,7 +126,7 @@ export function PlaybookPanel({
               </div>
               <div className="markdown-content text-sm max-h-[300px] overflow-auto">
                 <MemoizedMarkdown
-                  id="agent-settings"
+                  id={agentSettingsId}
                   content={formatSettings()}
                 />
               </div>
