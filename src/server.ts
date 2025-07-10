@@ -66,8 +66,8 @@ export default {
     if (url.pathname === "/api/oauth/config") {
       return new Response(
         JSON.stringify({
+          client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
           auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
-          client_id: "app-agent-template",
           token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
         }),
         {
