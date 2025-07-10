@@ -330,12 +330,19 @@ async function verifyOAuthToken(
  */
 async function handleOAuthCallback(
   request: Request,
-  _env: Env
+  env: Env
 ): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
+
+  console.log("[OAuth Callback] Called with:", {
+    code_preview: code ? `${code.substring(0, 20)}...` : null,
+    state,
+    error,
+    url: url.toString(),
+  });
 
   if (error) {
     console.error("OAuth error:", error);
@@ -360,62 +367,21 @@ async function handleOAuthCallback(
   try {
     console.log("[OAuth Callback] Exchanging authorization code for token...");
 
-    // Exchange code for token using our API endpoint
-    const tokenResponse = await fetch(
-      `${url.origin}/api/oauth/token-exchange`,
-      {
-        body: JSON.stringify({
-          code,
-          grant_type: "authorization_code",
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      }
-    );
+    // Exchange code for token directly
+    const tokenData = await exchangeCodeForToken(code, env);
 
-    if (!tokenResponse.ok) {
-      throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+    if (!tokenData) {
+      throw new Error("Token exchange failed: No token data returned");
     }
-
-    const tokenData = (await tokenResponse.json()) as TokenData;
 
     console.log(
       `[OAuth Callback] Token exchange successful for user: ${tokenData.user_info.id}`
     );
 
-    // Store user info persistently in the agent's database
-    try {
-      const agentBaseUrl = `${url.origin}/agents/app-agent/${tokenData.user_info.id}`;
-      console.log(
-        `[OAuth Callback] Storing user info in agent database for user: ${tokenData.user_info.id}`
-      );
-
-      const storeResponse = await fetch(`${agentBaseUrl}/store-user-info`, {
-        body: JSON.stringify({
-          api_key: tokenData.access_token,
-          credits: tokenData.user_info.credits, // OAuth token IS the gateway API key
-          email: tokenData.user_info.email,
-          payment_method: tokenData.user_info.payment_method,
-          user_id: tokenData.user_info.id,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-
-      if (storeResponse.ok) {
-        console.log(
-          `[OAuth Callback] Successfully stored user info for user: ${tokenData.user_info.id}`
-        );
-      } else {
-        console.warn(
-          `[OAuth Callback] Failed to store user info: ${storeResponse.status}`
-        );
-        // Don't fail the OAuth flow if storage fails - user can still authenticate
-      }
-    } catch (error) {
-      console.warn("[OAuth Callback] Error storing user info:", error);
-      // Don't fail the OAuth flow if storage fails
-    }
+    // User info will be loaded by the agent when it initializes using the OAuth token
+    console.log(
+      `[OAuth Callback] Authentication successful for user: ${tokenData.user_info.id}`
+    );
 
     return new Response(getCallbackHTML(null, tokenData), {
       headers: { "Content-Type": "text/html" },
@@ -428,6 +394,99 @@ async function handleOAuthCallback(
         headers: { "Content-Type": "text/html" },
       }
     );
+  }
+}
+
+async function exchangeCodeForToken(
+  code: string,
+  env: Env
+): Promise<TokenData | null> {
+  const startTime = Date.now();
+  try {
+    console.log(
+      "[DEBUG] exchangeCodeForToken called with code:",
+      `${code.substring(0, 20)}...`,
+      "at",
+      new Date().toISOString()
+    );
+
+    // Exchange code for token with the OAuth provider
+    const requestBody = {
+      code,
+      client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
+      client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET,
+      redirect_uri: env.ATYOURSERVICE_OAUTH_REDIRECT_URI,
+      grant_type: "authorization_code",
+    };
+
+    // Only log debug info in development
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange request:", {
+        url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+        client_id: requestBody.client_id,
+        code_preview: `${code.substring(0, 20)}...`,
+        redirect_uri: requestBody.redirect_uri,
+        grant_type: requestBody.grant_type,
+        has_client_secret: !!requestBody.client_secret,
+      });
+
+      console.log("[DEBUG] Sending token exchange request...");
+    }
+    const tokenResponse = await fetch(
+      `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange response:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        headers: Object.fromEntries(tokenResponse.headers.entries()),
+        ok: tokenResponse.ok,
+      });
+    }
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      const elapsedTime = Date.now() - startTime;
+      console.error(
+        `[DEBUG] OAuth token exchange failed - Status: ${tokenResponse.status}, Response: ${errorText}, Elapsed: ${elapsedTime}ms`
+      );
+
+      // Try to parse the error response for more details
+      try {
+        const errorObj = JSON.parse(errorText);
+        console.error("[DEBUG] Parsed error object:", errorObj);
+      } catch (e) {
+        console.error("[DEBUG] Error response is not valid JSON");
+      }
+
+      return null;
+    }
+
+    const tokenData = (await tokenResponse.json()) as TokenData;
+    const elapsedTime = Date.now() - startTime;
+
+    if (env.SETTINGS_ENVIRONMENT === "dev") {
+      console.log("[DEBUG] Token exchange successful:", {
+        user_id: tokenData.user_info?.id,
+        has_access_token: !!tokenData.access_token,
+        elapsed_time: `${elapsedTime}ms`,
+      });
+    }
+
+    return tokenData;
+  } catch (error) {
+    const elapsedTime = Date.now() - startTime;
+    console.error(
+      `[DEBUG] Token exchange error after ${elapsedTime}ms:`,
+      error
+    );
+    return null;
   }
 }
 
@@ -478,7 +537,7 @@ function getCallbackHTML(
   <div class="container">
     <div class="spinner"></div>
     <h2>Authentication Successful!</h2>
-    <p class="success">Redirecting to your agent...</p>
+    <p class="success">Redirecting to your app agent...</p>
   </div>
   <script>
     // Store auth data and redirect
