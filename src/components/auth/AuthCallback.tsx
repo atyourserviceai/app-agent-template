@@ -94,7 +94,7 @@ export default function AuthCallback() {
                 api_key: tokenData.access_token,
                 credits: tokenData.user_info.credits,
                 email: tokenData.user_info.email,
-                payment_method: tokenData.user_info.payment_method,
+                payment_method: tokenData.user_info.payment_method || "credits",
                 user_id: tokenData.user_info.id,
               }),
               headers: {

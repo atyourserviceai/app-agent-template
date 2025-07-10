@@ -100,6 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             api_key: authData.apiKey,
             credits: authData.userInfo.credits,
             email: authData.userInfo.email,
+            payment_method: "credits", // Default value
             user_id: authData.userInfo.id,
           }),
           headers: {
