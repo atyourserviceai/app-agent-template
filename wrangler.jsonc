@@ -31,6 +31,10 @@
     "BROWSERBASE_API_KEY": "",
     "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:5273/auth/callback",
   },
+  "dev": {
+    "port": 8273,
+    "inspector_port": 9330,
+  },
   "env": {
     "staging": {
       "durable_objects": {
