@@ -1,6 +1,7 @@
 import { routeAgentRequest } from "agents";
 import { AppAgent } from "./agent";
 import { handleTokenExchange } from "./api/oauth-token-exchange";
+import { render } from "./entry-server";
 
 export { AppAgent };
 
@@ -557,9 +558,12 @@ function getCallbackHTML(
 }
 
 /**
- * Generate main HTML page
+ * Generate main HTML page with SSR
  */
 function getMainHTML(): string {
+  // Server-side render the React app
+  const appHtml = render();
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -567,10 +571,19 @@ function getMainHTML(): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Agent Template</title>
-    <script type="module" crossorigin src="/src/client.tsx"></script>
+    <script>
+      document.documentElement.classList.toggle(
+        "dark",
+        localStorage.theme === "dark" ||
+          (!("theme" in localStorage) &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+      );
+    </script>
+    <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">${appHtml}</div>
+    <script type="module" src="/src/client.tsx"></script>
 </body>
 </html>`;
 }

@@ -20,6 +20,8 @@ export const TooltipProvider = ({
   const isTooltipShown = useRef(false);
 
   const showTooltip = (id: string, isFocused: boolean) => {
+    if (typeof window === "undefined") return; // Skip on server
+
     if (showTimeout.current) clearTimeout(showTimeout.current);
     if (graceTimeout.current) clearTimeout(graceTimeout.current);
 
@@ -43,6 +45,8 @@ export const TooltipProvider = ({
   };
 
   const hideTooltip = () => {
+    if (typeof window === "undefined") return; // Skip on server
+
     if (showTimeout.current) clearTimeout(showTimeout.current);
 
     // Hide tooltip immediately when user leaves

@@ -31,7 +31,7 @@ interface AgentData {
   [key: string]: unknown;
 }
 
-// List of tools that require human confirmation
+// List of tools that require human confirmation for the generic template
 const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
   "getWeatherInformation",
   // Do not add suggestActions here as we want it to display without confirmation
@@ -147,7 +147,8 @@ function SuggestedActions({
 function Chat() {
   // Mobile viewport height fix
   useEffect(() => {
-    // Only run on mobile
+    // Only run on client and mobile
+    if (typeof window === "undefined") return;
     if (window.innerWidth <= 768) {
       const setViewportHeight = () => {
         const vh = window.innerHeight * 0.01;
@@ -169,6 +170,7 @@ function Chat() {
 
   // Add global error handlers for better error handling
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error("Unhandled promise rejection:", event.reason);
 
@@ -202,11 +204,7 @@ function Chat() {
   }, []);
 
   // UI-related state
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    // Check localStorage first, default to dark if not found
-    const savedTheme = localStorage.getItem("theme");
-    return (savedTheme as "dark" | "light") || "dark";
-  });
+  const [theme, setTheme] = useState<"dark" | "light">("dark"); // Always start with dark for SSR consistency
   const [showDebug, setShowDebug] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "playbook">("chat");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -220,6 +218,14 @@ function Chat() {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
   };
+
+  // Load saved theme after hydration
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme && (savedTheme === "dark" || savedTheme === "light")) {
+      setTheme(savedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     // Apply theme class on mount and when theme changes
@@ -1009,20 +1015,22 @@ function Chat() {
   );
 }
 
-// Main App component with authentication
+// Main App component with authentication - includes styling wrapper
 export default function App() {
   return (
-    <div
-      className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
-      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
-    >
-      <ErrorBoundary>
-        <AuthProvider>
-          <AuthGuard>
-            <Chat />
-          </AuthGuard>
-        </AuthProvider>
-      </ErrorBoundary>
+    <div className="bg-neutral-50 text-base text-neutral-900 antialiased transition-colors selection:bg-blue-700 selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
+      <div
+        className="bg-gradient-to-br from-blue-100 via-white to-blue-100 dark:from-blue-900 dark:via-black dark:to-blue-900"
+        style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+      >
+        <ErrorBoundary>
+          <AuthProvider>
+            <AuthGuard>
+              <Chat />
+            </AuthGuard>
+          </AuthProvider>
+        </ErrorBoundary>
+      </div>
     </div>
   );
 }

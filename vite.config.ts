@@ -8,6 +8,9 @@ export default defineConfig({
   plugins: [
     cloudflare({
       inspectorPort: 9329, // Set inspector port to avoid conflicts
+      viteEnvironment: {
+        name: "ssr", // Assign Worker to SSR environment per Cloudflare docs
+      },
     }),
     react(),
     tailwindcss(),

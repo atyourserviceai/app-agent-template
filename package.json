@@ -6,7 +6,10 @@
   "private": true,
   "scripts": {
     "dev": "script -q /dev/null vite dev 2>&1 | tee dev.log",
-    "deploy": "vite build && wrangler deploy",
+    "dev:ssr": "npm run build && wrangler dev",
+    "dev:watch": "npm run build && (vite build --watch & wrangler dev)",
+    "build": "vite build && vite build --ssr src/entry-server.tsx",
+    "deploy": "npm run build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging pnpm run deploy",
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",
     "logs:deployed": "wrangler tail",
