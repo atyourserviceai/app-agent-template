@@ -415,7 +415,7 @@ export class AppAgent extends AIChatAgent<Env> {
         while (retryCount <= maxRetries) {
           try {
             const openai = this.getAIProvider();
-            const model = openai("gpt-4.1-2025-04-14");
+            const model = openai("gpt-4.1-mini-2025-04-14");
 
             // Stream the AI response
             result = streamText({
