@@ -40,21 +40,15 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
 
           <div className="mb-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center">
-              <span className="text-green-500 dark:text-green-400 mr-2">
-                ✓
-              </span>
+              <span className="text-green-500 dark:text-green-400 mr-2">✓</span>
               Get 50¢ in free credits to start
             </div>
             <div className="flex items-center">
-              <span className="text-green-500 dark:text-green-400 mr-2">
-                ✓
-              </span>
+              <span className="text-green-500 dark:text-green-400 mr-2">✓</span>
               Track usage in your dashboard
             </div>
             <div className="flex items-center">
-              <span className="text-green-500 dark:text-green-400 mr-2">
-                ✓
-              </span>
+              <span className="text-green-500 dark:text-green-400 mr-2">✓</span>
               Top up or use your own OpenAI API key
             </div>
           </div>
