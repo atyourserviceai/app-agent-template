@@ -4,7 +4,7 @@ import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
-interface PlaybookPanelProps {
+interface PresentationPanelProps {
   agentState: AppAgentState;
   agentMode: AgentMode;
   showDebug: boolean;
@@ -16,11 +16,11 @@ declare global {
   }
 }
 
-export function PlaybookPanel({
+export function PresentationPanel({
   agentState,
   agentMode,
   showDebug,
-}: PlaybookPanelProps) {
+}: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
 

@@ -12,7 +12,7 @@ import { EmptyChat } from "@/components/chat/EmptyChat";
 import { ErrorMessage } from "@/components/chat/ErrorMessage";
 import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
 import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndicator";
-import { PlaybookContainer } from "@/components/chat/PlaybookContainer";
+import { PresentationContainer } from "@/components/chat/PresentationContainer";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import type { ToolTypes } from "./agent/tools/types";
@@ -526,7 +526,7 @@ function Chat() {
     reload();
   }, [auth, reload]);
 
-  // Handle custom event for setting chat input from PlaybookPanel
+  // Handle custom event for setting chat input from PresentationPanel
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
     function handleSetChatInput(event: CustomEvent) {
@@ -1000,8 +1000,8 @@ function Chat() {
           {renderMessages()}
         </ChatContainer>
 
-        {/* Playbook Panel */}
-        <PlaybookContainer
+        {/* Presentation Panel */}
+        <PresentationContainer
           activeTab={activeTab}
           agentMode={agentMode}
           agentState={agentState}

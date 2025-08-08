@@ -1,21 +1,21 @@
 import { Card } from "@/components/card/Card";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 import { ModeInfoCard } from "./ModeInfoCard";
-import { PlaybookPanel } from "./PlaybookPanel";
+import { PresentationPanel } from "./PresentationPanel";
 
-type PlaybookContainerProps = {
+type PresentationContainerProps = {
   activeTab: "chat" | "playbook";
   agentMode: AgentMode;
   agentState: AppAgentState | null;
   showDebug: boolean;
 };
 
-export function PlaybookContainer({
+export function PresentationContainer({
   activeTab,
   agentMode,
   agentState,
   showDebug,
-}: PlaybookContainerProps) {
+}: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
     isOnboardingComplete: false,
@@ -42,7 +42,7 @@ export function PlaybookContainer({
 
         {/* Playbook content area */}
         <div className="flex-1 overflow-auto">
-          <PlaybookPanel
+          <PresentationPanel
             agentState={safeAgentState}
             agentMode={agentMode}
             showDebug={showDebug}

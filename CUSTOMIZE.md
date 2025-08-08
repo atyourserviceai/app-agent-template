@@ -202,9 +202,9 @@ async getToolsForMode() {
 
 ### 5. Customize User Interface
 
-#### 5.1 Update PlaybookPanel
+#### 5.1 Update PresentationPanel
 
-**File: `src/components/chat/PlaybookPanel.tsx`**
+**File: `src/components/chat/PresentationPanel.tsx`**
 
 Replace or enhance the content area:
 
