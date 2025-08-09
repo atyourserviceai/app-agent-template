@@ -5,8 +5,8 @@ interface LandingPageProps {
 
 export function LandingPage({ onSignIn, authError }: LandingPageProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-blue-900 dark:via-black dark:to-blue-900">
-      <div className="max-w-md w-full">
+    <div className="w-full">
+      <div className="max-w-2xl w-full mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             App Agent Template{" "}
@@ -28,7 +28,7 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
           </p>
         </div>
 
-        <div className="bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-blue-500/20 shadow-lg">
+        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
           <div className="text-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               Get Started with AI

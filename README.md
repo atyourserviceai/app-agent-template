@@ -35,7 +35,7 @@ Since the React app has access to the agent's state, you can create:
 - Interactive forms and controls alongside chat
 - Status indicators and progress displays
 - Mode-specific UI that adapts to agent capabilities
-- Persistent data displays (playbooks, configurations, etc.)
+- Persistent data displays (configuration summaries, settings, etc.)
 
 ### Technical Implementation
 
@@ -48,7 +48,7 @@ Since the React app has access to the agent's state, you can create:
 
 - 🤖 **App Agent Architecture**: React app with access to agent state for rich UX
 - 🏗️ **Four-Mode System**: Setup phases (onboarding + integration) before operational phases (plan + act)
-- 📋 **Agent Playbook System**: Captures and stores institutional knowledge from onboarding
+- 📋 **Saved Configuration**: Onboarding produces defaults and settings the agent operates with
 - 💬 Interactive chat interface with AI
 - ✏️ Enhanced chat functionality (edit messages, retry, error handling)
 - 🛠️ Built-in tool system with human-in-the-loop confirmation
@@ -68,21 +68,21 @@ This template uses a four-mode agent architecture that goes beyond typical plan/
 
 #### 1. **🎯 Onboarding Mode** - _Agent Owner Configuration_
 
-- **Purpose**: Define the agent's goals, methodology, and operational playbook
+- **Purpose**: Define the agent's goals, methodology, and operating configuration
 - **Who uses it**: The agent owner/primary stakeholder (one-time setup)
 - **What it does**: Conducts an interactive interview to document:
   - What the agent should accomplish
   - How it should approach tasks
   - Company-specific processes and methodologies
   - Success criteria and best practices
-- **Output**: A comprehensive "playbook" stored in agent memory
+- **Output**: Saved configuration and defaults used in future sessions (e.g., preferences, operators, guardrails)
 
 #### 2. **🔧 Integration Mode** - _Developer/Admin Setup_
 
 - **Purpose**: Configure and test the tools needed to achieve the defined goals
 - **Who uses it**: Agent developers and system administrators
 - **What it does**:
-  - Analyzes the onboarding playbook to identify required tools
+- Analyzes the onboarding configuration to identify required tools
   - Guides integration setup for external services
   - Tests tool functionality before production use
   - Documents working integrations
@@ -97,9 +97,9 @@ This template uses a four-mode agent architecture that goes beyond typical plan/
 
 #### 4. **🚀 Act Mode** - _Execution & Operations_
 
-- **Purpose**: Execute actions using the established playbook and tools
+- **Purpose**: Execute actions using the established configuration and tools
 - **Who uses it**: End users for day-to-day operations
-- **What it does**: Performs concrete actions based on the documented playbook
+- **What it does**: Performs concrete actions guided by saved configuration and plans
 - **Tools**: Full access to execution tools
 
 ### Why This Architecture Works
@@ -108,7 +108,7 @@ Most AI agents jump straight into plan/act cycles without proper foundation. Thi
 
 1. **Clear Purpose Definition**: Onboarding captures the "why" and "how" before building
 2. **Reliable Tool Setup**: Integration mode prevents production failures
-3. **Documented Methodology**: The playbook becomes institutional knowledge
+3. **Persisted Configuration**: Onboarding choices become default operating configuration
 4. **Scalable Operations**: Multiple users can operate the agent consistently
 
 ### Natural Progression Flow
@@ -410,7 +410,7 @@ Agent: Interviews you about:
 - Knowledge base and FAQ structure
 - Communication preferences (email, chat, etc.)
 
-Output: Documented support playbook stored in agent memory
+Output: Saved configuration stored for future operation
 ```
 
 ### 2. Integration Mode - Set Up & Test Tools
@@ -419,7 +419,7 @@ Output: Documented support playbook stored in agent memory
 User: "integration"
 Agent: Switches to integration mode
 
-Agent: Analyzes your playbook and identifies needed tools:
+Agent: Analyzes your configuration and identifies needed tools:
 - Ticket system integration (Zendesk, Freshdesk, etc.)
 - Knowledge base search
 - Customer database lookup
@@ -459,7 +459,7 @@ Agent: Actively handles support operations:
 - Escalates complex issues per your procedures
 - Tracks metrics and suggests improvements
 
-Output: Executed support actions following your playbook
+Output: Executed support actions using your configured settings
 ```
 
 ## Example Use Cases

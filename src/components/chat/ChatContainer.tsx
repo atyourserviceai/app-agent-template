@@ -11,7 +11,7 @@ type ChatContainerProps = {
   inputValue: string;
   isLoading: boolean;
   pendingConfirmation: boolean;
-  activeTab: "chat" | "playbook";
+  activeTab: "chat" | "presentation";
   children: ReactNode;
   suggestedActionsComponent?: ReactNode;
   onToggleTheme: () => void;
@@ -20,6 +20,7 @@ type ChatContainerProps = {
   onClearHistory: () => void;
   onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onInputSubmit: (e: FormEvent) => void;
+  onCloseChat?: () => void; // optional close handler when used as floating panel
 };
 
 export function ChatContainer({
@@ -38,10 +39,11 @@ export function ChatContainer({
   onClearHistory,
   onInputChange,
   onInputSubmit,
+  onCloseChat,
 }: ChatContainerProps) {
   return (
     <div
-      className={`h-full md:w-3/5 lg:w-3/5 max-w-[800px] flex-shrink-0 flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-black ${
+      className={`h-full min-h-0 w-full flex-shrink-0 flex flex-col shadow-xl rounded-md overflow-hidden relative border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-black ${
         activeTab === "chat" ? "block" : "hidden md:flex"
       }`}
     >
@@ -54,10 +56,13 @@ export function ChatContainer({
         onToggleDebug={onToggleDebug}
         onChangeMode={onChangeMode}
         onClearHistory={onClearHistory}
+        onCloseChat={onCloseChat}
       />
 
       {/* Messages */}
-      <MessageList>{children}</MessageList>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <MessageList>{children}</MessageList>
+      </div>
 
       {/* Suggested actions */}
       {suggestedActionsComponent}

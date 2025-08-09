@@ -8,7 +8,7 @@ interface ModeInfoCardProps {
 
 /**
  * ModeInfoCard - Displays mode-specific information and features
- * This is shown above the playbook panel and includes full mode information
+ * This is shown above the presentation panel and includes full mode information
  */
 export function ModeInfoCard({ agentMode }: ModeInfoCardProps) {
   return (
@@ -27,7 +27,7 @@ export function ModeInfoCard({ agentMode }: ModeInfoCardProps) {
 
       <p className="text-sm text-neutral-600 dark:text-neutral-400">
         {agentMode === "onboarding" &&
-          "Let me help you configure your agent settings and initial setup. I'll guide you through:"}
+          "Let me help you configure preferences and defaults for future sessions. I'll guide you through:"}
         {agentMode === "integration" &&
           "In this mode, we can test your tools and integrations before using them. I'll help you:"}
         {agentMode === "plan" &&

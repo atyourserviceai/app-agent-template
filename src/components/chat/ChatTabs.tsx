@@ -1,8 +1,8 @@
 import { ClipboardText, Robot } from "@phosphor-icons/react";
 
 interface ChatTabsProps {
-  activeTab: "chat" | "playbook";
-  setActiveTab: (tab: "chat" | "playbook") => void;
+  activeTab: "chat" | "presentation";
+  setActiveTab: (tab: "chat" | "presentation") => void;
 }
 
 /**
@@ -25,9 +25,9 @@ export function ChatTabs({ activeTab, setActiveTab }: ChatTabsProps) {
         <button
           type="button"
           className={`flex-1 py-3 flex flex-col items-center justify-center gap-1 ${
-            activeTab === "playbook" ? "text-[#F48120]" : "text-neutral-500"
+            activeTab === "presentation" ? "text-[#F48120]" : "text-neutral-500"
           }`}
-          onClick={() => setActiveTab("playbook")}
+          onClick={() => setActiveTab("presentation")}
         >
           <ClipboardText size={20} aria-hidden="true" />
           <span className="text-xs font-medium">Playbook</span>

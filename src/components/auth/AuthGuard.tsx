@@ -62,7 +62,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!authMethod) {
-    return <LandingPage onSignIn={login} authError={authError} />;
+    // Floating login widget overlay; slightly blurred backdrop and scrollable if needed
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto p-4 md:p-6 bg-black/10 backdrop-blur-[2px]">
+        <div className="w-full max-w-2xl mx-auto my-8 md:my-12">
+          <LandingPage onSignIn={login} authError={authError} />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
