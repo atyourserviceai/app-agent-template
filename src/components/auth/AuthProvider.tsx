@@ -81,7 +81,11 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // On the server (SSR), start with isLoading = false so we render real markup
+  // The client will immediately run the init() effect and set proper loading state
+  const [isLoading, setIsLoading] = useState<boolean>(
+    typeof window !== "undefined"
+  );
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   // Function to sync token with agent database

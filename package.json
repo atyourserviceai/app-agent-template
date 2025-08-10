@@ -6,9 +6,10 @@
   "private": true,
   "scripts": {
     "dev": "script -q /dev/null vite dev 2>&1 | tee dev.log",
-    "dev:ssr": "npm run build && wrangler dev",
-    "dev:watch": "npm run build && (vite build --watch & wrangler dev)",
+    "dev:preview": "npm run build && wrangler dev",
+    "dev:preview:watch": "npm run build && (vite build --watch & wrangler dev)",
     "build": "vite build && vite build --ssr src/entry-server.tsx",
+    "postbuild": "rm -f dist/client/index.html && mkdir -p public/assets && cp -f dist/client/assets/index.css public/assets/index.css || true && cp -f dist/client/assets/client.js public/assets/client.js || true",
     "deploy": "npm run build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging pnpm run deploy",
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",

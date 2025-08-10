@@ -8,6 +8,8 @@
   ],
   "assets": {
     "directory": "public",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
   },
   "durable_objects": {
     "bindings": [

@@ -144,3 +144,6 @@ dist
 
 # Backups
 .backups
+
+# Build output
+public/assets/client.js

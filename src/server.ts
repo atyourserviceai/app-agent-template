@@ -2,6 +2,7 @@ import { routeAgentRequest } from "agents";
 import { AppAgent } from "./agent";
 import { handleTokenExchange } from "./api/oauth-token-exchange";
 import { render } from "./entry-server";
+import { renderDocument } from "./document";
 
 export { AppAgent };
 
@@ -27,6 +28,15 @@ export default {
     _ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
+
+    // Serve built client assets and favicon via Assets binding (redirected config binds
+    // dist/client as the assets directory during dev/preview).
+    if (
+      url.pathname.startsWith("/assets/") ||
+      url.pathname === "/favicon.ico"
+    ) {
+      return env.ASSETS.fetch(request);
+    }
 
     // Handle OAuth callback directly on the server
     if (url.pathname === "/auth/callback") {
@@ -250,10 +260,15 @@ export default {
         url.pathname === "/" ||
         (!url.pathname.includes("/api/") && !url.pathname.includes("."))
       ) {
-        return new Response(getMainHTML(), {
+        // SSR: render HTML on the server and embed the rendered app markup
+        const appHtml = render();
+        const html = renderDocument({ appHtml, title: "AI Chat Agent" });
+        console.log("[SSR] Serving SSR HTML for /");
+        return new Response(html, {
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Content-Type": "text/html",
+            "X-SSR": "1",
           },
         });
       }
@@ -583,7 +598,7 @@ function getMainHTML(): string {
 </head>
 <body>
     <div id="root">${appHtml}</div>
-    <script type="module" src="/src/client.tsx"></script>
+    <script type="module" src="/assets/client.js"></script>
 </body>
 </html>`;
 }
