@@ -1,13 +1,17 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { HelmetProvider, type FilledContext } from "react-helmet-async";
 import { Providers } from "@/providers";
 import App from "./app";
 
 export function render() {
+  const helmetContext: { helmet?: FilledContext["helmet"] } = {};
   const html = renderToString(
-    <Providers>
-      <App />
-    </Providers>
+    <HelmetProvider context={helmetContext}>
+      <Providers>
+        <App />
+      </Providers>
+    </HelmetProvider>
   );
-  return html;
+  return { appHtml: html, helmet: helmetContext.helmet } as const;
 }

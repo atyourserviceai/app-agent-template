@@ -6,8 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "script -q /dev/null vite dev 2>&1 | tee dev.log",
-    "dev:preview": "npm run build && wrangler dev",
-    "dev:preview:watch": "npm run build && (vite build --watch & wrangler dev)",
+    "preview": "npm run build && wrangler dev",
+    "preview:watch": "npm run build && (vite build --watch & wrangler dev)",
     "build": "vite build && vite build --ssr src/entry-server.tsx",
     "postbuild": "rm -f dist/client/index.html && mkdir -p public/assets && cp -f dist/client/assets/index.css public/assets/index.css || true && cp -f dist/client/assets/client.js public/assets/client.js || true",
     "deploy": "npm run build && wrangler deploy",
@@ -68,6 +68,7 @@
     "marked": "^15.0.12",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-helmet-async": "^2.0.5",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",

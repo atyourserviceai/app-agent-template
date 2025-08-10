@@ -7,7 +7,9 @@ export function useThemePreference() {
     if (typeof window === "undefined") return "dark";
     const saved = localStorage.getItem("theme");
     if (saved === "dark" || saved === "light") return saved;
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const prefersDark = window.matchMedia?.(
+      "(prefers-color-scheme: dark)"
+    ).matches;
     return prefersDark ? "dark" : "light";
   });
 
@@ -26,5 +28,3 @@ export function useThemePreference() {
 
   return { theme, setTheme, toggleTheme } as const;
 }
-
-

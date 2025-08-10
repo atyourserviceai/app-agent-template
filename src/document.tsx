@@ -1,14 +1,19 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { FilledContext } from "react-helmet-async";
 
 type DocumentProps = {
   appHtml: string;
   title?: string;
+  helmet?: FilledContext["helmet"];
+  inlineCss?: string;
 };
 
 export function renderDocument({
   appHtml,
   title = "AI Chat Agent",
+  helmet,
+  inlineCss,
 }: DocumentProps): string {
   const html = (
     <html lang="en">
@@ -23,7 +28,18 @@ export function renderDocument({
           content="AI-powered chat agent built with Cloudflare Agents"
         />
         <meta name="theme-color" content="#000000" />
-        <title>{title}</title>
+        <span
+          dangerouslySetInnerHTML={{
+            __html: helmet?.title?.toString() || `<title>${title}</title>`,
+          }}
+        />
+        <span
+          dangerouslySetInnerHTML={{
+            __html:
+              (helmet?.meta?.toString() || "") +
+              (helmet?.link?.toString() || ""),
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `document.documentElement.classList.toggle(
@@ -41,6 +57,10 @@ export function renderDocument({
           href="https://fonts.gstatic.com"
           crossOrigin=""
         />
+        {/* Inline CSS first to prevent FOUC; keep link as fallback/cache */}
+        {inlineCss ? (
+          <style dangerouslySetInnerHTML={{ __html: inlineCss }} />
+        ) : null}
         <link rel="stylesheet" crossOrigin="" href="/assets/index.css" />
       </head>
       <body>

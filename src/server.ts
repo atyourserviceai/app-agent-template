@@ -3,6 +3,11 @@ import { AppAgent } from "./agent";
 import { handleTokenExchange } from "./api/oauth-token-exchange";
 import { render } from "./entry-server";
 import { renderDocument } from "./document";
+// Inline CSS for SSR to eliminate FOUC and avoid external asset dependency
+// Vite will inline this file content as a string at build time
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - Vite provides ?inline loader
+import inlineStyles from "./styles.css?inline";
 
 export { AppAgent };
 
@@ -261,8 +266,13 @@ export default {
         (!url.pathname.includes("/api/") && !url.pathname.includes("."))
       ) {
         // SSR: render HTML on the server and embed the rendered app markup
-        const appHtml = render();
-        const html = renderDocument({ appHtml, title: "AI Chat Agent" });
+        const { appHtml, helmet } = render();
+        const html = renderDocument({
+          appHtml,
+          helmet,
+          title: "AI Chat Agent",
+          inlineCss: inlineStyles as string,
+        });
         console.log("[SSR] Serving SSR HTML for /");
         return new Response(html, {
           headers: {
