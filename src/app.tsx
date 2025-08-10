@@ -19,8 +19,10 @@ import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
 import { Moon, Sun } from "@phosphor-icons/react";
+import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
+import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useAgentState } from "./hooks/useAgentState";
@@ -206,7 +208,7 @@ function Chat() {
   }, []);
 
   // UI-related state
-  const [theme, setTheme] = useState<"dark" | "light">("dark"); // Always start with dark for SSR consistency
+  const { theme, toggleTheme } = useThemePreference();
   const [showDebug, setShowDebug] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
     "presentation"
@@ -218,32 +220,7 @@ function Chat() {
   // Add auth context for token expiration checks
   const auth = useAuth();
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-  };
-
-  // Load saved theme after hydration
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme && (savedTheme === "dark" || savedTheme === "light")) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Apply theme class on mount and when theme changes
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-    }
-
-    // Save theme preference to localStorage
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  // Theme persistence and DOM classes are handled by useThemePreference
 
   // Get authenticated agent configuration
   const agentConfig = useAgentAuth();
@@ -1054,6 +1031,8 @@ export default function App() {
                   variant="full"
                 />
               </div>
+              {/* Always-available theme toggle when unauthenticated */}
+              <RootThemeToggle />
               {/* Auth overlay and authenticated chat */}
               <AuthGuard>
                 <Chat />
@@ -1062,6 +1041,17 @@ export default function App() {
           </AuthProvider>
         </ErrorBoundary>
       </div>
+    </div>
+  );
+}
+
+function RootThemeToggle() {
+  const auth = useAuth();
+  const { theme, toggleTheme } = useThemePreference();
+  if (auth?.authMethod) return null;
+  return (
+    <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
+      <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
     </div>
   );
 }
