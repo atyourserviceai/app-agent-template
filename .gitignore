@@ -147,3 +147,13 @@ dist
 
 # Build output
 public/assets/client.js
+
+# React Router v7
+/.react-router/
+/build/
+
+# Vite cache
+.vite/
+
+# Cloudflare
+.mf

@@ -1,46 +1,20 @@
-import path from "node:path";
-import { cloudflare } from "@cloudflare/vite-plugin";
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { reactRouter } from "@react-router/dev/vite";
+import { cloudflare as cf } from "@cloudflare/vite-plugin";
+import tsconfigPaths from "vite-tsconfig-paths";
+import path from "node:path";
 
-export default defineConfig(({ ssrBuild }) => ({
+export default defineConfig({
   plugins: [
-    cloudflare({
-      inspectorPort: 9329, // Set inspector port to avoid conflicts
-      viteEnvironment: {
-        name: "ssr", // Assign Worker to SSR environment per Cloudflare docs
-      },
+    cf({ viteEnvironment: { name: "ssr" } }),
+    reactRouter(),
+    tsconfigPaths({
+      ignoreConfigErrors: true,
+      projects: [path.resolve(__dirname, "tsconfig.json")],
     }),
-    react(),
-    tailwindcss(),
   ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  build: {
-    sourcemap: true, // Enable source maps for better error debugging
-    // For the client build only, emit a stable entry filename we can reference from SSR HTML
-    rollupOptions: ssrBuild
-      ? undefined
-      : {
-          input: path.resolve(__dirname, "src/client.tsx"),
-          output: {
-            entryFileNames: "assets/client.js",
-            chunkFileNames: "assets/[name].js",
-            assetFileNames: (assetInfo) => {
-              if (assetInfo.name && assetInfo.name.endsWith(".css")) {
-                return "assets/index.css";
-              }
-              return "assets/[name][extname]";
-            },
-          },
-        },
-  },
   server: {
-    port: 5273,
+    port: 6001,
     strictPort: true,
   },
-}));
+});
