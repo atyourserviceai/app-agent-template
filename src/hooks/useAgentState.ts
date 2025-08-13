@@ -119,7 +119,14 @@ export function useAgentState(
         const fullUrl = new URL(setModeUrl, window.location.origin);
         console.log(`[UI] Full absolute URL: ${fullUrl.toString()}`);
 
-        const response = await fetch(setModeUrl, {
+        const urlObj = new URL(setModeUrl, window.location.origin);
+        if (agentConfig.query) {
+          for (const [k, v] of Object.entries(agentConfig.query)) {
+            if (typeof v === "string") urlObj.searchParams.set(k, v);
+          }
+        }
+
+        const response = await fetch(urlObj.toString(), {
           body: JSON.stringify({
             force,
             isAfterClearHistory,
@@ -129,6 +136,7 @@ export function useAgentState(
             "Content-Type": "application/json",
           },
           method: "POST",
+          credentials: "include",
         });
 
         console.log(
@@ -143,8 +151,13 @@ export function useAgentState(
         try {
           const responseData = (await response.clone().json()) as {
             success?: boolean;
+            error?: string;
           };
           console.log("[UI] Set mode response:", responseData);
+
+          if (responseData.error) {
+            throw new Error(responseData.error);
+          }
 
           // Force sync the UI when setMode API is used successfully
           if (responseData.success && agentMode !== newMode) {
@@ -157,7 +170,7 @@ export function useAgentState(
           console.log("[UI] Unable to parse response as JSON");
         }
 
-        console.log("[UI] Successfully called setMode endpoint");
+        console.log("[UI] Successfully called setMode endpoint with no error");
         return;
       }
 
