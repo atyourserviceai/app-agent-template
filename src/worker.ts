@@ -1,5 +1,6 @@
 import { createRequestHandler } from "react-router";
 import { routeAgentRequest } from "agents";
+import { handleTokenExchange } from "./api/oauth-token-exchange";
 import { AppAgent } from "./agent";
 
 export { AppAgent };
@@ -10,6 +11,8 @@ interface Env {
   GATEWAY_BASE_URL: string;
   OAUTH_PROVIDER_BASE_URL: string;
   ATYOURSERVICE_OAUTH_CLIENT_ID?: string;
+  ATYOURSERVICE_OAUTH_CLIENT_SECRET?: string;
+  ATYOURSERVICE_OAUTH_REDIRECT_URI?: string;
   SETTINGS_ENVIRONMENT?: string; // "dev" | "staging" | "production"
 }
 
@@ -22,20 +25,39 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/auth/callback") {
-      return handleOAuthCallback(request, env);
-    }
+    // Let React Router handle /auth/callback via app/routes/auth.callback.tsx
 
     if (url.pathname === "/api/oauth/config") {
-      return new Response(
-        JSON.stringify({
-          client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
-          auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
-          token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+          return new Response(
+            JSON.stringify({
+              client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
+              auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+              // Return a same-origin token endpoint to avoid browser CORS issues
+              token_url: `/api/oauth/token`,
+            }),
+            { headers: { "Content-Type": "application/json" } }
+          );
     }
+
+        if (url.pathname === "/api/oauth/token") {
+          if (request.method === "OPTIONS") {
+            return new Response(null, {
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+              },
+            });
+          }
+          const resp = await handleTokenExchange(request, env as unknown as Env);
+          return new Response(await resp.text(), {
+            status: resp.status,
+            headers: {
+              "Content-Type": resp.headers.get("Content-Type") || "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          });
+        }
 
     if (url.pathname === "/api/user/info") {
       const auth = request.headers.get("Authorization");
@@ -65,9 +87,4 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-async function handleOAuthCallback(
-  _request: Request,
-  _env: Env
-): Promise<Response> {
-  return new Response("Not Implemented", { status: 501 });
-}
+// OAuth callback is handled client-side in app/routes/auth.callback.tsx

@@ -49,9 +49,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, []);
 
-  // Show loading spinner while checking authentication
-  // During SSR, do not block rendering with a loading spinner
-  if (typeof window !== "undefined" && isLoading) {
+  // Show loading spinner while checking authentication. Render the same on SSR and CSR
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -20,7 +20,9 @@ export function ThemeToggleButton({
       onClick={onToggle}
       title={title}
     >
-      {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      <span suppressHydrationWarning>
+        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      </span>
     </button>
   );
 }

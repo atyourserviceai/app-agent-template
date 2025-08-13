@@ -3,15 +3,21 @@ import { useEffect, useState } from "react";
 export type Theme = "dark" | "light";
 
 export function useThemePreference() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark";
+  // Start with a deterministic value to avoid SSR/CSR mismatches.
+  // We'll reconcile to the user's preference after hydration.
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  useEffect(() => {
+    // On mount, detect user/system preference and reconcile if different
     const saved = localStorage.getItem("theme");
-    if (saved === "dark" || saved === "light") return saved;
-    const prefersDark = window.matchMedia?.(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    return prefersDark ? "dark" : "light";
-  });
+    let preferred: Theme | null = null;
+    if (saved === "dark" || saved === "light") preferred = saved;
+    else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches)
+      preferred = "dark";
+    else preferred = "light";
+
+    if (preferred && preferred !== theme) setTheme(preferred);
+  }, []);
 
   useEffect(() => {
     if (theme === "dark") {
