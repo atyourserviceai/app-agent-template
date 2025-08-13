@@ -15,10 +15,10 @@ type ChatHeaderProps = {
 };
 
 export function ChatHeader({
-  theme,
+  theme: _theme,
   showDebug,
   agentMode,
-  onToggleTheme,
+  onToggleTheme: _onToggleTheme,
   onToggleDebug,
   onChangeMode,
   onClearHistory,

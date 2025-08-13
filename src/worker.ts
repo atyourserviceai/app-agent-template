@@ -9,9 +9,11 @@ export { AppAgent };
 
 // Vite injects the server build at this virtual module path
 // eslint-disable-next-line import/no-unresolved
+type ImportMetaEnv = { env?: { MODE?: string } };
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
-  (import.meta as any).env?.MODE || "production"
+  ((import.meta as unknown as ImportMetaEnv).env?.MODE as string) ||
+    "production"
 );
 
 export default {
