@@ -28,36 +28,37 @@ export default {
     // Let React Router handle /auth/callback via app/routes/auth.callback.tsx
 
     if (url.pathname === "/api/oauth/config") {
-          return new Response(
-            JSON.stringify({
-              client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
-              auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
-              // Return a same-origin token endpoint to avoid browser CORS issues
-              token_url: `/api/oauth/token`,
-            }),
-            { headers: { "Content-Type": "application/json" } }
-          );
+      return new Response(
+        JSON.stringify({
+          client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
+          auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
+          // Return a same-origin token endpoint to avoid browser CORS issues
+          token_url: `/api/oauth/token`,
+        }),
+        { headers: { "Content-Type": "application/json" } }
+      );
     }
 
-        if (url.pathname === "/api/oauth/token") {
-          if (request.method === "OPTIONS") {
-            return new Response(null, {
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-              },
-            });
-          }
-          const resp = await handleTokenExchange(request, env as unknown as Env);
-          return new Response(await resp.text(), {
-            status: resp.status,
-            headers: {
-              "Content-Type": resp.headers.get("Content-Type") || "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          });
-        }
+    if (url.pathname === "/api/oauth/token") {
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+        });
+      }
+      const resp = await handleTokenExchange(request, env as unknown as Env);
+      return new Response(await resp.text(), {
+        status: resp.status,
+        headers: {
+          "Content-Type":
+            resp.headers.get("Content-Type") || "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
 
     if (url.pathname === "/api/user/info") {
       const auth = request.headers.get("Authorization");
