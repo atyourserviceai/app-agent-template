@@ -135,6 +135,25 @@ The agent automatically adapts its behavior, available tools, and responses base
 - Type "plan" to switch to plan mode
 - Type "act" to switch to act mode
 
+## Stack
+
+- React Router v7 (SSR + hydration) with `@react-router/dev/vite`
+- Cloudflare Workers glue in `src/worker.ts` (agents routing + API endpoints)
+- Vite + `@cloudflare/vite-plugin` + `@tailwindcss/vite` + `vite-tsconfig-paths`
+- Tailwind CSS v4 (use `@import "tailwindcss";` in `src/styles.css`)
+
+Key files:
+
+- `app/entry.client.tsx`, `app/entry.server.tsx`, `app/root.tsx`, `app/routes.ts`
+- `app/routes/_index.tsx`, `app/routes/auth.callback.tsx`
+- `src/worker.ts` (handles `/api/oauth/config`, `/api/oauth/token`, `/api/user/info`, then falls through to React Router)
+
+Hydration safety:
+
+- `<meta charSet="utf-8" />` + server `Content-Type: text/html; charset=utf-8`
+- Pre-hydration theme script in `app/root.tsx` sets `dark/light` to avoid mismatches
+- `suppressHydrationWarning` only on `<html>`
+
 ## Prerequisites
 
 - **Cloudflare Account**
@@ -164,7 +183,7 @@ This template uses **AI@YourService** for user authentication by default, but yo
 
 > **💡 Recommended Approach**: Use AI@YourService OAuth for the LLM Gateway even with custom auth, so users pay for their own AI usage rather than you absorbing those costs.
 
-## Quick Start
+## Quick Start (dev)
 
 1. Install dependencies:
 
@@ -176,10 +195,10 @@ pnpm install
 
 Create a `.dev.vars` file based on `.dev.vars.example`
 
-3. Run locally:
+3. Run locally (ports: 5273 for this demo):
 
 ```bash
-pnpm start
+pnpm run dev
 ```
 
 ## Deployment
@@ -212,7 +231,7 @@ The project supports three deployment environments, each with its own configurat
   - Automatically deployed on Git push to branch `dev` to enable CI/CD testing
   - Optional manual deployment:
   ```bash
-  pnpm run deploy -- --env staging
+  pnpm run deploy:staging
   ```
 
 ### Production
@@ -226,8 +245,13 @@ The project supports three deployment environments, each with its own configurat
   - Automatically deployed on Git push to branch `main` to enable CI/CD testing
   - Optional manual deployment:
   ```bash
-  pnpm run deploy -- --env production
+  pnpm run deploy:production
   ```
+
+### OAuth notes
+
+- Client fetches config from `/api/oauth/config` which returns `token_url: /api/oauth/token`
+- The Worker exchanges the code server-side at `/api/oauth/token` (avoids browser CORS and keeps secrets server-side)
 
 ## Project Structure
 
