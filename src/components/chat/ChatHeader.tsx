@@ -1,5 +1,4 @@
 import { Bug, Trash, X } from "@phosphor-icons/react";
-import { useId } from "react";
 import { Button } from "@/components/button/Button";
 import { Toggle } from "@/components/toggle/Toggle";
 import type { AgentMode } from "../../agent/AppAgent";
@@ -25,8 +24,6 @@ export function ChatHeader({
   onClearHistory,
   onCloseChat,
 }: ChatHeaderProps) {
-  const agentIconId = useId();
-
   return (
     <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900">
       <div className="flex-1 min-w-0" />

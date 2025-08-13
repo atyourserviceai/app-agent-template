@@ -5,5 +5,4 @@ export default {
   future: {
     unstable_viteEnvironmentApi: true,
   },
-  routes: "file",
 } satisfies Config;

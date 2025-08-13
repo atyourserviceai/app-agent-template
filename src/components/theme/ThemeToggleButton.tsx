@@ -15,6 +15,7 @@ export function ThemeToggleButton({
 }: ThemeToggleButtonProps) {
   return (
     <button
+      type="button"
       aria-label="Toggle theme"
       className={`rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 ${className}`}
       onClick={onToggle}

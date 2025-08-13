@@ -3,15 +3,24 @@ import "../src/styles.css";
 
 export const meta = () => [
   { title: "App Agent Template" },
-  { name: "description", content: "AI-powered chat agent built with Cloudflare Agents" },
+  {
+    name: "description",
+    content: "AI-powered chat agent built with Cloudflare Agents",
+  },
   { property: "og:title", content: "App Agent Template" },
-  { property: "og:description", content: "AI-powered chat agent built with Cloudflare Agents" },
+  {
+    property: "og:description",
+    content: "AI-powered chat agent built with Cloudflare Agents",
+  },
   { property: "og:type", content: "website" },
   { property: "og:site_name", content: "App Agent Template" },
   { property: "og:image", content: "/favicon.ico" },
   { name: "twitter:card", content: "summary_large_image" },
   { name: "twitter:title", content: "App Agent Template" },
-  { name: "twitter:description", content: "AI-powered chat agent built with Cloudflare Agents" },
+  {
+    name: "twitter:description",
+    content: "AI-powered chat agent built with Cloudflare Agents",
+  },
   { name: "twitter:image", content: "/favicon.ico" },
 ];
 export const links = () => [];

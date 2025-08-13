@@ -17,7 +17,7 @@ export function useThemePreference() {
     else preferred = "light";
 
     if (preferred && preferred !== theme) setTheme(preferred);
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     if (theme === "dark") {

@@ -7,7 +7,6 @@ import { Avatar } from "@/components/avatar/Avatar";
 import { Card } from "@/components/card/Card";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatMessage } from "@/components/chat/ChatMessage";
-import { ChatTabs } from "@/components/chat/ChatTabs";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import { ErrorMessage } from "@/components/chat/ErrorMessage";
 import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
@@ -949,6 +948,7 @@ function Chat() {
       {activeTab !== "chat" && (
         <div className="fixed bottom-4 right-6 z-40">
           <button
+            type="button"
             aria-label="Open chat"
             className="rounded-full shadow-lg bg-[#F48120] text-white px-4 py-2 md:px-5 md:py-3"
             onClick={() => setActiveTab("chat")}
@@ -962,6 +962,7 @@ function Chat() {
       <div className="fixed top-4 right-4 z-40 pr-2 md:pr-4 flex items-center gap-2">
         <UserProfile />
         <button
+          type="button"
           aria-label="Toggle theme"
           className="rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
           onClick={toggleTheme}
