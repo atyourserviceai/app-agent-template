@@ -60,11 +60,11 @@
         "SETTINGS_ENVIRONMENT": "staging",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://foo-agent-staging.atyourservice.ai/auth/callback",
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://staging.appagent.dev/auth/callback",
       },
       "routes": [
         {
-          "pattern": "foo-agent-staging.atyourservice.ai",
+          "pattern": "staging.appagent.dev",
           "custom_domain": true,
         },
       ],
@@ -90,11 +90,11 @@
         "SETTINGS_ENVIRONMENT": "production",
         "COMPOSIO_API_KEY": "",
         "BROWSERBASE_API_KEY": "",
-        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://foo-agent.atyourservice.ai/auth/callback",
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://appagent.dev/auth/callback",
       },
       "routes": [
         {
-          "pattern": "foo-agent.atyourservice.ai",
+          "pattern": "appagent.dev",
           "custom_domain": true,
         },
       ],
