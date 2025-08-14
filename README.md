@@ -226,7 +226,7 @@ The project supports three deployment environments, each with its own configurat
 - **Configuration**: Uses the `staging` environment in `wrangler.jsonc`
 - **Environment Variables**:
   - `SETTINGS_ENVIRONMENT`: "staging"
-- **Domain**: `foo-agent-staging.atyourservice.ai`
+- **Domain**: `staging.appagent.dev`
 - **Deployment**:
   - Automatically deployed on Git push to branch `dev` to enable CI/CD testing
   - Optional manual deployment:
@@ -240,7 +240,7 @@ The project supports three deployment environments, each with its own configurat
 - **Configuration**: Uses the `production` environment in `wrangler.jsonc`
 - **Environment Variables**:
   - `SETTINGS_ENVIRONMENT`: "production"
-- **Domain**: `foo-agent.atyourservice.ai`
+- **Domain**: `appagent.dev`
 - **Deployment**:
   - Automatically deployed on Git push to branch `main` to enable CI/CD testing
   - Optional manual deployment:
