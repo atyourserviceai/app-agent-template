@@ -1,4 +1,5 @@
 import { Moon, Sun } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 
 type ThemeToggleButtonProps = {
   theme: "dark" | "light";
@@ -13,6 +14,12 @@ export function ThemeToggleButton({
   className = "",
   title = "Toggle theme",
 }: ThemeToggleButtonProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <button
       type="button"
@@ -21,8 +28,19 @@ export function ThemeToggleButton({
       onClick={onToggle}
       title={title}
     >
-      <span suppressHydrationWarning>
-        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      {/* Render icon only after mount to ensure SSR/CSR markup matches */}
+      <span
+        suppressHydrationWarning
+        aria-hidden={!isMounted}
+        className="flex items-center justify-center"
+      >
+        {isMounted ? (
+          theme === "dark" ? (
+            <Sun size={20} />
+          ) : (
+            <Moon size={20} />
+          )
+        ) : null}
       </span>
     </button>
   );

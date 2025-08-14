@@ -62,9 +62,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!authMethod) {
-    // Floating login widget overlay; slightly blurred backdrop and scrollable if needed
+    // Floating login widget overlay; stronger blurred backdrop and scrollable if needed
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto p-4 md:p-6 bg-transparent supports-[backdrop-filter]:backdrop-blur-[2px]">
+      <div className="fixed inset-0 z-50 overflow-y-auto p-4 md:p-6 bg-transparent supports-[backdrop-filter]:backdrop-blur-[4px]">
         <div className="w-full max-w-2xl mx-auto my-8 md:my-12">
           <LandingPage onSignIn={login} authError={authError} />
         </div>

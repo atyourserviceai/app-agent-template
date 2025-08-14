@@ -32,11 +32,11 @@ export function PresentationPanel({
     });
   };
 
-  // Function to set chat input
+  // Function to set chat input (dispatch event consumed at App level)
   const setChatInput = (input: string) => {
-    if (window.setChatInput) {
-      window.setChatInput(input);
-    }
+    window.dispatchEvent(
+      new CustomEvent("set-chat-input", { detail: { text: input } })
+    );
   };
 
   // Check if we have any meaningful content to display
@@ -80,8 +80,137 @@ export function PresentationPanel({
     return settingsInfo;
   };
 
+  // Enriched fullscreen context: descriptions, quick actions and simple stats
+  const modeDescription: Record<AgentMode, string> = {
+    onboarding:
+      "Set up the agent’s purpose, defaults and operators. Finish onboarding to unlock deeper integrations.",
+    integration:
+      "Connect tools, run checks and document capabilities. Ensure everything is safe before acting.",
+    plan: "Analyze context and propose next steps without executing tools. Iterate safely before acting.",
+    act: "Execute approved actions with guardrails and visibility via the gateway.",
+  };
+
+  const quickActionsByMode: Record<
+    AgentMode,
+    Array<{ label: string; prompt: string }>
+  > = {
+    onboarding: [
+      { label: "Set language", prompt: "Set language to English" },
+      {
+        label: "Add operator",
+        prompt: "Add operator Alice (alice@example.com) as Analyst",
+      },
+      {
+        label: "Define purpose",
+        prompt: "Define the agent purpose for product research",
+      },
+    ],
+    integration: [
+      { label: "List tools", prompt: "List available tools and their status" },
+      {
+        label: "Run tests",
+        prompt: "Run integration tests for configured tools",
+      },
+      { label: "Document a tool", prompt: "Document the 'fetchWebPage' tool" },
+    ],
+    plan: [
+      {
+        label: "Summarize context",
+        prompt: "Summarize current context and known inputs",
+      },
+      {
+        label: "Propose next steps",
+        prompt: "Propose next 3 steps and assumptions",
+      },
+      {
+        label: "Risk check",
+        prompt: "List risks and mitigations before execution",
+      },
+    ],
+    act: [
+      { label: "Execute task", prompt: "Execute the top recommended action" },
+      {
+        label: "Schedule",
+        prompt: "Schedule a follow-up task for tomorrow 9am",
+      },
+      { label: "Export data", prompt: "Export current agent data as backup" },
+    ],
+  };
+
+  const quickActions = quickActionsByMode[agentMode] || [];
+  const onboardingComplete = !!agentState.isOnboardingComplete;
+  const integrationComplete = !!agentState.isIntegrationComplete;
+  const testCount = agentState.testResults
+    ? Object.keys(agentState.testResults).length
+    : 0;
+  const lastModeChange = agentState._lastModeChange
+    ? new Date(agentState._lastModeChange)
+    : null;
+
   return (
     <div className="h-full bg-white dark:bg-neutral-900 p-4 overflow-auto">
+      {/* Hero / mode banner with quick stats and actions */}
+      <div className="relative overflow-hidden rounded-xl p-6 md:p-8 mb-4 bg-gradient-to-br from-neutral-100/80 to-neutral-200/60 dark:from-neutral-900/60 dark:to-neutral-800/40 ring-1 ring-black/5 dark:ring-white/10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-800 text-white dark:bg-white dark:text-neutral-900">
+              <span>Mode</span>
+              <span className="opacity-80">•</span>
+              <span className="capitalize">{agentMode}</span>
+            </div>
+            <h2 className="mt-3 text-2xl md:text-3xl font-semibold text-neutral-900 dark:text-white">
+              {agentMode === "onboarding" && "Welcome—let’s set you up"}
+              {agentMode === "integration" && "Validate and connect tools"}
+              {agentMode === "plan" && "Think before you act"}
+              {agentMode === "act" && "Execute with confidence"}
+            </h2>
+            <p className="mt-2 text-neutral-700 dark:text-neutral-300 max-w-2xl">
+              {modeDescription[agentMode]}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:grid-cols-3">
+            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Onboarding
+              </p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                {onboardingComplete ? "Complete" : "In progress"}
+              </p>
+            </div>
+            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Integration
+              </p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                {integrationComplete ? "Complete" : `${testCount} tests`}
+              </p>
+            </div>
+            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Last change
+              </p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                {lastModeChange ? lastModeChange.toLocaleString() : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+        {quickActions.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {quickActions.map((qa) => (
+              <button
+                key={qa.label}
+                type="button"
+                className="px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity"
+                onClick={() => setChatInput(qa.prompt)}
+              >
+                {qa.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-2 mb-4">
         <ClipboardText size={20} className="text-neutral-500" />
         <h2 className="text-lg font-medium">Agent Configuration</h2>
@@ -133,10 +262,10 @@ export function PresentationPanel({
             </Card>
           )}
 
-          {/* Onboarding Status */}
+          {/* Progress & Health */}
           <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Setup Status</h3>
+              <h3 className="font-medium">Progress & Health</h3>
             </div>
             <div className="text-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -154,7 +283,9 @@ export function PresentationPanel({
                 />
                 <span>
                   Integration:{" "}
-                  {agentState.isIntegrationComplete ? "Complete" : "Pending"}
+                  {agentState.isIntegrationComplete
+                    ? "Complete"
+                    : `Pending (${testCount} tests)`}
                 </span>
               </div>
               <p className="text-neutral-600 dark:text-neutral-400 mt-2">
