@@ -199,20 +199,24 @@ export function PresentationPanel({
         </div>
 
         {/* Quick actions - mobile: scrollable, desktop: wrap */}
-        {quickActions.length > 0 && (
-          <div className="mt-4 flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible pb-2 md:pb-0">
-            {quickActions.map((qa) => (
-              <button
-                key={qa.label}
-                type="button"
-                className="flex-shrink-0 px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity whitespace-nowrap"
-                onClick={() => setChatInput(qa.prompt)}
-              >
-                {qa.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {(() => {
+          return quickActions.length > 0 ? (
+            <div className="mt-4 flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible pb-2 md:pb-0">
+              {quickActions.map((qa) => (
+                <button
+                  key={qa.label}
+                  type="button"
+                  className="flex-shrink-0 px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity whitespace-nowrap"
+                  onClick={() => {
+                    setChatInput(qa.prompt);
+                  }}
+                >
+                  {qa.label}
+                </button>
+              ))}
+            </div>
+          ) : null;
+        })()}
       </div>
 
       <div className="flex items-center gap-2 mb-3">
@@ -236,7 +240,9 @@ export function PresentationPanel({
             <button
               type="button"
               className="px-4 py-2 bg-[#F48120] text-white rounded-md hover:bg-[#F48120]/90 transition-colors"
-              onClick={() => setChatInput("Switch to onboarding mode")}
+              onClick={() => {
+                setChatInput("Switch to onboarding mode");
+              }}
             >
               Go to Onboarding
             </button>

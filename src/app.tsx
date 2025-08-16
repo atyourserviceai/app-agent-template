@@ -510,12 +510,49 @@ function Chat() {
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
     function handleSetChatInput(event: CustomEvent) {
-      if (event.detail) {
-        setInput(event.detail.text || "");
+      if (event.detail && event.detail.text) {
+        const selectedText = event.detail.text;
+
+        // Check token expiration before proceeding
+        if (auth?.checkTokenExpiration()) {
+          return; // Token expired, user will be redirected to login
+        }
+
         // If we're not in chat tab, switch to it
         if (activeTab !== "chat") {
           setActiveTab("chat");
         }
+
+        // Set the input value first (needed for compatibility with input validation)
+        setInput(selectedText);
+
+        // Then create a synthetic form submit event
+        setTimeout(() => {
+          // Create a new user message
+          const newMessage = {
+            content: selectedText,
+            createdAt: new Date(),
+            id: crypto.randomUUID(),
+            parts: [
+              {
+                text: selectedText,
+                type: "text" as const,
+              },
+            ],
+            role: "user" as const,
+          };
+
+          // Add the message to the chat
+          setMessages([...agentMessages, newMessage]);
+
+          // Clear the input field
+          setInput("");
+
+          // Trigger the agent to respond with token check
+          setTimeout(() => {
+            reloadWithTokenCheck();
+          }, 50);
+        }, 10);
       }
     }
 
@@ -532,7 +569,7 @@ function Chat() {
         handleSetChatInput as EventListener
       );
     };
-  }, [setInput, activeTab]);
+  }, [setInput, activeTab, agentMessages, reloadWithTokenCheck, auth]);
 
   // Handle action button clicks from the suggestActions tool
   useEffect(() => {
@@ -944,13 +981,13 @@ function Chat() {
   // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (mobile: full-width bottom bar, desktop: corner button) */}
+      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
       {activeTab !== "chat" && (
-        <div className="fixed bottom-0 left-0 right-0 md:bottom-4 md:right-6 md:left-auto z-40">
+        <div className="fixed bottom-4 right-4 z-[60]">
           <button
             type="button"
             aria-label="Open chat"
-            className="w-full md:w-auto bg-[#F48120] text-white font-semibold py-4 md:py-3 px-6 md:px-5 rounded-none md:rounded-full shadow-lg md:shadow-xl text-lg md:text-base"
+            className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
             onClick={() => setActiveTab("chat")}
           >
             Chat
@@ -959,7 +996,9 @@ function Chat() {
       )}
 
       {/* Floating profile + theme toggle container - mobile: top bar, desktop: corner */}
-      <div className={`fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-40 bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}>
+      <div
+        className={`fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+      >
         <div className="flex items-center gap-2">
           <UserProfile />
           <button
@@ -980,7 +1019,7 @@ function Chat() {
 
       {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
       <div
-        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-30 ${
+        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-[70] ${
           activeTab === "chat" ? "block" : "hidden"
         }`}
       >
@@ -1028,19 +1067,13 @@ export default function App() {
         <ErrorBoundary>
           <AuthProvider>
             <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-              {/* Background Presentation always visible */}
-              <div className="absolute inset-0">
-                <PresentationContainer
-                  activeTab="presentation"
-                  agentMode={"onboarding" as const}
-                  agentState={null}
-                  showDebug={false}
-                  variant="full"
-                />
+              {/* Background Presentation Panel - always visible */}
+              <div className="absolute inset-0 z-50">
+                <BackgroundPresentationPanel />
               </div>
               {/* Always-available theme toggle when unauthenticated */}
               <RootThemeToggle />
-              {/* Auth overlay and authenticated chat */}
+              {/* Auth overlay and authenticated content */}
               <AuthGuard>
                 <Chat />
               </AuthGuard>
@@ -1049,6 +1082,49 @@ export default function App() {
         </ErrorBoundary>
       </div>
     </div>
+  );
+}
+
+// Background presentation panel that shows with or without agent state
+function BackgroundPresentationPanel() {
+  const auth = useAuth();
+
+  // If not authenticated, show presentation panel without agent state
+  if (!auth?.authMethod) {
+    return (
+      <PresentationContainer
+        activeTab="presentation"
+        agentMode={"onboarding" as const}
+        agentState={null}
+        showDebug={false}
+        variant="full"
+      />
+    );
+  }
+
+  // If authenticated, show presentation panel with agent state
+  return <AuthenticatedPresentationPanel />;
+}
+
+// Component that renders the presentation panel with agent state when authenticated
+function AuthenticatedPresentationPanel() {
+  // Get authenticated agent configuration
+  const agentConfig = useAgentAuth();
+
+  // Use the agent state hook
+  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+    agentConfig || { agent: "", name: "" },
+    "onboarding"
+  );
+
+  return (
+    <PresentationContainer
+      activeTab="presentation"
+      agentMode={agentMode}
+      agentState={agentState}
+      showDebug={false}
+      variant="full"
+    />
   );
 }
 
