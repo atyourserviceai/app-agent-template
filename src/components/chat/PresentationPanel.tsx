@@ -148,60 +148,52 @@ export function PresentationPanel({
     : null;
 
   return (
-    <div className="h-full bg-white dark:bg-neutral-900 p-4 overflow-auto">
+    <div className="h-full bg-white dark:bg-neutral-900 p-3 md:p-4 overflow-auto">
       {/* Hero / mode banner with quick stats and actions */}
-      <div className="relative overflow-hidden rounded-xl p-6 md:p-8 mb-4 bg-gradient-to-br from-neutral-100/80 to-neutral-200/60 dark:from-neutral-900/60 dark:to-neutral-800/40 ring-1 ring-black/5 dark:ring-white/10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="relative overflow-hidden rounded-xl p-4 md:p-6 lg:p-8 mb-4 bg-gradient-to-br from-neutral-100/80 to-neutral-200/60 dark:from-neutral-900/60 dark:to-neutral-800/40 ring-1 ring-black/5 dark:ring-white/10">
+        <div className="flex flex-col gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-800 text-white dark:bg-white dark:text-neutral-900">
               <span>Mode</span>
               <span className="opacity-80">•</span>
               <span className="capitalize">{agentMode}</span>
             </div>
-            <h2 className="mt-3 text-2xl md:text-3xl font-semibold text-neutral-900 dark:text-white">
-              {agentMode === "onboarding" && "Welcome—let’s set you up"}
+            <h2 className="mt-3 text-xl md:text-2xl lg:text-3xl font-semibold text-neutral-900 dark:text-white">
+              {agentMode === "onboarding" && "Welcome—let's set you up"}
               {agentMode === "integration" && "Validate and connect tools"}
               {agentMode === "plan" && "Think before you act"}
               {agentMode === "act" && "Execute with confidence"}
             </h2>
-            <p className="mt-2 text-neutral-700 dark:text-neutral-300 max-w-2xl">
+            <p className="mt-2 text-sm md:text-base text-neutral-700 dark:text-neutral-300 max-w-2xl">
               {modeDescription[agentMode]}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:grid-cols-3">
-            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Onboarding
-              </p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                {onboardingComplete ? "Complete" : "In progress"}
-              </p>
+          
+          {/* Stats grid - mobile: 2 cols, desktop: 3 cols */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Onboarding</p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{onboardingComplete ? "Complete" : "In progress"}</p>
             </div>
-            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Integration
-              </p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                {integrationComplete ? "Complete" : `${testCount} tests`}
-              </p>
+            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Integration</p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{integrationComplete ? "Complete" : `${testCount} tests`}</p>
             </div>
-            <div className="rounded-lg px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                Last change
-              </p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-                {lastModeChange ? lastModeChange.toLocaleString() : "—"}
-              </p>
+            <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10 md:col-auto col-span-2">
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Last change</p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{lastModeChange ? lastModeChange.toLocaleString() : "—"}</p>
             </div>
           </div>
         </div>
+        
+        {/* Quick actions - mobile: scrollable, desktop: wrap */}
         {quickActions.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible pb-2 md:pb-0">
             {quickActions.map((qa) => (
               <button
                 key={qa.label}
                 type="button"
-                className="px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity"
+                className="flex-shrink-0 px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity whitespace-nowrap"
                 onClick={() => setChatInput(qa.prompt)}
               >
                 {qa.label}
@@ -211,9 +203,9 @@ export function PresentationPanel({
         )}
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <ClipboardText size={20} className="text-neutral-500" />
-        <h2 className="text-lg font-medium">Agent Configuration</h2>
+      <div className="flex items-center gap-2 mb-3">
+        <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+        <h3 className="text-sm md:text-base font-medium">Agent Configuration</h3>
       </div>
 
       {!hasAnyContent && (

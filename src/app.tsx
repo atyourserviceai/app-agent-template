@@ -944,13 +944,13 @@ function Chat() {
   // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (desktop + mobile): only shows when chat is hidden */}
+      {/* Floating chat launcher (mobile: full-width bottom bar, desktop: corner button) */}
       {activeTab !== "chat" && (
-        <div className="fixed bottom-4 right-6 z-40">
+        <div className="fixed bottom-0 left-0 right-0 md:bottom-4 md:right-6 md:left-auto z-40">
           <button
             type="button"
             aria-label="Open chat"
-            className="rounded-full shadow-lg bg-[#F48120] text-white px-4 py-2 md:px-5 md:py-3"
+            className="w-full md:w-auto bg-[#F48120] text-white font-semibold py-4 md:py-3 px-6 md:px-5 rounded-none md:rounded-full shadow-lg md:shadow-xl text-lg md:text-base"
             onClick={() => setActiveTab("chat")}
           >
             Chat
@@ -958,27 +958,33 @@ function Chat() {
         </div>
       )}
 
-      {/* Floating profile + theme toggle container with safe padding from scrollbar */}
-      <div className="fixed top-4 right-4 z-40 pr-2 md:pr-4 flex items-center gap-2">
-        <UserProfile />
-        <button
-          type="button"
-          aria-label="Toggle theme"
-          className="rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
-          onClick={toggleTheme}
-          title="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+      {/* Floating profile + theme toggle container - mobile: top bar, desktop: corner */}
+      <div className="fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-40 bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2">
+        <div className="flex items-center gap-2">
+          <UserProfile />
+          <button
+            type="button"
+            aria-label="Toggle theme"
+            className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
+            onClick={toggleTheme}
+            title="Toggle theme"
+          >
+            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
+        {/* Mobile: show current mode */}
+        <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
+          {agentMode}
+        </div>
       </div>
 
-      {/* Floating Chat Container */}
+      {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
       <div
-        className={`fixed left-4 right-4 bottom-4 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] h-[80vh] md:h-[75vh] overflow-hidden z-30 ${
+        className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-30 ${
           activeTab === "chat" ? "block" : "hidden"
         }`}
       >
-        <div className="mx-2 md:mx-0 h-full min-h-0 rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
+        <div className="h-full md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white/95 dark:bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/70">
           <ChatContainer
             theme={theme}
             showDebug={showDebug}

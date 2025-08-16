@@ -5,34 +5,34 @@ interface LandingPageProps {
 
 export function LandingPage({ onSignIn, authError }: LandingPageProps) {
   return (
-    <div className="w-full py-6 px-4">
+    <div className="w-full py-4 md:py-6 px-3 md:px-4">
       <div className="max-w-4xl mx-auto">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <div className="inline-block max-w-4xl w-full mx-auto rounded-2xl bg-transparent supports-[backdrop-filter]:backdrop-blur-[8px] px-6 py-8 md:px-10 md:py-10">
-            <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
+        <div className="text-center mb-8 md:mb-12">
+          <div className="inline-block max-w-4xl w-full mx-auto rounded-2xl bg-transparent supports-[backdrop-filter]:backdrop-blur-[8px] px-4 md:px-6 lg:px-10 py-6 md:py-8 lg:py-10">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
               App Agent Template
             </h1>
-            <p className="text-xl text-gray-800 dark:text-gray-200 mb-2">
+            <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
               A clean foundation for Cloudflare Worker agents with a modern UX.
             </p>
-            <p className="text-blue-700 dark:text-blue-400 italic mb-8">
+            <p className="text-blue-700 dark:text-blue-400 italic mb-6 md:mb-8 text-sm md:text-base">
               Free AI credits to get you going.
             </p>
 
             {authError && (
-              <div className="mb-6 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg max-w-md mx-auto">
+              <div className="mb-4 md:mb-6 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg max-w-md mx-auto">
                 <p className="text-red-600 dark:text-red-400 text-sm">
                   {authError}
                 </p>
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={onSignIn}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
               >
                 Try it →
               </button>
@@ -40,7 +40,7 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
                 href="https://github.com/atyourserviceai/app-agent-template"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-black text-white dark:bg-white dark:text-black font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
+                className="w-full sm:w-auto bg-black text-white dark:bg-white dark:text-black font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
               >
                 GitHub
               </a>
@@ -49,12 +49,12 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
         </div>
 
         {/* What You Get Section */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
             Feature highlights
           </h2>
-          <div className="grid md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 text-base">
-            <ul className="list-disc pl-6 space-y-2">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6 text-gray-700 dark:text-gray-300 text-sm md:text-base">
+            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
               <li>
                 <strong className="text-gray-900 dark:text-white">
                   Four modes
@@ -80,7 +80,7 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
                 endpoints for data portability.
               </li>
             </ul>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
               <li>
                 <strong className="text-gray-900 dark:text-white">
                   Composio integration

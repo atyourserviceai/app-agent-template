@@ -4,6 +4,10 @@ import "../src/styles.css";
 export const meta = () => [
   { title: "App Agent Template" },
   {
+    name: "viewport",
+    content: "width=device-width, initial-scale=1.0",
+  },
+  {
     name: "description",
     content: "AI-powered chat agent built with Cloudflare Agents",
   },
