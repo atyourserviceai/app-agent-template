@@ -168,24 +168,36 @@ export function PresentationPanel({
               {modeDescription[agentMode]}
             </p>
           </div>
-          
+
           {/* Stats grid - mobile: 2 cols, desktop: 3 cols */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
             <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Onboarding</p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{onboardingComplete ? "Complete" : "In progress"}</p>
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Onboarding
+              </p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
+                {onboardingComplete ? "Complete" : "In progress"}
+              </p>
             </div>
             <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Integration</p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{integrationComplete ? "Complete" : `${testCount} tests`}</p>
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Integration
+              </p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
+                {integrationComplete ? "Complete" : `${testCount} tests`}
+              </p>
             </div>
             <div className="rounded-lg px-2 md:px-3 py-2 bg-white/80 dark:bg-neutral-900/60 ring-1 ring-black/5 dark:ring-white/10 md:col-auto col-span-2">
-              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Last change</p>
-              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">{lastModeChange ? lastModeChange.toLocaleString() : "—"}</p>
+              <p className="text-[10px] md:text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Last change
+              </p>
+              <p className="text-xs md:text-sm font-semibold text-neutral-900 dark:text-white">
+                {lastModeChange ? lastModeChange.toLocaleString() : "—"}
+              </p>
             </div>
           </div>
         </div>
-        
+
         {/* Quick actions - mobile: scrollable, desktop: wrap */}
         {quickActions.length > 0 && (
           <div className="mt-4 flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible pb-2 md:pb-0">
@@ -205,7 +217,9 @@ export function PresentationPanel({
 
       <div className="flex items-center gap-2 mb-3">
         <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-        <h3 className="text-sm md:text-base font-medium">Agent Configuration</h3>
+        <h3 className="text-sm md:text-base font-medium">
+          Agent Configuration
+        </h3>
       </div>
 
       {!hasAnyContent && (
