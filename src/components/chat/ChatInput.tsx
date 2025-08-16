@@ -1,6 +1,6 @@
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button/Button";
 import { Textarea } from "@/components/textarea/Textarea";
 
@@ -22,6 +22,18 @@ export function ChatInput({
   placeholder,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -41,6 +53,7 @@ export function ChatInput({
     if (pendingConfirmation)
       return "Please respond to the tool confirmation above...";
     if (isLoading) return "AI is thinking...";
+    if (isMobile) return "Type your message...";
     return "Type your message... (Shift+Enter for new line, Enter to send)";
   };
 

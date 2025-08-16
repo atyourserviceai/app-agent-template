@@ -959,7 +959,7 @@ function Chat() {
       )}
 
       {/* Floating profile + theme toggle container - mobile: top bar, desktop: corner */}
-      <div className="fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-40 bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2">
+      <div className={`fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-40 bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}>
         <div className="flex items-center gap-2">
           <UserProfile />
           <button

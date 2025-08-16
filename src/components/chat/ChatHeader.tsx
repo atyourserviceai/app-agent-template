@@ -26,12 +26,26 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   return (
     <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900">
-      <div className="flex-1 min-w-0" />
+      {/* Left side: Close button */}
+      <div className="flex items-center gap-2">
+        {/* Close chat - show on mobile, hide on desktop when no onCloseChat provided */}
+        {onCloseChat && (
+          <Button
+            variant="ghost"
+            size="md"
+            shape="square"
+            className="rounded-full h-9 w-9 flex items-center justify-center"
+            onClick={onCloseChat}
+            aria-label="Close chat"
+            title="Close"
+          >
+            <X size={18} />
+          </Button>
+        )}
+      </div>
 
-      {/* Mode selector */}
-      <div className="flex items-center gap-2 ml-auto">
-        {/* Hidden debug element for logging mode - using key to force re-render */}
-        <div key={`debug-${agentMode}`} style={{ display: "none" }} />
+      {/* Center: Mode selector */}
+      <div className="flex items-center gap-2">
         <select
           className="bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md px-2 py-1 text-sm"
           value={agentMode}
@@ -44,43 +58,29 @@ export function ChatHeader({
         </select>
       </div>
 
-      {/* Debug toggle */}
-      <div className="hidden md:flex items-center gap-2 mr-2">
-        <Bug size={16} />
-        <Toggle
-          toggled={showDebug}
-          aria-label="Toggle debug mode"
-          onClick={onToggleDebug}
-        />
-      </div>
+      {/* Right side: Debug toggle and clear history */}
+      <div className="flex items-center gap-2">
+        {/* Debug toggle */}
+        <div className="hidden md:flex items-center gap-2">
+          <Bug size={16} />
+          <Toggle
+            toggled={showDebug}
+            aria-label="Toggle debug mode"
+            onClick={onToggleDebug}
+          />
+        </div>
 
-      {/* Theme toggle moved to top-right of app */}
-
-      {/* Clear history */}
-      <Button
-        variant="ghost"
-        size="md"
-        shape="square"
-        className="rounded-full h-9 w-9"
-        onClick={onClearHistory}
-      >
-        <Trash size={20} />
-      </Button>
-
-      {/* Close chat (floating panel use) */}
-      {onCloseChat && (
+        {/* Clear history */}
         <Button
           variant="ghost"
-          size="lg"
+          size="md"
           shape="square"
-          className="rounded-full h-10 w-10 flex items-center justify-center"
-          onClick={onCloseChat}
-          aria-label="Close chat"
-          title="Close"
+          className="rounded-full h-9 w-9"
+          onClick={onClearHistory}
         >
-          <X size={20} />
+          <Trash size={20} />
         </Button>
-      )}
+      </div>
     </div>
   );
 }
