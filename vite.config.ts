@@ -7,7 +7,10 @@ import path from "node:path";
 
 export default defineConfig({
   plugins: [
-    cf({ viteEnvironment: { name: "ssr" } }),
+    cf({
+      viteEnvironment: { name: "ssr" },
+      inspectorPort: 9329, // Set inspector port to avoid conflicts
+    }),
     tailwindcss(),
     reactRouter(),
     tsconfigPaths({
@@ -16,7 +19,7 @@ export default defineConfig({
     }),
   ],
   server: {
-    port: 6001,
+    port: 5273,
     strictPort: true,
   },
 });
