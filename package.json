@@ -26,7 +26,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^2.0.6",
+    "@biomejs/biome": "2.2.0",
     "@cloudflare/puppeteer": "^1.0.3",
     "@cloudflare/vite-plugin": "1.7.4",
     "@cloudflare/vitest-pool-workers": "^0.8.43",

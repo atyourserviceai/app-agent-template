@@ -40,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
         {/* Set theme class before hydration to avoid FOUC/mismatch */}
         <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
           dangerouslySetInnerHTML={{
             __html:
               "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();",

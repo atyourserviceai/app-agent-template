@@ -36,11 +36,16 @@ export function useAgentState(
   );
 
   // Initialize the agent with authentication if available
-  // Always call useAgent to follow React hooks rules, but with fallback config when not authenticated
+  // Always call useAgent to follow React hooks rules, but use ref to track auth state
+  const isAuthenticated = useRef(!!agentConfig);
+
   const agent = useAgent({
-    agent: agentConfig?.agent || "fallback",
-    name: agentConfig?.name || "fallback",
+    agent: "AppAgent", // Always use the correct agent name
+    name: agentConfig?.name || "unauthenticated",
     onStateUpdate: (newState: AppAgentState) => {
+      // Only process state updates if we have a valid config
+      if (!isAuthenticated.current) return;
+
       console.log("[UI] Agent state updated:", newState);
 
       // Critical: On initial state load, force agentMode to match agent state

@@ -183,6 +183,8 @@ const DropdownMenu = ({
               </DropdownMenuPrimitive.Item>
             );
           }
+          // Return null for any unhandled item types
+          return null;
         })}
       </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
