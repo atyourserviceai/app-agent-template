@@ -422,6 +422,7 @@ export class AppAgent extends AIChatAgent<Env> {
               maxSteps: 10,
               messages: filteredMessages,
               model,
+              temperature: 1,
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
                 if (
