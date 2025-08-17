@@ -1123,10 +1123,7 @@ function AuthenticatedTopPanel() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
   const agentConfig = useAgentAuth();
-  const { agentMode } = useAgentState(
-    agentConfig,
-    "onboarding"
-  );
+  const { agentMode } = useAgentState(agentConfig, "onboarding");
   const [showDebug, setShowDebug] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
     "presentation"

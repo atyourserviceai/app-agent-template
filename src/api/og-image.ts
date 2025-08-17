@@ -2,11 +2,16 @@ interface Env {
   // No browser rendering needed for static SVG generation
 }
 
-export async function handleOgImage(request: Request, env: Env): Promise<Response> {
+export async function handleOgImage(
+  request: Request,
+  env: Env
+): Promise<Response> {
   try {
     const url = new URL(request.url);
     const title = url.searchParams.get("title") || "App Agent Template";
-    const description = url.searchParams.get("description") || "AI-powered chat agent built with Cloudflare Agents";
+    const description =
+      url.searchParams.get("description") ||
+      "AI-powered chat agent built with Cloudflare Agents";
     const mode = url.searchParams.get("mode") || "onboarding";
 
     // For now, return a simple SVG-based OG image

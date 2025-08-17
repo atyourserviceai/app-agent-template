@@ -17,7 +17,9 @@ export function useAgentState(
   const initialStateLoaded = useRef(false);
 
   const [agentConfig] = useState(() => {
-    console.log(`[UI] Using external agent config: ${externalConfig?.name || 'null'}`);
+    console.log(
+      `[UI] Using external agent config: ${externalConfig?.name || "null"}`
+    );
     return externalConfig;
   });
 
@@ -35,25 +37,27 @@ export function useAgentState(
 
   // Initialize the agent with authentication if available
   // Only call useAgent if we have a valid config to prevent WebSocket connections when not authenticated
-  const agent = agentConfig ? useAgent({
-    agent: agentConfig.agent,
-    name: agentConfig.name,
-    onStateUpdate: (newState: AppAgentState) => {
-      console.log("[UI] Agent state updated:", newState);
+  const agent = agentConfig
+    ? useAgent({
+        agent: agentConfig.agent,
+        name: agentConfig.name,
+        onStateUpdate: (newState: AppAgentState) => {
+          console.log("[UI] Agent state updated:", newState);
 
-      // Critical: On initial state load, force agentMode to match agent state
-      if (!initialStateLoaded.current && newState?.mode) {
-        console.log(
-          `[UI] INITIAL STATE LOAD: Forcing mode to ${newState.mode} from agent state`
-        );
-        setAgentMode(newState.mode);
-        initialStateLoaded.current = true;
-      }
+          // Critical: On initial state load, force agentMode to match agent state
+          if (!initialStateLoaded.current && newState?.mode) {
+            console.log(
+              `[UI] INITIAL STATE LOAD: Forcing mode to ${newState.mode} from agent state`
+            );
+            setAgentMode(newState.mode);
+            initialStateLoaded.current = true;
+          }
 
-      setAgentState(newState);
-    }, // Include query params for authentication
-    query: agentConfig.query,
-  }) : null;
+          setAgentState(newState);
+        }, // Include query params for authentication
+        query: agentConfig.query,
+      })
+    : null;
 
   // Initialize agentMode from agent state when it changes
   useEffect(() => {
@@ -176,7 +180,9 @@ export function useAgentState(
       }
 
       // If agent is not available, show an error
-      console.error("[UI] Unable to change mode: agent not available or missing config");
+      console.error(
+        "[UI] Unable to change mode: agent not available or missing config"
+      );
     } catch (error) {
       console.error("Error changing agent mode:", error);
     }

@@ -6,10 +6,10 @@ interface OgImageProps {
   mode?: string;
 }
 
-export default function OgImage({ 
-  title = "App Agent Template", 
+export default function OgImage({
+  title = "App Agent Template",
   description = "AI-powered chat agent built with Cloudflare Agents",
-  mode = "onboarding"
+  mode = "onboarding",
 }: OgImageProps) {
   return (
     <div
