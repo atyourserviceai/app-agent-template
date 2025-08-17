@@ -995,28 +995,6 @@ function Chat() {
         </div>
       )}
 
-      {/* Floating profile + theme toggle container - mobile: top bar, desktop: corner */}
-      <div
-        className={`fixed top-0 left-0 right-0 md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
-      >
-        <div className="flex items-center gap-2">
-          <UserProfile />
-          <button
-            type="button"
-            aria-label="Toggle theme"
-            className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
-            onClick={toggleTheme}
-            title="Toggle theme"
-          >
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-        </div>
-        {/* Mobile: show current mode */}
-        <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
-          {agentMode}
-        </div>
-      </div>
-
       {/* Floating Chat Container - mobile: full screen, desktop: corner panel */}
       <div
         className={`fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-[75vh] md:inset-auto overflow-hidden z-[70] ${
@@ -1066,13 +1044,15 @@ export default function App() {
       >
         <ErrorBoundary>
           <AuthProvider>
-            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
+            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
               {/* Background Presentation Panel - always visible */}
               <div className="absolute inset-0 z-50">
                 <BackgroundPresentationPanel />
               </div>
               {/* Always-available theme toggle when unauthenticated */}
               <RootThemeToggle />
+              {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+              <AuthenticatedTopPanel />
               {/* Auth overlay and authenticated content */}
               <AuthGuard>
                 <Chat />
@@ -1135,6 +1115,50 @@ function RootThemeToggle() {
   return (
     <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
       <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
+    </div>
+  );
+}
+
+function AuthenticatedTopPanel() {
+  const auth = useAuth();
+  const { theme, toggleTheme } = useThemePreference();
+  const agentConfig = useAgentAuth();
+  const { agentMode } = useAgentState(
+    agentConfig || { agent: "", name: "" },
+    "onboarding"
+  );
+  const [showDebug, setShowDebug] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
+    "presentation"
+  );
+
+  // Only render if authenticated
+  if (!auth?.authMethod) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Toggle theme"
+          className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 order-2 md:order-1"
+          onClick={toggleTheme}
+          title="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+        <div className="order-1 md:order-2">
+          <UserProfile />
+        </div>
+      </div>
+      {/* Mobile: show current mode */}
+      <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
+        {agentMode}
+      </div>
     </div>
   );
 }

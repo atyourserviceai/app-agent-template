@@ -31,7 +31,7 @@ export function PresentationContainer({
   if (variant === "full") {
     return (
       <div className="h-full w-full overflow-hidden bg-white dark:bg-black">
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col pt-16 md:pt-0">
           <div className="flex-1 overflow-auto">
             <PresentationPanel
               agentState={safeAgentState}
