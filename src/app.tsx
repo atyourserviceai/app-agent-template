@@ -1140,7 +1140,7 @@ function AuthenticatedTopPanel() {
 
   return (
     <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
     >
       <div className="flex items-center gap-2">
         <button

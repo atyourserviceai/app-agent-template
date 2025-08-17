@@ -40,6 +40,8 @@ export interface UserInfo {
   id: string;
   email: string;
   credits: number;
+  starting_balance?: number;
+  used_credits?: number;
 }
 
 export interface AuthMethod {
@@ -317,6 +319,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           id: string;
           email: string;
           credits: number;
+          starting_balance?: number;
+          used_credits?: number;
         };
 
         // Update the stored auth method with fresh user info
@@ -326,6 +330,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.id,
+            starting_balance: userInfo.starting_balance,
+            used_credits: userInfo.used_credits,
           },
         };
 
