@@ -27,7 +27,9 @@ export const meta = () => [
   },
   { name: "twitter:image", content: "/api/og-image" },
 ];
-export const links = () => [];
+export const links = () => [
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
