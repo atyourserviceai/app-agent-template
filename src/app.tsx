@@ -510,7 +510,7 @@ function Chat() {
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
     function handleSetChatInput(event: CustomEvent) {
-      if (event.detail && event.detail.text) {
+      if (event.detail?.text) {
         const selectedText = event.detail.text;
 
         // Check token expiration before proceeding
@@ -569,7 +569,14 @@ function Chat() {
         handleSetChatInput as EventListener
       );
     };
-  }, [setInput, activeTab, agentMessages, reloadWithTokenCheck, auth]);
+  }, [
+    setInput,
+    activeTab,
+    agentMessages,
+    reloadWithTokenCheck,
+    auth,
+    setMessages,
+  ]);
 
   // Handle action button clicks from the suggestActions tool
   useEffect(() => {
@@ -1092,10 +1099,7 @@ function AuthenticatedPresentationPanel() {
   const agentConfig = useAgentAuth();
 
   // Use the agent state hook
-  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig,
-    "onboarding"
-  );
+  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
 
   return (
     <PresentationContainer
@@ -1124,8 +1128,8 @@ function AuthenticatedTopPanel() {
   const { theme, toggleTheme } = useThemePreference();
   const agentConfig = useAgentAuth();
   const { agentMode } = useAgentState(agentConfig, "onboarding");
-  const [showDebug, setShowDebug] = useState(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "presentation">(
+  const [_showDebug, _setShowDebug] = useState(false);
+  const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
     "presentation"
   );
 

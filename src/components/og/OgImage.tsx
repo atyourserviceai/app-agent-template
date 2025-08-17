@@ -1,5 +1,3 @@
-import React from "react";
-
 interface OgImageProps {
   title?: string;
   description?: string;

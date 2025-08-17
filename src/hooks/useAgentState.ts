@@ -36,28 +36,26 @@ export function useAgentState(
   );
 
   // Initialize the agent with authentication if available
-  // Only call useAgent if we have a valid config to prevent WebSocket connections when not authenticated
-  const agent = agentConfig
-    ? useAgent({
-        agent: agentConfig.agent,
-        name: agentConfig.name,
-        onStateUpdate: (newState: AppAgentState) => {
-          console.log("[UI] Agent state updated:", newState);
+  // Always call useAgent to follow React hooks rules, but with fallback config when not authenticated
+  const agent = useAgent({
+    agent: agentConfig?.agent || "fallback",
+    name: agentConfig?.name || "fallback",
+    onStateUpdate: (newState: AppAgentState) => {
+      console.log("[UI] Agent state updated:", newState);
 
-          // Critical: On initial state load, force agentMode to match agent state
-          if (!initialStateLoaded.current && newState?.mode) {
-            console.log(
-              `[UI] INITIAL STATE LOAD: Forcing mode to ${newState.mode} from agent state`
-            );
-            setAgentMode(newState.mode);
-            initialStateLoaded.current = true;
-          }
+      // Critical: On initial state load, force agentMode to match agent state
+      if (!initialStateLoaded.current && newState?.mode) {
+        console.log(
+          `[UI] INITIAL STATE LOAD: Forcing mode to ${newState.mode} from agent state`
+        );
+        setAgentMode(newState.mode);
+        initialStateLoaded.current = true;
+      }
 
-          setAgentState(newState);
-        }, // Include query params for authentication
-        query: agentConfig.query,
-      })
-    : null;
+      setAgentState(newState);
+    }, // Include query params for authentication
+    query: agentConfig?.query,
+  });
 
   // Initialize agentMode from agent state when it changes
   useEffect(() => {

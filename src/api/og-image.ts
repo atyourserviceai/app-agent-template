@@ -1,10 +1,6 @@
-interface Env {
-  // No browser rendering needed for static SVG generation
-}
-
 export async function handleOgImage(
   request: Request,
-  env: Env
+  _env: Env
 ): Promise<Response> {
   try {
     const url = new URL(request.url);
