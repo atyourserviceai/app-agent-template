@@ -18,14 +18,14 @@ export const meta = () => [
   },
   { property: "og:type", content: "website" },
   { property: "og:site_name", content: "App Agent Template" },
-  { property: "og:image", content: "/favicon.ico" },
+  { property: "og:image", content: "/api/og-image" },
   { name: "twitter:card", content: "summary_large_image" },
   { name: "twitter:title", content: "App Agent Template" },
   {
     name: "twitter:description",
     content: "AI-powered chat agent built with Cloudflare Agents",
   },
-  { name: "twitter:image", content: "/favicon.ico" },
+  { name: "twitter:image", content: "/api/og-image" },
 ];
 export const links = () => [];
 

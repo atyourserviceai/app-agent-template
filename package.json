@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.0.6",
-    "@cloudflare/puppeteer": "^1.0.2",
+    "@cloudflare/puppeteer": "^1.0.3",
     "@cloudflare/vite-plugin": "1.7.4",
     "@cloudflare/vitest-pool-workers": "^0.8.43",
     "@cloudflare/workers-types": "^4.20250620.0",
@@ -39,8 +39,8 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
     "htm": "^3.1.1",
-    "react-router": "^7.8.0",
     "prettier": "^3.5.3",
+    "react-router": "^7.8.0",
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",

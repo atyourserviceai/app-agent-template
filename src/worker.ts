@@ -1,6 +1,7 @@
 import { createRequestHandler } from "react-router";
 import { routeAgentRequest } from "agents";
 import { handleTokenExchange } from "./api/oauth-token-exchange";
+import { handleOgImage } from "./api/og-image";
 import { AppAgent } from "./agent";
 
 export { AppAgent };
@@ -74,6 +75,10 @@ export default {
         status: resp.status,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    if (url.pathname === "/api/og-image") {
+      return handleOgImage(request, env);
     }
 
     const agentResp = await routeAgentRequest(request, env, { cors: true });
