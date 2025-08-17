@@ -7,7 +7,7 @@ export function useAgentState(
     agent: string;
     name: string;
     query?: Record<string, string>;
-  },
+  } | null,
   initialMode: AgentMode = "onboarding"
 ) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
@@ -17,7 +17,7 @@ export function useAgentState(
   const initialStateLoaded = useRef(false);
 
   const [agentConfig] = useState(() => {
-    console.log(`[UI] Using external agent config: ${externalConfig.name}`);
+    console.log(`[UI] Using external agent config: ${externalConfig?.name || 'null'}`);
     return externalConfig;
   });
 
@@ -34,7 +34,8 @@ export function useAgentState(
   );
 
   // Initialize the agent with authentication if available
-  const agent = useAgent({
+  // Only call useAgent if we have a valid config to prevent WebSocket connections when not authenticated
+  const agent = agentConfig ? useAgent({
     agent: agentConfig.agent,
     name: agentConfig.name,
     onStateUpdate: (newState: AppAgentState) => {
@@ -52,7 +53,7 @@ export function useAgentState(
       setAgentState(newState);
     }, // Include query params for authentication
     query: agentConfig.query,
-  });
+  }) : null;
 
   // Initialize agentMode from agent state when it changes
   useEffect(() => {
@@ -107,7 +108,7 @@ export function useAgentState(
 
       // Instead of directly updating state, call the agent's setMode method
       // which will properly inject transition messages
-      if (agent) {
+      if (agent && agentConfig?.agent && agentConfig?.name) {
         // Log the endpoint URL we're actually using
         const setModeUrl = `/agents/${agentConfig.agent}/${agentConfig.name}/set-mode`;
         console.log(
@@ -175,7 +176,7 @@ export function useAgentState(
       }
 
       // If agent is not available, show an error
-      console.error("[UI] Unable to change mode: agent not available");
+      console.error("[UI] Unable to change mode: agent not available or missing config");
     } catch (error) {
       console.error("Error changing agent mode:", error);
     }
@@ -183,7 +184,9 @@ export function useAgentState(
 
   // Function to navigate to a specific room
   const navigateToRoom = (roomName: string) => {
-    changeAgentConfig(agentConfig.agent, roomName);
+    if (agentConfig) {
+      changeAgentConfig(agentConfig.agent, roomName);
+    }
   };
 
   return {

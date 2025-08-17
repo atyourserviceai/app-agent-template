@@ -226,7 +226,7 @@ function Chat() {
 
   // Use the agent state hook (must be called before any conditional returns)
   const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig || { agent: "", name: "" }, // Provide fallback to avoid null
+    agentConfig, // Pass null if not authenticated - useAgentState handles this
     "onboarding"
   );
 
@@ -254,7 +254,7 @@ function Chat() {
     reload,
     isLoading,
   } = useAgentChat({
-    agent,
+    agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     maxSteps: 5,
     onError: (error) => {
       console.error("Error while streaming:", error);
@@ -1093,7 +1093,7 @@ function AuthenticatedPresentationPanel() {
 
   // Use the agent state hook
   const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig || { agent: "", name: "" },
+    agentConfig,
     "onboarding"
   );
 
@@ -1124,7 +1124,7 @@ function AuthenticatedTopPanel() {
   const { theme, toggleTheme } = useThemePreference();
   const agentConfig = useAgentAuth();
   const { agentMode } = useAgentState(
-    agentConfig || { agent: "", name: "" },
+    agentConfig,
     "onboarding"
   );
   const [showDebug, setShowDebug] = useState(false);
