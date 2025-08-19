@@ -69,7 +69,7 @@ export const browseWebPage = tool({
         `[browseWebPage] Processing ${urls.length} URLs with selector "${selector}"`
       );
       console.log(
-        `[browseWebPage] Using API Key (first 5 chars): ${apiKey.substring(0, 5)}... and Base URL: ${baseUrl}`
+        `[browseWebPage] Using API Key: ${apiKey.length <= 4 ? "[REDACTED]" : `${apiKey.substring(0, 2)}...${apiKey.substring(-2)} (${apiKey.length} chars)`} and Base URL: ${baseUrl}`
       );
 
       const results: BrowseResult[] = [];

@@ -222,7 +222,10 @@ export class AppAgent extends AIChatAgent<Env> {
     const userApiKey = state.userInfo?.api_key;
 
     if (userApiKey) {
-      const redactedApiKey = `${userApiKey.substring(0, 20)}...${userApiKey.substring(-8)}`;
+      const redactedApiKey =
+        userApiKey.length <= 4
+          ? `[REDACTED] (${userApiKey.length} chars)`
+          : `${userApiKey.substring(0, 2)}...${userApiKey.substring(-2)} (${userApiKey.length} chars)`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
       );
@@ -264,8 +267,14 @@ export class AppAgent extends AIChatAgent<Env> {
       const newApiKey = newState.userInfo?.api_key;
 
       if (newApiKey && newApiKey !== currentApiKey) {
-        const redactedOld = `${currentApiKey.substring(0, 20)}...${currentApiKey.substring(-8)}`;
-        const redactedNew = `${newApiKey.substring(0, 20)}...${newApiKey.substring(-8)}`;
+        const redactedOld =
+          currentApiKey.length <= 4
+            ? "[REDACTED]"
+            : `${currentApiKey.substring(0, 2)}...${currentApiKey.substring(-2)} (${currentApiKey.length} chars)`;
+        const redactedNew =
+          newApiKey.length <= 4
+            ? "[REDACTED]"
+            : `${newApiKey.substring(0, 2)}...${newApiKey.substring(-2)} (${newApiKey.length} chars)`;
         console.log(
           `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
         );
