@@ -74,6 +74,44 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
     options?: { signal?: AbortSignal }
   ) => {
     try {
+      // First validate parameters using the tool's schema to catch validation errors
+      if (tool.parameters && params) {
+        try {
+          tool.parameters.parse(params);
+        } catch (validationError) {
+          console.error(
+            `[Tool Validation Error] ${tool.description || "unnamed tool"} parameter validation failed:`,
+            validationError
+          );
+
+          // Create a user-friendly error message for common validation issues
+          let errorMessage = "Invalid parameters provided to tool";
+          if (validationError instanceof Error) {
+            // Parse Zod error for more helpful message
+            if (validationError.message.includes("Invalid enum value")) {
+              const match = validationError.message.match(/Expected '([^']+)'/);
+              if (match) {
+                errorMessage = `Invalid parameter value. Expected one of: ${match[1]}`;
+              }
+            } else {
+              errorMessage = validationError.message;
+            }
+          }
+
+          return {
+            error: {
+              details:
+                validationError instanceof Error
+                  ? validationError.message
+                  : undefined,
+              message: errorMessage,
+              timestamp: new Date().toISOString(),
+            },
+            success: false,
+          } as TResult;
+        }
+      }
+
       const result = await originalExecute(params, options);
       if (result && typeof result === "object" && "success" in result) {
         return result as TResult;
