@@ -29,22 +29,18 @@ export function ChatHeader({
 
   return (
     <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900">
-      {/* Left side: Close button */}
+      {/* Left side: Clear history button */}
       <div className="flex items-center gap-2">
-        {/* Close chat - show on mobile, hide on desktop when no onCloseChat provided */}
-        {onCloseChat && (
-          <Button
-            variant="ghost"
-            size="md"
-            shape="square"
-            className="rounded-full h-9 w-9 flex items-center justify-center"
-            onClick={onCloseChat}
-            aria-label="Close chat"
-            title="Close"
-          >
-            <X size={18} />
-          </Button>
-        )}
+        {/* Clear history */}
+        <Button
+          variant="ghost"
+          size="md"
+          shape="square"
+          className="rounded-full h-9 w-9"
+          onClick={onClearHistory}
+        >
+          <Trash size={20} />
+        </Button>
       </div>
 
       {/* Center: Mode selector */}
@@ -61,7 +57,7 @@ export function ChatHeader({
         </select>
       </div>
 
-      {/* Right side: Debug toggle and clear history */}
+      {/* Right side: Debug toggle and close chat */}
       <div className="flex items-center gap-2">
         {/* Debug toggle - only show in dev environment */}
         {isDev && (
@@ -75,16 +71,20 @@ export function ChatHeader({
           </div>
         )}
 
-        {/* Clear history */}
-        <Button
-          variant="ghost"
-          size="md"
-          shape="square"
-          className="rounded-full h-9 w-9"
-          onClick={onClearHistory}
-        >
-          <Trash size={20} />
-        </Button>
+        {/* Close chat - show on mobile, hide on desktop when no onCloseChat provided */}
+        {onCloseChat && (
+          <Button
+            variant="ghost"
+            size="md"
+            shape="square"
+            className="rounded-full h-9 w-9 flex items-center justify-center"
+            onClick={onCloseChat}
+            aria-label="Close chat"
+            title="Close"
+          >
+            <X size={18} />
+          </Button>
+        )}
       </div>
     </div>
   );
