@@ -2,6 +2,7 @@ import { Bug, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/button/Button";
 import { Toggle } from "@/components/toggle/Toggle";
 import type { AgentMode } from "../../agent/AppAgent";
+import { useEnvironment } from "../../contexts/EnvironmentContext";
 
 type ChatHeaderProps = {
   theme: "dark" | "light";
@@ -24,6 +25,8 @@ export function ChatHeader({
   onClearHistory,
   onCloseChat,
 }: ChatHeaderProps) {
+  const { isDev } = useEnvironment();
+
   return (
     <div className="px-4 py-3 border-b border-neutral-300 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-900">
       {/* Left side: Close button */}
@@ -60,15 +63,17 @@ export function ChatHeader({
 
       {/* Right side: Debug toggle and clear history */}
       <div className="flex items-center gap-2">
-        {/* Debug toggle */}
-        <div className="hidden md:flex items-center gap-2">
-          <Bug size={16} />
-          <Toggle
-            toggled={showDebug}
-            aria-label="Toggle debug mode"
-            onClick={onToggleDebug}
-          />
-        </div>
+        {/* Debug toggle - only show in dev environment */}
+        {isDev && (
+          <div className="hidden md:flex items-center gap-2">
+            <Bug size={16} />
+            <Toggle
+              toggled={showDebug}
+              aria-label="Toggle debug mode"
+              onClick={onToggleDebug}
+            />
+          </div>
+        )}
 
         {/* Clear history */}
         <Button
