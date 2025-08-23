@@ -18,12 +18,20 @@
         "name": "AppAgent",
         "class_name": "AppAgent",
       },
+      {
+        "name": "UserDO",
+        "class_name": "UserDO",
+      },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
       "new_sqlite_classes": ["AppAgent"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["UserDO"],
     },
   ],
   "vars": {
@@ -46,12 +54,20 @@
             "name": "AppAgent",
             "class_name": "AppAgent",
           },
+          {
+            "name": "UserDO",
+            "class_name": "UserDO",
+          },
         ],
       },
       "migrations": [
         {
           "tag": "v1",
           "new_sqlite_classes": ["AppAgent"],
+        },
+        {
+          "tag": "v2",
+          "new_sqlite_classes": ["UserDO"],
         },
       ],
       "vars": {
@@ -76,12 +92,20 @@
             "name": "AppAgent",
             "class_name": "AppAgent",
           },
+          {
+            "name": "UserDO",
+            "class_name": "UserDO",
+          },
         ],
       },
       "migrations": [
         {
           "tag": "v1",
           "new_sqlite_classes": ["AppAgent"],
+        },
+        {
+          "tag": "v2",
+          "new_sqlite_classes": ["UserDO"],
         },
       ],
       "vars": {
