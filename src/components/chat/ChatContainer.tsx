@@ -18,6 +18,7 @@ type ChatContainerProps = {
   onToggleDebug: () => void;
   onChangeMode: (mode: AgentMode) => void;
   onClearHistory: () => void;
+  onExportConversation?: () => Promise<void>;
   onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onInputSubmit: (e: FormEvent) => void;
   onCloseChat?: () => void; // optional close handler when used as floating panel
@@ -37,6 +38,7 @@ export function ChatContainer({
   onToggleDebug,
   onChangeMode,
   onClearHistory,
+  onExportConversation,
   onInputChange,
   onInputSubmit,
   onCloseChat,
@@ -56,6 +58,7 @@ export function ChatContainer({
         onToggleDebug={onToggleDebug}
         onChangeMode={onChangeMode}
         onClearHistory={onClearHistory}
+        onExportConversation={onExportConversation}
         onCloseChat={onCloseChat}
       />
 
