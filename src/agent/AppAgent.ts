@@ -116,7 +116,7 @@ export interface AppAgentState {
     email: string;
     credits: number;
     payment_method: string;
-    api_key?: string; // User's AtYourService.ai API key
+    // JWT API key removed - now stored only in SQLite
   };
 
   // Onboarding mode state
@@ -214,12 +214,48 @@ export class AppAgent extends AIChatAgent<Env> {
   }
 
   /**
+   * Get JWT token from SQLite database (secure method)
+   * @returns JWT token string or null if not found
+   */
+  private getJWTFromDatabase(): string | null {
+    try {
+      const state = this.state as AppAgentState;
+      const userId = state.userInfo?.id;
+
+      if (!userId) {
+        console.error("[AppAgent] No user ID available to fetch JWT from database");
+        return null;
+      }
+
+      // Query SQLite for the JWT token
+      const result = this.sql`
+        SELECT api_key
+        FROM user_info
+        WHERE user_id = ${userId}
+        LIMIT 1
+      `;
+
+      for (const row of result) {
+        const tokenRow = row as { api_key: string };
+        return tokenRow.api_key;
+      }
+
+      console.warn(`[AppAgent] No JWT token found in database for user: ${userId}`);
+      return null;
+    } catch (error) {
+      console.error("[AppAgent] Failed to fetch JWT from database:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get AI provider using user-specific API key if available
    * Includes retry logic for token refresh on 403 errors
    */
   getAIProvider() {
     const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+    // Fetch JWT from SQLite database instead of state for security
+    const userApiKey = this.getJWTFromDatabase();
 
     if (userApiKey) {
       const redactedApiKey =
@@ -246,8 +282,8 @@ export class AppAgent extends AIChatAgent<Env> {
    */
   async refreshTokenOnError() {
     try {
-      const state = this.state as AppAgentState;
-      const currentApiKey = state.userInfo?.api_key;
+      // Fetch current JWT from SQLite database instead of state
+      const currentApiKey = this.getJWTFromDatabase();
 
       if (!currentApiKey) {
         console.log("[AppAgent] No current API key to refresh");
@@ -262,9 +298,8 @@ export class AppAgent extends AIChatAgent<Env> {
       // This will detect if the token is invalid and handle accordingly
       await this.fetchUserInfoFromOAuth(currentApiKey);
 
-      // Check if token was actually updated
-      const newState = this.state as AppAgentState;
-      const newApiKey = newState.userInfo?.api_key;
+      // Check if token was actually updated in database
+      const newApiKey = this.getJWTFromDatabase();
 
       if (newApiKey && newApiKey !== currentApiKey) {
         const redactedOld =
@@ -646,11 +681,11 @@ export class AppAgent extends AIChatAgent<Env> {
           )
         `;
 
-        // Also update agent state for immediate use
+        // Also update agent state for immediate use (without JWT for security)
         const updatedState: AppAgentState = {
           ...currentState,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
@@ -1026,8 +1061,8 @@ export class AppAgent extends AIChatAgent<Env> {
    * Get Browser API key for the external browser rendering service
    */
   getBrowserApiKey() {
-    const state = this.state as AppAgentState;
-    const userApiKey = state.userInfo?.api_key;
+    // Fetch JWT from SQLite database instead of state for security
+    const userApiKey = this.getJWTFromDatabase();
 
     if (userApiKey) {
       return userApiKey;
@@ -1120,7 +1155,7 @@ export class AppAgent extends AIChatAgent<Env> {
       const updatedState: AppAgentState = {
         ...state,
         userInfo: {
-          api_key: token,
+          // JWT token removed - now stored only in SQLite for security
           credits: userInfo.credits,
           email: userInfo.email,
           id: userInfo.id,
@@ -1156,7 +1191,8 @@ export class AppAgent extends AIChatAgent<Env> {
         };
 
         // Check if the stored API key matches the current OAuth token
-        if (oauthToken && userInfo.api_key !== oauthToken) {
+        const storedApiKey = this.getJWTFromDatabase();
+        if (oauthToken && storedApiKey !== oauthToken) {
           console.log(
             "[AppAgent] Stored API key doesn't match current token, fetching fresh user info from OAuth"
           );
@@ -1168,7 +1204,7 @@ export class AppAgent extends AIChatAgent<Env> {
         const updatedState: AppAgentState = {
           ...state,
           userInfo: {
-            api_key: userInfo.api_key,
+            // JWT token removed - now stored only in SQLite for security
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.user_id,
