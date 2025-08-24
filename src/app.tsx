@@ -23,7 +23,9 @@ import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
-import { useAgentAuth } from "./hooks/useAgentAuth";
+import { useCurrentProjectAuth, useProjectAuth } from "./hooks/useAgentAuth";
+import { ProjectProvider, useProject } from "./contexts/ProjectContext";
+import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import { useMessageEditing } from "./hooks/useMessageEditing";
@@ -151,7 +153,81 @@ function SuggestedActions({
   );
 }
 
+// Multi-instance Chat - manages multiple project tabs
 function Chat() {
+  const { currentProject, projects } = useProject();
+
+  return (
+    <div className="h-full w-full">
+      {/* Render all project tabs, but only show the active one */}
+      {projects.map((project) => (
+        <ProjectTab
+          key={project.name}
+          projectName={project.name}
+          isActive={project.name === currentProject.name}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Component for individual project tabs - each maintains its own agent instance
+function ProjectTab({
+  projectName,
+  isActive,
+}: {
+  projectName: string;
+  isActive: boolean;
+}) {
+  const agentConfig = useProjectAuth(projectName);
+  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+    agentConfig,
+    "onboarding"
+  );
+
+  if (!agentConfig) {
+    return <div>Loading project {projectName}...</div>;
+  }
+
+  return (
+    <div
+      style={{
+        display: isActive ? "block" : "none",
+        height: "100%",
+        width: "100%",
+      }}
+    >
+      <ProjectTabContent
+        projectName={projectName}
+        agentConfig={agentConfig}
+        agent={agent}
+        agentState={agentState}
+        agentMode={agentMode}
+        changeAgentMode={changeAgentMode}
+        isActive={isActive}
+      />
+    </div>
+  );
+}
+
+// The actual content of each project tab - contains the original Chat logic
+function ProjectTabContent({
+  projectName,
+  agentConfig,
+  agent,
+  agentState,
+  agentMode,
+  changeAgentMode,
+  isActive,
+}: {
+  projectName: string;
+  agentConfig: any;
+  agent: any;
+  agentState: any;
+  agentMode: any;
+  changeAgentMode: any;
+  isActive: boolean;
+}) {
   // Mobile viewport height fix
   useEffect(() => {
     // Only run on client and mobile
@@ -225,14 +301,7 @@ function Chat() {
 
   // Theme persistence and DOM classes are handled by useThemePreference
 
-  // Get authenticated agent configuration
-  const agentConfig = useAgentAuth();
-
-  // Use the agent state hook (must be called before any conditional returns)
-  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig, // Pass null if not authenticated - useAgentState handles this
-    "onboarding"
-  );
+  // agentConfig, agent, agentState, agentMode, changeAgentMode are now passed as props from ProjectTab
 
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
@@ -1066,20 +1135,22 @@ export default function App() {
       >
         <ErrorBoundary>
           <AuthProvider>
-            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
-              {/* Background Presentation Panel - always visible */}
-              <div className="absolute inset-0 z-50">
-                <BackgroundPresentationPanel />
+            <ProjectProvider>
+              <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
+                {/* Background Presentation Panel - always visible */}
+                <div className="absolute inset-0 z-50">
+                  <BackgroundPresentationPanel />
+                </div>
+                {/* Always-available theme toggle when unauthenticated */}
+                <RootThemeToggle />
+                {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+                <AuthenticatedTopPanel />
+                {/* Auth overlay and authenticated content */}
+                <AuthGuard>
+                  <Chat />
+                </AuthGuard>
               </div>
-              {/* Always-available theme toggle when unauthenticated */}
-              <RootThemeToggle />
-              {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-              <AuthenticatedTopPanel />
-              {/* Auth overlay and authenticated content */}
-              <AuthGuard>
-                <Chat />
-              </AuthGuard>
-            </div>
+            </ProjectProvider>
           </AuthProvider>
         </ErrorBoundary>
       </div>
@@ -1110,8 +1181,8 @@ function BackgroundPresentationPanel() {
 
 // Component that renders the presentation panel with agent state when authenticated
 function AuthenticatedPresentationPanel() {
-  // Get authenticated agent configuration
-  const agentConfig = useAgentAuth();
+  // Get authenticated agent configuration for current project
+  const agentConfig = useCurrentProjectAuth();
 
   // Use the agent state hook
   const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
@@ -1141,7 +1212,7 @@ function RootThemeToggle() {
 function AuthenticatedTopPanel() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
-  const agentConfig = useAgentAuth();
+  const agentConfig = useCurrentProjectAuth();
   const { agentMode } = useAgentState(agentConfig, "onboarding");
   const [_showDebug, _setShowDebug] = useState(false);
   const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
@@ -1158,6 +1229,9 @@ function AuthenticatedTopPanel() {
       className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
     >
       <div className="flex items-center gap-2">
+        <div className="order-0 md:order-0">
+          <ProjectSelector />
+        </div>
         <button
           type="button"
           aria-label="Toggle theme"

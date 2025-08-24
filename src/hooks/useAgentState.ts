@@ -16,12 +16,15 @@ export function useAgentState(
   // Add ref to track initial agent state load
   const initialStateLoaded = useRef(false);
 
-  const [agentConfig] = useState(() => {
-    console.log(
-      `[UI] Using external agent config: ${externalConfig?.name || "null"}`
-    );
-    return externalConfig;
-  });
+  // Use the external config directly, don't capture it in useState
+  const agentConfig = externalConfig;
+
+  useEffect(() => {
+    // Reset initial state loaded flag when config changes so new agent state loads properly
+    initialStateLoaded.current = false;
+    setAgentState(null); // Clear previous agent state
+    isAuthenticated.current = !!agentConfig; // Update authentication status
+  }, [agentConfig]);
 
   // Update agent configuration with proper typing
   const changeAgentConfig = useCallback(
@@ -45,8 +48,6 @@ export function useAgentState(
     onStateUpdate: (newState: AppAgentState) => {
       // Only process state updates if we have a valid config
       if (!isAuthenticated.current) return;
-
-      console.log("[UI] Agent state updated:", newState);
 
       // Critical: On initial state load, force agentMode to match agent state
       if (!initialStateLoaded.current && newState?.mode) {

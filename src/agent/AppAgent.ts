@@ -194,6 +194,9 @@ export class AppAgent extends AIChatAgent<Env> {
 
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
+
+    console.log(`[AppAgent] Initialized for project-specific instance`);
+
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;
     const updatedState = this.ensureStateSchema(state);
@@ -223,7 +226,9 @@ export class AppAgent extends AIChatAgent<Env> {
       const userId = state.userInfo?.id;
 
       if (!userId) {
-        console.error("[AppAgent] No user ID available to fetch JWT from database");
+        console.error(
+          "[AppAgent] No user ID available to fetch JWT from database"
+        );
         return null;
       }
 
@@ -240,7 +245,9 @@ export class AppAgent extends AIChatAgent<Env> {
         return tokenRow.api_key;
       }
 
-      console.warn(`[AppAgent] No JWT token found in database for user: ${userId}`);
+      console.warn(
+        `[AppAgent] No JWT token found in database for user: ${userId}`
+      );
       return null;
     } catch (error) {
       console.error("[AppAgent] Failed to fetch JWT from database:", error);
@@ -638,7 +645,7 @@ export class AppAgent extends AIChatAgent<Env> {
       url: url.toString(),
     });
 
-    // Extract OAuth token from request and ensure user info is loaded
+    // Extract OAuth token from request
     const token = url.searchParams.get("token");
     const currentState = this.state as AppAgentState;
 
@@ -803,14 +810,24 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log("[AppAgent] Handling /get-messages request");
 
       try {
-        // Try to get messages normally
-        const messages = (
-          this.sql`select * from cf_ai_chat_agent_messages` || []
-        ).map((row) => {
-          return JSON.parse(row.message as string);
-        });
+        // Query messages from SQLite database (persisted across DO evictions)
+        const messageRows = this
+          .sql`SELECT * FROM cf_ai_chat_agent_messages ORDER BY created_at`;
+        const messages = [];
 
+        for await (const row of messageRows) {
+          try {
+            messages.push(JSON.parse(row.message as string));
+          } catch (error) {
+            console.error(
+              "[AppAgent] Error parsing message from database:",
+              error
+            );
+            // Skip malformed messages rather than failing entirely
+          }
+        }
         const messageCount = Array.isArray(messages) ? messages.length : 0;
+
         console.log(
           `[AppAgent] /get-messages returning ${messageCount} messages`
         );
@@ -840,6 +857,107 @@ export class AppAgent extends AIChatAgent<Env> {
           "Content-Type": "application/json",
         },
       });
+    }
+
+    // Create project endpoint
+    if (url.pathname.endsWith("/create-project") && request.method === "POST") {
+      console.log("[AppAgent] Project creation requested");
+
+      try {
+        const body = (await request.json()) as {
+          projectName: string;
+          displayName: string;
+        };
+        const { projectName, displayName } = body;
+
+        if (!projectName || !displayName) {
+          return Response.json(
+            {
+              error: "projectName and displayName are required",
+              success: false,
+            },
+            { status: 400 }
+          );
+        }
+
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to create the project
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/create-project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectName, displayName }),
+          })
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to create project: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        return Response.json({ success: true });
+      } catch (error) {
+        console.error("[AppAgent] Error creating project:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Get projects endpoint
+    if (url.pathname.endsWith("/get-projects")) {
+      console.log("[AppAgent] Projects list requested");
+
+      try {
+        // Get user info to verify authentication
+        const state = this.state as AppAgentState;
+        if (!state.userInfo?.id) {
+          return Response.json(
+            { error: "User not authenticated", success: false },
+            { status: 401 }
+          );
+        }
+
+        // Use UserDO to get projects
+        const userDOId = this.env.UserDO.idFromName(state.userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request("https://localhost/list-projects")
+        );
+
+        if (!userDOResponse.ok) {
+          const error = await userDOResponse.text();
+          return Response.json(
+            { error: `Failed to get projects: ${error}`, success: false },
+            { status: 500 }
+          );
+        }
+
+        const projects = await userDOResponse.json();
+        return Response.json(projects);
+      } catch (error) {
+        console.error("[AppAgent] Error getting projects:", error);
+        return Response.json(
+          { error: "Internal server error", success: false },
+          { status: 500 }
+        );
+      }
     }
 
     // Import endpoint to restore data from a previous export

@@ -11,6 +11,8 @@ type ModalProps = {
   clickOutsideToClose?: boolean;
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  size?: "sm" | "md" | "lg";
 };
 
 export const Modal = ({
@@ -19,6 +21,8 @@ export const Modal = ({
   clickOutsideToClose = false,
   isOpen,
   onClose,
+  title,
+  size = "md",
 }: ModalProps) => {
   const modalRef = clickOutsideToClose
     ? // biome-ignore lint/correctness/useHookAtTopLevel: todo
@@ -82,15 +86,32 @@ export const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-0 left-0 z-50 flex h-screen w-full items-center justify-center bg-transparent p-6">
+    <div className="fixed top-0 left-0 z-50 flex h-screen w-full items-center justify-center p-6">
       <div className="fade fixed top-0 left-0 h-full w-full bg-black/5 backdrop-blur-[2px]" />
 
       <Card
-        className={cn("reveal reveal-sm relative z-50 max-w-md", className)}
+        className={cn(
+          "reveal reveal-sm relative z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700",
+          {
+            "max-w-sm": size === "sm",
+            "max-w-md": size === "md",
+            "max-w-lg": size === "lg",
+          },
+          className
+        )}
         ref={modalRef}
         tabIndex={-1}
+        variant="secondary"
       >
-        {children}
+        {title && (
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700">
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              {title}
+            </h2>
+          </div>
+        )}
+
+        <div className={title ? "" : "pt-6"}>{children}</div>
 
         <Button
           aria-label="Close Modal"

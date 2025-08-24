@@ -30,15 +30,18 @@ interface ProjectMetadata {
  * - Provide authentication info to ProjectAgents
  */
 export class UserDO extends DurableObject {
+  private sql: any; // SQL storage interface
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    this.sql = ctx.storage.sql;
     this.initializeTables();
   }
 
   private async initializeTables() {
     try {
       // User authentication and billing info table (same schema as AppAgent)
-      await this.ctx.storage.sql`
+      await this.sql.exec(`
         CREATE TABLE IF NOT EXISTS user_info (
           user_id TEXT PRIMARY KEY,
           api_key TEXT NOT NULL,
@@ -48,10 +51,10 @@ export class UserDO extends DurableObject {
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-      `;
+      `);
 
       // Project metadata table for organizing user work
-      await this.ctx.storage.sql`
+      await this.sql.exec(`
         CREATE TABLE IF NOT EXISTS projects (
           name TEXT PRIMARY KEY,
           display_name TEXT NOT NULL,
@@ -59,7 +62,7 @@ export class UserDO extends DurableObject {
           description TEXT,
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-      `;
+      `);
 
       console.log("UserDO: Tables initialized successfully");
     } catch (error) {
@@ -99,11 +102,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Internal server error",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -111,32 +114,35 @@ export class UserDO extends DurableObject {
 
   // Store user authentication and profile information
   private async handleStoreUserInfo(request: Request): Promise<Response> {
-    const userInfo = await request.json() as UserProfile;
+    const userInfo = (await request.json()) as UserProfile;
 
     try {
       // Store user info with JWT token in SQLite only
-      await this.ctx.storage.sql`
+      await this.sql.exec(`
         INSERT INTO user_info (user_id, api_key, email, credits, payment_method)
-        VALUES (${userInfo.user_id}, ${userInfo.api_key}, ${userInfo.email}, ${userInfo.credits}, ${userInfo.payment_method})
+        VALUES ('${userInfo.user_id}', '${userInfo.api_key}', '${userInfo.email}', ${userInfo.credits}, '${userInfo.payment_method}')
         ON CONFLICT(user_id) DO UPDATE SET
-          api_key = ${userInfo.api_key},
-          email = ${userInfo.email},
+          api_key = '${userInfo.api_key}',
+          email = '${userInfo.email}',
           credits = ${userInfo.credits},
-          payment_method = ${userInfo.payment_method},
+          payment_method = '${userInfo.payment_method}',
           updated_at = CURRENT_TIMESTAMP
-      `;
+      `);
 
       // Create default "personal" project if it doesn't exist
-      await this.ctx.storage.sql`
+      await this.sql.exec(`
         INSERT INTO projects (name, display_name, privacy, description)
         VALUES ('personal', 'Personal', 'private', 'Your personal workspace')
         ON CONFLICT(name) DO NOTHING
-      `;
+      `);
 
       console.log(`UserDO: Stored user info for ${userInfo.user_id}`);
 
       return new Response(
-        JSON.stringify({ success: true, message: "User info stored successfully" }),
+        JSON.stringify({
+          success: true,
+          message: "User info stored successfully",
+        }),
         { headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {
@@ -144,11 +150,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to store user info",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -167,37 +173,36 @@ export class UserDO extends DurableObject {
     }
 
     try {
-      const userResult = await this.ctx.storage.sql`
+      const userResult = await this.sql.exec(`
         SELECT user_id, email, credits, payment_method, created_at, updated_at
         FROM user_info
-        WHERE user_id = ${userId}
-      `;
+        WHERE user_id = '${userId}'
+      `);
 
       const userRows = [...userResult];
       if (userRows.length === 0) {
-        return new Response(
-          JSON.stringify({ error: "User not found" }),
-          { status: 404, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "User not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       // Return user info WITHOUT JWT token for security
-      const userInfo = userRows[0] as Omit<UserProfile, 'api_key'>;
+      const userInfo = userRows[0] as Omit<UserProfile, "api_key">;
 
-      return new Response(
-        JSON.stringify({ user: userInfo }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ user: userInfo }), {
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (error) {
       console.error("UserDO: Failed to get user info:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to get user info",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -206,11 +211,11 @@ export class UserDO extends DurableObject {
   // Get JWT token for authentication (internal use only)
   async getJWTToken(userId: string): Promise<string | null> {
     try {
-      const tokenResult = await this.ctx.storage.sql`
+      const tokenResult = await this.sql.exec(`
         SELECT api_key
         FROM user_info
-        WHERE user_id = ${userId}
-      `;
+        WHERE user_id = '${userId}'
+      `);
 
       const tokenRows = [...tokenResult];
       if (tokenRows.length === 0) {
@@ -227,18 +232,33 @@ export class UserDO extends DurableObject {
 
   // Create a new project
   private async handleCreateProject(request: Request): Promise<Response> {
-    const projectData = await request.json() as ProjectMetadata;
+    const requestData = await request.json();
+    console.log("UserDO: Create project request data:", requestData);
+
+    // Extract project data from the request (frontend sends different format)
+    const projectData = {
+      name: requestData.projectName,
+      display_name: requestData.displayName || requestData.projectName,
+      privacy: "private" as const, // Default to private for now
+      description: requestData.description || null,
+    };
 
     try {
-      await this.ctx.storage.sql`
+      console.log("UserDO: About to execute SQL with data:", projectData);
+
+      // Try template literal syntax instead of parameter binding
+      await this.sql.exec(`
         INSERT INTO projects (name, display_name, privacy, description)
-        VALUES (${projectData.name}, ${projectData.display_name}, ${projectData.privacy}, ${projectData.description || null})
-      `;
+        VALUES (${JSON.stringify(projectData.name)}, ${JSON.stringify(projectData.display_name)}, ${JSON.stringify(projectData.privacy)}, ${JSON.stringify(projectData.description)})
+      `);
 
       console.log(`UserDO: Created project ${projectData.name}`);
 
       return new Response(
-        JSON.stringify({ success: true, message: "Project created successfully" }),
+        JSON.stringify({
+          success: true,
+          message: "Project created successfully",
+        }),
         { headers: { "Content-Type": "application/json" } }
       );
     } catch (error) {
@@ -246,11 +266,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to create project",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -259,28 +279,27 @@ export class UserDO extends DurableObject {
   // List all projects for this user
   private async handleListProjects(request: Request): Promise<Response> {
     try {
-      const projectResult = await this.ctx.storage.sql`
+      const projectResult = await this.sql.exec(`
         SELECT name, display_name, privacy, description, created_at
         FROM projects
         ORDER BY created_at ASC
-      `;
+      `);
 
       const projects = [...projectResult] as ProjectMetadata[];
 
-      return new Response(
-        JSON.stringify({ projects }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ projects }), {
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (error) {
       console.error("UserDO: Failed to list projects:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to list projects",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }
@@ -299,36 +318,35 @@ export class UserDO extends DurableObject {
     }
 
     try {
-      const projectResult = await this.ctx.storage.sql`
+      const projectResult = await this.sql.exec(`
         SELECT name, display_name, privacy, description, created_at
         FROM projects
-        WHERE name = ${projectName}
-      `;
+        WHERE name = '${projectName}'
+      `);
 
       const projectRows = [...projectResult];
       if (projectRows.length === 0) {
-        return new Response(
-          JSON.stringify({ error: "Project not found" }),
-          { status: 404, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Project not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       const project = projectRows[0] as ProjectMetadata;
 
-      return new Response(
-        JSON.stringify({ project }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ project }), {
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (error) {
       console.error("UserDO: Failed to get project:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to get project",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         }
       );
     }

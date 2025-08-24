@@ -83,10 +83,10 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  // To avoid hydration mismatches, start with isLoading = true on both server and client
-  // and render a consistent loading shell until client effects run
-  // Start false so SSR shows LandingPage; client effect will validate and update
+  // Start with loading false for SSR/bots, will be set to true on client mount
+  // This prevents bots from seeing loading spinners while still preventing auth flash on client
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   // Function to sync token with agent database
@@ -131,7 +131,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  // Client-side hydration effect - prevents auth flash only on client
   useEffect(() => {
+    // This only runs on the client after hydration
+    setHasHydrated(true);
+    setIsLoading(true);
+  }, []);
+
+  useEffect(() => {
+    // Don't run auth check until after hydration
+    if (!hasHydrated) return;
+
     // Load OAuth config and check for stored auth on component mount
     const init = async () => {
       try {
@@ -213,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, [syncTokenWithAgent]);
+  }, [hasHydrated, syncTokenWithAgent]);
 
   const login = async () => {
     try {

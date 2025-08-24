@@ -107,7 +107,7 @@ const DropdownMenu = ({
           onCloseRmFocus ? e.preventDefault() : null;
         }}
         className={cn(
-          "z-modal radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
+          "z-[100] radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
           {
             "origin-bottom-left": align === "start" && side === "top",
             "origin-bottom-right": align === "end" && side === "top",
