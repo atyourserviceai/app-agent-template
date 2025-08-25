@@ -1136,24 +1136,31 @@ export default function App() {
         <ErrorBoundary>
           <AuthProvider>
             <ProjectProvider>
-              <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
-                {/* Background Presentation Panel - always visible */}
-                <div className="absolute inset-0 z-50">
-                  <BackgroundPresentationPanel />
-                </div>
-                {/* Always-available theme toggle when unauthenticated */}
-                <RootThemeToggle />
-                {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-                <AuthenticatedTopPanel />
-                {/* Auth overlay and authenticated content */}
-                <AuthGuard>
-                  <Chat />
-                </AuthGuard>
-              </div>
+              <AppContent />
             </ProjectProvider>
           </AuthProvider>
         </ErrorBoundary>
       </div>
+    </div>
+  );
+}
+
+// App content that has access to project context
+function AppContent() {
+  return (
+    <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
+      {/* Background Presentation Panel - always visible */}
+      <div className="absolute inset-0 z-50">
+        <BackgroundPresentationPanel />
+      </div>
+      {/* Always-available theme toggle when unauthenticated */}
+      <RootThemeToggle />
+      {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+      <AuthenticatedTopPanel />
+      {/* Auth overlay and authenticated content */}
+      <AuthGuard>
+        <Chat />
+      </AuthGuard>
     </div>
   );
 }
