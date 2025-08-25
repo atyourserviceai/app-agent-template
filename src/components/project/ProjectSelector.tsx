@@ -4,9 +4,7 @@ import {
   DropdownMenu,
   type MenuItemProps,
 } from "@/components/dropdown/DropdownMenu";
-import { Button } from "@/components/button/Button";
-import { Modal } from "@/components/modal/Modal";
-import { Input } from "@/components/input/Input";
+import { CreateProject } from "./CreateProject";
 import { Plus, FolderOpen, Check } from "@phosphor-icons/react";
 
 interface ProjectSelectorProps {
@@ -18,40 +16,8 @@ export function ProjectSelector({
   className = "",
   size = "sm",
 }: ProjectSelectorProps) {
-  const { currentProject, projects, switchProject, createProject, isLoading } =
-    useProject();
+  const { currentProject, projects, switchProject, isLoading } = useProject();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
-  const [createError, setCreateError] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) {
-      setCreateError("Project name is required");
-      return;
-    }
-
-    setIsCreating(true);
-    setCreateError("");
-
-    try {
-      await createProject(newProjectName.trim());
-      setNewProjectName("");
-      setShowCreateModal(false);
-    } catch (error) {
-      setCreateError(
-        error instanceof Error ? error.message : "Failed to create project"
-      );
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setShowCreateModal(false);
-    setNewProjectName("");
-    setCreateError("");
-  };
 
   const menuItems: MenuItemProps[] = [
     // Current projects
@@ -98,57 +64,10 @@ export function ProjectSelector({
       </DropdownMenu>
 
       {/* Create Project Modal */}
-      <Modal
+      <CreateProject
         isOpen={showCreateModal}
-        onClose={handleCancel}
-        title="Create New Project"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="project-name"
-              className="block text-sm font-medium mb-2"
-            >
-              Project Name
-            </label>
-            <Input
-              id="project-name"
-              type="text"
-              value={newProjectName}
-              onValueChange={(value) => setNewProjectName(value)}
-              placeholder="e.g., Marketing Ideas, Side Projects"
-              className="w-full"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isCreating) {
-                  handleCreateProject();
-                }
-              }}
-              autoFocus
-            />
-            {createError && (
-              <p className="text-red-600 text-sm mt-1">{createError}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={handleCancel}
-              disabled={isCreating}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateProject}
-              disabled={isCreating || !newProjectName.trim()}
-              loading={isCreating}
-            >
-              Create Project
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onClose={() => setShowCreateModal(false)}
+      />
     </>
   );
 }
