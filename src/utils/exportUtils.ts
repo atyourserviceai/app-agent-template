@@ -1,4 +1,11 @@
-import type { Message, ToolInvocation } from "@ai-sdk/react";
+import type { Message } from "@ai-sdk/react";
+
+type ToolInvocation = {
+  toolCallId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  result?: unknown;
+};
 
 /**
  * Export conversation messages to markdown format

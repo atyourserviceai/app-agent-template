@@ -1,4 +1,5 @@
-import React, {
+import type React from "react";
+import {
   createContext,
   useContext,
   useState,
@@ -131,7 +132,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (response.ok) {
-        const userProjects = (await response.json()) as { projects?: any[] };
+        const userProjects = (await response.json()) as {
+          projects?: Array<{ name: string; display_name?: string }>;
+        };
 
         // Extract projects array from API response
         const projectsArray = userProjects.projects || [];
@@ -139,8 +142,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         // Map API projects to frontend format, filtering out duplicates
         const apiProjects = Array.isArray(projectsArray)
           ? projectsArray
-              .filter((p: any) => p.name !== "personal") // Don't duplicate personal
-              .map((p: any) => ({
+              .filter((p) => p.name !== "personal") // Don't duplicate personal
+              .map((p) => ({
                 name: p.name,
                 displayName: p.display_name || p.name,
               }))

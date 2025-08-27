@@ -195,7 +195,7 @@ export class AppAgent extends AIChatAgent<Env> {
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
 
-    console.log(`[AppAgent] Initialized for project-specific instance`);
+    console.log("[AppAgent] Initialized for project-specific instance");
 
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;

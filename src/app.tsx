@@ -28,6 +28,7 @@ import { ProjectProvider, useProject } from "./contexts/ProjectContext";
 import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
 import { useErrorHandling } from "./hooks/useErrorHandling";
+import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
 import {
   exportConversationToMarkdown,
@@ -180,7 +181,7 @@ function ProjectTab({
   isActive: boolean;
 }) {
   const agentConfig = useProjectAuth(projectName);
-  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
+  const { agent, agentMode, changeAgentMode } = useAgentState(
     agentConfig,
     "onboarding"
   );
@@ -198,13 +199,10 @@ function ProjectTab({
       }}
     >
       <ProjectTabContent
-        projectName={projectName}
         agentConfig={agentConfig}
         agent={agent}
-        agentState={agentState}
         agentMode={agentMode}
         changeAgentMode={changeAgentMode}
-        isActive={isActive}
       />
     </div>
   );
@@ -212,21 +210,15 @@ function ProjectTab({
 
 // The actual content of each project tab - contains the original Chat logic
 function ProjectTabContent({
-  projectName,
   agentConfig,
   agent,
-  agentState,
   agentMode,
   changeAgentMode,
-  isActive,
 }: {
-  projectName: string;
-  agentConfig: any;
-  agent: any;
-  agentState: any;
-  agentMode: any;
-  changeAgentMode: any;
-  isActive: boolean;
+  agentConfig: ReturnType<typeof useProjectAuth>;
+  agent: ReturnType<typeof useAgentState>["agent"];
+  agentMode: AgentMode;
+  changeAgentMode: (mode: AgentMode) => Promise<void>;
 }) {
   // Mobile viewport height fix
   useEffect(() => {

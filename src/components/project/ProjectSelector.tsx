@@ -12,10 +12,7 @@ interface ProjectSelectorProps {
   size?: "sm" | "md" | "lg";
 }
 
-export function ProjectSelector({
-  className = "",
-  size = "sm",
-}: ProjectSelectorProps) {
+export function ProjectSelector({ className = "" }: ProjectSelectorProps) {
   const { currentProject, projects, switchProject, isLoading } = useProject();
   const [showCreateModal, setShowCreateModal] = useState(false);
 

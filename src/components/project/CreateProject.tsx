@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { Button } from "@/components/button/Button";
 import { Modal } from "@/components/modal/Modal";
@@ -14,6 +14,7 @@ export function CreateProject({ isOpen, onClose }: CreateProjectProps) {
   const [newProjectName, setNewProjectName] = useState("");
   const [createError, setCreateError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const projectNameId = useId();
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
@@ -53,13 +54,13 @@ export function CreateProject({ isOpen, onClose }: CreateProjectProps) {
       <div className="space-y-4">
         <div>
           <label
-            htmlFor="project-name"
+            htmlFor={projectNameId}
             className="block text-sm font-medium mb-2"
           >
             Project Name
           </label>
           <Input
-            id="project-name"
+            id={projectNameId}
             type="text"
             value={newProjectName}
             onValueChange={(value) => setNewProjectName(value)}

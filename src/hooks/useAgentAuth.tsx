@@ -7,7 +7,7 @@ import { useProject } from "../contexts/ProjectContext";
  * @param projectName - Name of the project (e.g., "personal", "saas-ideas")
  * @returns Agent configuration for connecting to project-specific AppAgent instance
  */
-export function useProjectAuth(projectName: string = "personal") {
+export function useProjectAuth(projectName = "personal") {
   const { authMethod } = useAuth();
 
   const agentConfig = useMemo(() => {

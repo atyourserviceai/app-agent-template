@@ -83,7 +83,7 @@ export default {
     }
 
     // Handle project-based routing: /u/{userId}/{projectName}
-    const projectMatch = url.pathname.match(/^\/u\/([^\/]+)\/([^\/]+)/);
+    const projectMatch = url.pathname.match(/^\/u\/([^/]+)\/([^/]+)/);
     if (projectMatch) {
       const [, userId, projectName] = projectMatch;
 

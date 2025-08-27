@@ -40,7 +40,7 @@ export function ChatHeader({
       await onExportConversation();
       setExportStatus("success");
       setTimeout(() => setExportStatus("idle"), 2000);
-    } catch (error) {
+    } catch (_error) {
       setExportStatus("error");
       setTimeout(() => setExportStatus("idle"), 2000);
     }

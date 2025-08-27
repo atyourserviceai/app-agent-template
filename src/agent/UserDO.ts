@@ -11,15 +11,6 @@ interface UserProfile {
   updated_at: string;
 }
 
-// Project metadata for organizing user's work
-interface ProjectMetadata {
-  name: string; // "personal", "saas-ideas", etc.
-  display_name: string; // "Personal", "SaaS Ideas", etc.
-  privacy: "private" | "public";
-  created_at: string;
-  description?: string;
-}
-
 /**
  * UserDO: Centralized user data management
  *
@@ -30,7 +21,7 @@ interface ProjectMetadata {
  * - Provide authentication info to ProjectAgents
  */
 export class UserDO extends DurableObject {
-  private sql: any; // SQL storage interface
+  private sql: DurableObjectStorage["sql"]; // SQL storage interface
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -232,7 +223,11 @@ export class UserDO extends DurableObject {
 
   // Create a new project
   private async handleCreateProject(request: Request): Promise<Response> {
-    const requestData = await request.json();
+    const requestData = (await request.json()) as {
+      projectName: string;
+      displayName?: string;
+      description?: string;
+    };
     console.log("UserDO: Create project request data:", requestData);
 
     // Extract project data from the request (frontend sends different format)
@@ -277,7 +272,7 @@ export class UserDO extends DurableObject {
   }
 
   // List all projects for this user
-  private async handleListProjects(request: Request): Promise<Response> {
+  private async handleListProjects(_request: Request): Promise<Response> {
     try {
       const projectResult = await this.sql.exec(`
         SELECT name, display_name, privacy, description, created_at
@@ -285,7 +280,13 @@ export class UserDO extends DurableObject {
         ORDER BY created_at ASC
       `);
 
-      const projects = [...projectResult] as ProjectMetadata[];
+      const projects = [...projectResult].map((row) => ({
+        name: row.name as string,
+        display_name: row.display_name as string,
+        privacy: row.privacy as string,
+        description: row.description as string | null,
+        created_at: row.created_at as string,
+      }));
 
       return new Response(JSON.stringify({ projects }), {
         headers: { "Content-Type": "application/json" },
@@ -332,7 +333,13 @@ export class UserDO extends DurableObject {
         });
       }
 
-      const project = projectRows[0] as ProjectMetadata;
+      const project = {
+        name: projectRows[0].name as string,
+        display_name: projectRows[0].display_name as string,
+        privacy: projectRows[0].privacy as string,
+        description: projectRows[0].description as string | null,
+        created_at: projectRows[0].created_at as string,
+      };
 
       return new Response(JSON.stringify({ project }), {
         headers: { "Content-Type": "application/json" },
