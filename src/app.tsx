@@ -307,13 +307,6 @@ function ProjectTabContent({
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
 
-  // Debug effect to log dropdown values on every render
-  useEffect(() => {
-    console.log(
-      `[UI Debug] Dropdown values - agentMode: ${agentMode}, agentState?.mode: ${agentState?.mode || "none"}`
-    );
-  }, [agentMode, agentState]);
-
   const {
     messages: agentMessagesRaw,
     input: agentInput,
@@ -789,9 +782,6 @@ function ProjectTabContent({
           "isModeMessage" in messageData;
 
         if (isModeMessage) {
-          console.log(
-            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
-          );
           // Trigger AI response just like a user sent a message
           reloadWithTokenCheck();
         }
@@ -1054,17 +1044,9 @@ function ProjectTabContent({
     setTemporaryLoading(true);
     setTimeout(() => setTemporaryLoading(false), 1500);
 
-    // After clearing, force refresh the current mode to generate a welcome message
+    // After clearing, refresh the current mode to generate a welcome message
     if (changeAgentMode) {
-      console.log("[UI] Refreshing mode after clearing history");
-
-      // Pass true for both force and isAfterClearHistory
-      // The isAfterClearHistory flag is critical to ensure proper behavior:
-      // - On page reload, the agent's onConnect method ensures a welcome message
-      // - When clearing history, we don't trigger onConnect, so we need this flag
-      // - This makes the mode transition create a fresh welcome message
-      // - Without this flag, clearing history would leave an empty chat with no welcome message
-      changeAgentMode(agentMode, true, true);
+      changeAgentMode(agentMode);
     }
   };
 

@@ -46,23 +46,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const switchProject = useCallback(
     (projectName: string) => {
-      console.log(
-        `🏗️ [DEBUG] ProjectContext: Switching to project ${projectName}`
-      );
       const project = projects.find((p) => p.name === projectName);
       if (project) {
-        console.log(
-          `🏗️ [DEBUG] ProjectContext: Found project, setting current project to:`,
-          project
-        );
         setCurrentProject(project);
-        // Store the selection in localStorage for persistence
         localStorage.setItem("selectedProject", projectName);
-      } else {
-        console.log(
-          `🏗️ [DEBUG] ProjectContext: Project ${projectName} not found in projects list:`,
-          projects
-        );
       }
     },
     [projects]
@@ -144,11 +131,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (response.ok) {
-        const userProjects = await response.json();
-        console.log(
-          "🏗️ [DEBUG] ProjectContext: Received projects:",
-          userProjects
-        );
+        const userProjects = (await response.json()) as { projects?: any[] };
 
         // Extract projects array from API response
         const projectsArray = userProjects.projects || [];
