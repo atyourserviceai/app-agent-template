@@ -287,6 +287,9 @@ function ProjectTabContent({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
+  // Thinking tokens state
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingTokens, setThinkingTokens] = useState<string>("");
 
   // Add auth context for token expiration checks
   const auth = useAuth();
@@ -531,6 +534,34 @@ function ProjectTabContent({
     handleRetry,
     handleRetryLastUserMessage,
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
+  // Listen for thinking tokens from agent data stream
+  useEffect(() => {
+    if (agentData && Array.isArray(agentData)) {
+      // Check if we have thinking tokens data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const thinkingData = agentData.find(
+        (data: any) => data?.type === "thinking-tokens"
+      );
+      if (
+        thinkingData &&
+        typeof thinkingData === "object" &&
+        "content" in thinkingData &&
+        typeof thinkingData.content === "string"
+      ) {
+        setIsThinking(true);
+        setThinkingTokens(thinkingData.content);
+      }
+    }
+  }, [agentData]);
+
+  // Reset thinking state when loading stops
+  useEffect(() => {
+    if (!isLoading) {
+      setIsThinking(false);
+      setThinkingTokens("");
+    }
+  }, [isLoading]);
 
   // Token expiration wrapper functions
   const handleRetryWithTokenCheck = (index: number) => {
@@ -965,7 +996,11 @@ function ProjectTabContent({
       // but not when there's already an assistant message being streamed
       messageElements.push(
         <div key="loading-indicator">
-          <LoadingIndicator formatTime={formatTime} />
+          <LoadingIndicator
+            formatTime={formatTime}
+            isThinking={isThinking && !!thinkingTokens}
+            thinkingTokens={thinkingTokens}
+          />
         </div>
       );
     }
@@ -1072,6 +1107,7 @@ function ProjectTabContent({
             agentMode={agentMode}
             inputValue={agentInput}
             isLoading={isLoading}
+            isThinking={isThinking}
             pendingConfirmation={pendingToolCallConfirmation}
             activeTab={"chat"}
             onToggleTheme={toggleTheme}

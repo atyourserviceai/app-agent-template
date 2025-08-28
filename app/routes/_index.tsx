@@ -7,6 +7,7 @@ export async function loader({ context }: LoaderFunctionArgs) {
   const env = context?.cloudflare?.env;
   return {
     environment: env?.SETTINGS_ENVIRONMENT || "production",
+    simulateThinkingTokens: env?.SIMULATE_THINKING_TOKENS === "true",
   };
 }
 

@@ -6,6 +6,7 @@ import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
   createDataStreamResponse,
+  extractReasoningMiddleware,
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
@@ -13,6 +14,7 @@ import {
 } from "ai";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
+import { simulateThinkingLLM } from "./middleware/simulateThinkingMiddleware";
 import type {
   AdminContact,
   Operator,
@@ -466,7 +468,38 @@ export class AppAgent extends AIChatAgent<Env> {
         while (retryCount <= maxRetries) {
           try {
             const openai = this.getAIProvider();
-            const model = openai("gpt-5-mini-2025-08-07");
+            let model = openai("gpt-5-mini-2025-08-07");
+
+            // Enable simulation for testing if environment variable is set
+            if (this.env.SIMULATE_THINKING_TOKENS === "true") {
+              model = simulateThinkingLLM();
+              console.log("[AppAgent] Using simulated thinking tokens for testing");
+            }
+
+            // Create reasoning middleware to handle thinking tokens properly
+            const _reasoningMiddleware = extractReasoningMiddleware({
+              tagName: "thinking", // Common tag for thinking tokens
+              onReasoningStart: () => {
+                console.log("[AppAgent] 🧠 Reasoning started - setting thinking state");
+                // Signal that thinking has started
+                dataStream.writeData({
+                  type: "thinking-tokens",
+                  content: "", // Empty content to trigger thinking state
+                });
+              },
+              onReasoningChunk: (chunk: string) => {
+                console.log("[AppAgent] 🧠 Reasoning chunk received:", chunk.substring(0, 50) + "...");
+                // Stream thinking tokens in real-time
+                dataStream.writeData({
+                  type: "thinking-tokens", 
+                  content: chunk,
+                });
+              },
+              onReasoningEnd: () => {
+                console.log("[AppAgent] 🧠 Reasoning complete");
+                // Could send a signal that thinking is complete
+              }
+            });
 
             // Stream the AI response
             result = streamText({
@@ -474,6 +507,7 @@ export class AppAgent extends AIChatAgent<Env> {
               messages: filteredMessages,
               model,
               temperature: 1,
+              middleware: [_reasoningMiddleware],
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
                 if (
@@ -501,6 +535,22 @@ export class AppAgent extends AIChatAgent<Env> {
                 console.log(
                   `[AppAgent] Completed processing message in ${currentMode} mode`
                 );
+
+                // Handle reasoning tokens if they exist
+                if ("reasoning" in args && args.reasoning) {
+                  console.log(
+                    `[AppAgent] Reasoning tokens captured: ${args.reasoning.length} characters`
+                  );
+                  console.log(
+                    `[AppAgent] Reasoning preview: ${args.reasoning.substring(0, 200)}...`
+                  );
+
+                  // Stream thinking tokens to the client for optional display
+                  dataStream.writeData({
+                    type: "thinking-tokens",
+                    content: args.reasoning,
+                  });
+                }
 
                 // Pass args directly to onFinish callback
                 onFinish(

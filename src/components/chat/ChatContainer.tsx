@@ -10,6 +10,7 @@ type ChatContainerProps = {
   agentMode: AgentMode;
   inputValue: string;
   isLoading: boolean;
+  isThinking: boolean; // Add thinking state
   pendingConfirmation: boolean;
   activeTab: "chat" | "presentation";
   children: ReactNode;
@@ -30,6 +31,7 @@ export function ChatContainer({
   agentMode,
   inputValue,
   isLoading,
+  isThinking,
   pendingConfirmation,
   activeTab,
   children,
@@ -76,6 +78,7 @@ export function ChatContainer({
         onChange={onInputChange}
         onSubmit={onInputSubmit}
         isLoading={isLoading}
+        isThinking={isThinking}
         pendingConfirmation={pendingConfirmation}
       />
     </div>

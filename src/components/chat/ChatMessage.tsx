@@ -1,4 +1,5 @@
 import type { Message } from "@ai-sdk/react";
+import { useState } from "react";
 import { Avatar } from "@/components/avatar/Avatar";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
@@ -24,6 +25,7 @@ type ChatMessageProps = {
   onEditingValueChange: (value: string) => void;
   formatTime: (date: Date) => string;
   showDebug?: boolean;
+  thinkingTokens?: string;
 };
 
 export function ChatMessage({
@@ -37,8 +39,10 @@ export function ChatMessage({
   onEditingValueChange,
   formatTime,
   showDebug = false,
+  thinkingTokens,
 }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const [showThinking, setShowThinking] = useState(false);
 
   // Find the first text part for display
   const textPart = message.parts?.find((p) => p.type === "text");
@@ -159,6 +163,31 @@ export function ChatMessage({
                   />
                 </div>
               </Card>
+
+              {/* Thinking tokens display for assistant messages */}
+              {!isUser && thinkingTokens && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowThinking(!showThinking)}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 flex items-center gap-1"
+                    title="Toggle AI thinking process"
+                  >
+                    <span>🧠</span>
+                    <span>
+                      {showThinking ? "Hide" : "Show"} thinking process
+                    </span>
+                  </button>
+                  {showThinking && (
+                    <Card className="mt-2 p-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <div className="text-xs text-amber-800 dark:text-amber-200 font-mono whitespace-pre-wrap max-h-60 overflow-y-auto">
+                        {thinkingTokens}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-between items-center mt-1">
                 <p
                   className={`text-sm text-muted-foreground ${

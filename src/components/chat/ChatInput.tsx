@@ -9,6 +9,7 @@ type ChatInputProps = {
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   onSubmit: (e: FormEvent) => void;
   isLoading: boolean;
+  isThinking: boolean;
   pendingConfirmation: boolean;
   placeholder?: string;
 };
@@ -18,6 +19,7 @@ export function ChatInput({
   onChange,
   onSubmit,
   isLoading,
+  isThinking,
   pendingConfirmation,
   placeholder,
 }: ChatInputProps) {
@@ -52,7 +54,8 @@ export function ChatInput({
     if (placeholder) return placeholder;
     if (pendingConfirmation)
       return "Please respond to the tool confirmation above...";
-    if (isLoading) return "AI is thinking...";
+    if (isThinking) return "Thinking..."; // Amber thinking indicator
+    if (isLoading) return "AI is thinking..."; // Generic loading state
     if (isMobile) return "Type your message...";
     return "Type your message... (Shift+Enter for new line, Enter to send)";
   };
@@ -77,15 +80,24 @@ export function ChatInput({
         <div className="flex-1 relative">
           <Textarea
             ref={textareaRef}
-            disabled={pendingConfirmation || isLoading}
+            disabled={pendingConfirmation || isLoading || isThinking}
             placeholder={getPlaceholder()}
-            className="pl-4 pr-10 py-2 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-transparent focus:border-border-neutral-300 resize-none min-h-[40px] max-h-[200px] overflow-y-auto"
+            className={`pl-4 pr-10 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-transparent resize-none min-h-[40px] max-h-[200px] overflow-y-auto ${
+              isThinking 
+                ? "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 text-amber-800 dark:text-amber-200 placeholder:text-amber-600 dark:placeholder:text-amber-400" 
+                : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:border-border-neutral-300"
+            }`}
             value={value}
             onChange={onChange}
             onKeyDown={handleKeyDown}
             rows={1}
           />
-          {isLoading && (
+          {isThinking && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin h-4 w-4 border-2 border-amber-200 dark:border-amber-700 border-t-amber-500 dark:border-t-amber-400 rounded-full" />
+            </div>
+          )}
+          {isLoading && !isThinking && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <div className="animate-spin h-4 w-4 border-2 border-neutral-300 dark:border-neutral-600 border-t-[#F48120] rounded-full" />
             </div>
@@ -96,7 +108,7 @@ export function ChatInput({
           type="submit"
           shape="square"
           className="rounded-full h-10 w-10 flex-shrink-0"
-          disabled={pendingConfirmation || !value.trim() || isLoading}
+          disabled={pendingConfirmation || !value.trim() || isLoading || isThinking}
         >
           <PaperPlaneRight size={16} />
         </Button>

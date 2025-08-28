@@ -4,10 +4,16 @@ import { EnvironmentProvider } from "../contexts/EnvironmentContext";
 import { useLoaderData } from "react-router";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
-  const { environment } = useLoaderData<{ environment: string }>();
+  const { environment, simulateThinkingTokens } = useLoaderData<{
+    environment: string;
+    simulateThinkingTokens: boolean;
+  }>();
 
   return (
-    <EnvironmentProvider environment={environment}>
+    <EnvironmentProvider
+      environment={environment}
+      simulateThinkingTokens={simulateThinkingTokens}
+    >
       <TooltipProvider>
         <ModalProvider>{children}</ModalProvider>
       </TooltipProvider>

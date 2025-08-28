@@ -3,6 +3,7 @@ import { createContext, useContext, type ReactNode } from "react";
 interface EnvironmentContextType {
   environment: string;
   isDev: boolean;
+  simulateThinkingTokens: boolean;
 }
 
 const EnvironmentContext = createContext<EnvironmentContextType | null>(null);
@@ -10,15 +11,18 @@ const EnvironmentContext = createContext<EnvironmentContextType | null>(null);
 interface EnvironmentProviderProps {
   children: ReactNode;
   environment: string;
+  simulateThinkingTokens: boolean;
 }
 
 export function EnvironmentProvider({
   children,
   environment,
+  simulateThinkingTokens,
 }: EnvironmentProviderProps) {
   const value: EnvironmentContextType = {
     environment,
     isDev: environment === "dev",
+    simulateThinkingTokens,
   };
 
   return (
