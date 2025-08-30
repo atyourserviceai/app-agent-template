@@ -323,21 +323,57 @@ function ProjectTabContent({
         "[ERROR HANDLER] Error details:",
         JSON.stringify(error, null, 2)
       );
-      console.log("[ERROR HANDLER] Error type:", typeof error);
-      console.log(
-        "[ERROR HANDLER] Error keys:",
-        error ? Object.keys(error) : "no keys"
-      );
-      console.log(
-        "[ERROR HANDLER] Error message:",
-        error instanceof Error ? error.message : String(error)
-      );
-      console.log(
-        "[ERROR HANDLER] Error stack:",
-        error instanceof Error ? error.stack : "no stack"
-      );
 
-      // Use values from the editing hook for error handling
+      // Check if this is a tool validation error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isToolValidationError = 
+        errorMessage.includes("Invalid arguments for tool") &&
+        errorMessage.includes("Type validation failed");
+
+      if (isToolValidationError) {
+        console.log("[ERROR HANDLER] Tool validation error detected, creating synthetic tool call");
+        
+        // Extract tool name from error message
+        const toolNameMatch = errorMessage.match(/Invalid arguments for tool (\w+):/);
+        const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
+        
+        // Create a synthetic assistant message with failed tool call
+        const syntheticMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant" as const,
+          content: `I encountered a parameter validation error with the ${toolName} tool.`,
+          createdAt: new Date(),
+          parts: [
+            {
+              type: "tool-invocation" as const,
+              toolInvocation: {
+                toolCallId: `error-${Date.now()}`,
+                toolName,
+                state: "result" as const,
+                args: {},
+                result: {
+                  success: false,
+                  error: {
+                    message: "Tool parameter validation failed",
+                    details: errorMessage,
+                    timestamp: new Date().toISOString(),
+                  }
+                }
+              }
+            },
+            {
+              type: "text" as const,
+              text: `I encountered a parameter validation error with the ${toolName} tool. Please check the error details above.`
+            }
+          ]
+        };
+
+        // Set this synthetic message instead of the error message
+        setMessages([...agentMessages, syntheticMessage]);
+        return; // Exit early to avoid the normal error handling
+      }
+
+      // Use values from the editing hook for error handling (normal error flow)
       console.log(
         `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
       );
@@ -345,8 +381,8 @@ function ProjectTabContent({
         `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
       );
 
-      // Create a new assistant message with the error
-      const errorMessage = formatErrorForMessage(error);
+      // Create a new assistant message with the error (normal error flow)
+      const formattedErrorMessage = formatErrorForMessage(error);
 
       // Initialize with current messages
       let currentMessages = [...agentMessages];
@@ -462,12 +498,12 @@ function ProjectTabContent({
 
       // Create a new error message with required format
       const newErrorMessage = {
-        content: errorMessage,
+        content: formattedErrorMessage,
         createdAt: new Date(),
         id: crypto.randomUUID(),
         parts: [
           {
-            text: errorMessage,
+            text: formattedErrorMessage,
             type: "text" as const,
           },
         ],
