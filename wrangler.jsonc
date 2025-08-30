@@ -1,11 +1,15 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "foo-agent",
   "main": "src/worker.ts",
-  "compatibility_date": "2025-02-11",
+  "compatibility_date": "2025-08-03",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
+  },
+  "ai": {
+    "binding": "AI"
   },
   "assets": {
     "directory": "public",

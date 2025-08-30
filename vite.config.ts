@@ -18,6 +18,11 @@ export default defineConfig({
       projects: [path.resolve(__dirname, "tsconfig.json")],
     }),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src")
+    }
+  },
   server: {
     port: 5273,
     strictPort: true,

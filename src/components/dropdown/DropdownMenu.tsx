@@ -1,36 +1,37 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: todo */
 import { DotsThree, IconContext } from "@phosphor-icons/react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { cva } from "class-variance-authority";
+
 import { cn } from "@/lib/utils";
+import { cva } from "class-variance-authority";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
-    defaultVariants: {
-      size: "default",
-      variant: "default",
-    },
     variants: {
-      size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        icon: "size-9",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-      },
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
         outline:
           "border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline"
       },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9"
+      }
     },
+    defaultVariants: {
+      variant: "default",
+      size: "default"
+    }
   }
 );
 
@@ -73,7 +74,7 @@ const DropdownMenu = ({
   side,
   sideOffset,
   id,
-  size = "base",
+  size = "base"
 }: DropdownMenuProps) => (
   <DropdownMenuPrimitive.Root>
     <DropdownMenuPrimitive.Trigger
@@ -83,12 +84,12 @@ const DropdownMenu = ({
           ? "radix-state-open:!text-neutral-950 dark:radix-state-open:!text-white text-neutral-500 focus-visible:opacity-100 dark:text-neutral-400"
           : buttonVariants(
               buttonProps ?? {
+                variant: "ghost",
+                size: "default", // 'base',
                 // shape: 'square',
                 // interaction: 'none',
                 class:
-                  "radix-state-open:text-neutral-950 dark:radix-state-open:text-white focus-visible:opacity-100",
-                size: "default", // 'base',
-                variant: "ghost",
+                  "radix-state-open:text-neutral-950 dark:radix-state-open:text-white focus-visible:opacity-100"
               }
             ),
         className
@@ -107,13 +108,13 @@ const DropdownMenu = ({
           onCloseRmFocus ? e.preventDefault() : null;
         }}
         className={cn(
-          "z-[100] radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
+          "z-modal radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
           {
-            "origin-bottom-left": align === "start" && side === "top",
-            "origin-bottom-right": align === "end" && side === "top",
-            "origin-top-left": align === "start" && side === "bottom",
             "origin-top-right": align === "end" && side === "bottom",
-            "text-sm font-normal": size === "sm",
+            "origin-top-left": align === "start" && side === "bottom",
+            "origin-bottom-right": align === "end" && side === "top",
+            "origin-bottom-left": align === "start" && side === "top",
+            "text-sm font-normal": size === "sm"
           }
         )}
       >
@@ -152,7 +153,7 @@ const DropdownMenu = ({
                     {item.label}
                     <IconContext.Provider
                       value={{
-                        size: size === "sm" ? 16 : 20,
+                        size: size === "sm" ? 16 : 20
                       }}
                     >
                       {item.icon}
@@ -166,14 +167,14 @@ const DropdownMenu = ({
                       "radix-highlighted:bg-neutral-100 radix-highlighted:text-neutral-950 dark:radix-highlighted:bg-neutral-800 dark:radix-highlighted:text-white flex w-full items-center justify-between gap-5 rounded-md p-2.5 text-neutral-700 focus:outline-none dark:text-neutral-300",
                       {
                         "radix-highlighted:bg-red-50 radix-highlighted:text-red-600 dark:radix-highlighted:bg-red-500/10 dark:radix-highlighted:text-red-400 text-red-500 dark:text-red-400/90":
-                          item.destructiveAction,
+                          item.destructiveAction
                       }
                     )}
                   >
                     {item.label}
                     <IconContext.Provider
                       value={{
-                        size: size === "sm" ? 16 : 20,
+                        size: size === "sm" ? 16 : 20
                       }}
                     >
                       {item.icon}
@@ -183,8 +184,6 @@ const DropdownMenu = ({
               </DropdownMenuPrimitive.Item>
             );
           }
-          // Return null for any unhandled item types
-          return null;
         })}
       </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>

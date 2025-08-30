@@ -23,7 +23,7 @@ const AvatarComponent = ({
   image,
   size = "base",
   toggled,
-  username,
+  username
 }: AvatarProps) => {
   const firstInitial = username.charAt(0).toUpperCase();
 
@@ -33,14 +33,14 @@ const AvatarComponent = ({
       className={cn(
         "btn btn-secondary circular add-focus relative overflow-hidden",
         {
-          "add-size-base": size === "base",
-          "add-size-md": size === "md",
           "add-size-sm": size === "sm",
+          "add-size-md": size === "md",
+          "add-size-base": size === "base",
+          interactive: as === "button",
           "after:absolute after:top-0 after:left-0 after:z-10 after:size-full after:bg-black/10 after:opacity-0 after:transition-opacity hover:after:opacity-100 dark:after:bg-white/10":
             image,
           "after:opacity-100": image && toggled,
-          interactive: as === "button",
-          toggle: !image && toggled,
+          toggle: !image && toggled
         },
         className
       )}
