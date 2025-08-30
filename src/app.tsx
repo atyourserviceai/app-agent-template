@@ -17,7 +17,7 @@ import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvoca
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
-import { Moon, Sun } from "@phosphor-icons/react/dist/ssr";
+import { MoonStars, SunDim } from "@phosphor-icons/react/dist/ssr";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
@@ -190,6 +190,7 @@ function ProjectTab({
         agent={agent}
         agentMode={agentMode}
         changeAgentMode={changeAgentMode}
+        projectName={projectName}
       />
     </div>
   );
@@ -200,12 +201,14 @@ function ProjectTabContent({
   agentConfig,
   agent,
   agentMode,
-  changeAgentMode
+  changeAgentMode,
+  projectName
 }: {
   agentConfig: ReturnType<typeof useProjectAuth>;
   agent: ReturnType<typeof useAgentState>["agent"];
   agentMode: AgentMode;
   changeAgentMode: (mode: AgentMode) => Promise<void>;
+  projectName: string;
 }) {
   // Mobile viewport height fix
   useEffect(() => {
@@ -288,6 +291,15 @@ function ProjectTabContent({
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
+  
+  // Log the agent configuration details after context hooks are available
+  console.log('[DEBUG] Agent configuration:', {
+    authMethod: auth?.authMethod?.userInfo ? 'authenticated' : 'not authenticated',
+    userId: auth?.authMethod?.userInfo?.id,
+    project: projectName,
+    agentUrl: `/agents/app-agent/${auth?.authMethod?.userInfo?.id}${projectName !== 'personal' ? `-${projectName}` : ''}`,
+    hasAgent: !!agent
+  });
 
   // Use agents hook with AI SDK 5 compatibility
   const agentChatResult = useAgentChat({
@@ -321,8 +333,6 @@ function ProjectTabContent({
         const syntheticMessage = {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: `I encountered a parameter validation error with the ${toolName} tool.`,
-          createdAt: new Date(),
           parts: [
             {
               type: "tool-invocation" as const,
@@ -396,16 +406,14 @@ function ProjectTabContent({
           `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
         );
         currentMessages.push({
-          content: editedMessageText,
-          createdAt: new Date(),
           id: crypto.randomUUID(),
+          role: "user" as const,
           parts: [
             {
-              text: editedMessageText,
-              type: "text" as const
+              type: "text" as const,
+              text: editedMessageText
             }
-          ],
-          role: "user" as const
+          ]
         });
 
         // Reset original refs
@@ -434,16 +442,14 @@ function ProjectTabContent({
             `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
           );
           currentMessages.push({
-            content: editedMessageText,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: editedMessageText,
-                type: "text" as const
+                type: "text" as const,
+                text: editedMessageText
               }
-            ],
-            role: "user" as const
+            ]
           });
         }
 
@@ -462,32 +468,28 @@ function ProjectTabContent({
           );
           // Add the user message that caused the error
           currentMessages.push({
-            content: lastUserInput,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: lastUserInput,
-                type: "text" as const
+                type: "text" as const,
+                text: lastUserInput
               }
-            ],
-            role: "user" as const
+            ]
           });
         }
       }
 
       // Create a new error message with required format
       const newErrorMessage = {
-        content: formattedErrorMessage,
-        createdAt: new Date(),
         id: crypto.randomUUID(),
+        role: "assistant" as const,
         parts: [
           {
-            text: formattedErrorMessage,
-            type: "text" as const
+            type: "text" as const,
+            text: formattedErrorMessage
           }
-        ],
-        role: "assistant" as const
+        ]
       };
 
       console.log(
@@ -507,61 +509,95 @@ function ProjectTabContent({
     }
   });
 
-  // Use the actual properties that useAgentChat returns
+  // Log what useAgentChat actually returns
+  console.log('[DEBUG] useAgentChat result keys:', Object.keys(agentChatResult));
+  console.log('[DEBUG] useAgentChat result:', agentChatResult);
+  
+  // Use the actual properties that useAgentChat returns (which wraps useChat from AI SDK 5)
   const {
     messages: agentMessagesRaw,
     setMessages,
     sendMessage,
-    regenerate,
-    clearError,
     stop,
-    error
-  } = agentChatResult;
+    status,
+    addToolResult,
+    clearHistory: agentClearHistory,
+    // reload might not be available, let's check
+    reload: agentReload
+  } = agentChatResult as any; // Cast to any due to type definition issues
+  
+  console.log('[DEBUG] sendMessage function type:', typeof sendMessage);
+  console.log('[DEBUG] messages length:', agentMessagesRaw?.length);
+  console.log('[DEBUG] current status:', status);
 
   // Create manual input state (AI SDK 5 pattern)
-  const [agentInput, setAgentInput] = useState('');
+  const [agentInput, setAgentInput] = useState("");
 
-  // Map to AI SDK 5 compatible API
+  // AI SDK 5 native API from useChat
   const setInput = setAgentInput;
-  const append = sendMessage; // sendMessage is the equivalent of append
-  const reload = regenerate; // regenerate is the equivalent of reload
-  const status = 'ready'; // Not available from useAgentChat, use static value
-  const clearHistory = () => {
-    setMessages([]);
-    if (clearError) clearError();
-  };
+  const isLoading = status === "streaming" || status === "submitted";
+  const clearHistory = agentClearHistory;
 
-  // AI SDK 5 compatibility mapping - use static values since status isn't available
-  const isLoading = false; // Will be managed by useMessageEditing hook
-  const addToolResult = () => {
-    console.log('addToolResult called - not implemented in v5-migration branch');
-  };
   const agentData = undefined; // Not available in AI SDK 5
 
   // AI SDK 5 input handlers
-  const handleAgentInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleAgentInputChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
     setInput(e.target.value);
   };
 
-  const handleAgentSubmit = (e: React.FormEvent) => {
+  const handleAgentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (agentInput.trim()) {
-      sendMessage(agentInput); // Use sendMessage instead of append
-      setAgentInput(''); // Clear input after sending
+      console.log('[DEBUG] Sending message:', {
+        role: "user",
+        parts: [{ type: "text", text: agentInput }]
+      });
+      console.log('[DEBUG] Current status before send:', status);
+      console.log('[DEBUG] Messages count before send:', agentMessagesRaw.length);
+      
+      try {
+        console.log('[DEBUG] About to call sendMessage...');
+        console.log('[DEBUG] sendMessage function:', sendMessage.toString().substring(0, 200));
+        
+        const result = await sendMessage({
+          role: "user",
+          parts: [{ type: "text", text: agentInput }]
+        }); // Proper AI SDK 5 UIMessage format
+        
+        console.log('[DEBUG] SendMessage result:', result);
+        console.log('[DEBUG] Status after send:', status);
+        console.log('[DEBUG] Messages count after send:', agentMessagesRaw.length);
+        
+        // Wait a moment and check again
+        setTimeout(() => {
+          console.log('[DEBUG] Status after timeout:', status);
+          console.log('[DEBUG] Messages after timeout:', agentMessagesRaw.length);
+        }, 1000);
+        
+      } catch (error) {
+        console.error('[DEBUG] SendMessage error:', error);
+        console.error('[DEBUG] Error stack:', (error as Error).stack);
+      }
+      
+      setAgentInput(""); // Clear input after sending
     }
   };
 
-  // Create a reload function using the available API
-  const reloadFunction = reload || (() => {
-    console.log('Using fallback reload - re-sending last user message');
-    // Find the last user message
+  // Use AI SDK 5 reload function if available, otherwise create a fallback
+  const reloadFunction = agentReload || (() => {
+    console.log('Reload not available from useAgentChat, using sendMessage fallback');
+    // Find the last user message and resend it
     const lastUserMessage = [...agentMessagesRaw].reverse().find(m => m.role === 'user');
-    if (lastUserMessage) {
-      // Re-send the last user message using sendMessage
-      const content = typeof lastUserMessage.content === 'string'
-        ? lastUserMessage.content
-        : lastUserMessage.content?.[0]?.text || '';
-      sendMessage(content);
+    if (lastUserMessage && lastUserMessage.parts && lastUserMessage.parts[0]) {
+      const textPart = lastUserMessage.parts.find((p: any) => p.type === 'text');
+      if (textPart) {
+        sendMessage({
+          role: "user",
+          parts: [{ type: "text", text: textPart.text }]
+        });
+      }
     }
   });
 
@@ -610,24 +646,11 @@ function ProjectTabContent({
   } = useMessageEditing(agentMessages, setMessages, agentInput, reloadFunction);
 
   // Listen for thinking tokens from agent data stream
+  // Note: agentData is not available in AI SDK 5, so this is disabled
   useEffect(() => {
-    if (agentData && Array.isArray(agentData)) {
-      // Check if we have thinking tokens data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const thinkingData = agentData.find(
-        (data: any) => data?.type === "thinking-tokens"
-      );
-      if (
-        thinkingData &&
-        typeof thinkingData === "object" &&
-        "content" in thinkingData &&
-        typeof thinkingData.content === "string"
-      ) {
-        setIsThinking(true);
-        setThinkingTokens(thinkingData.content);
-      }
-    }
-  }, [agentData]);
+    // Thinking tokens are not available in AI SDK 5
+    // This feature would need to be implemented differently
+  }, []);
 
   // Reset thinking state when loading stops
   useEffect(() => {
@@ -790,16 +813,14 @@ function ProjectTabContent({
           setTimeout(() => {
             // Create a new user message
             const newMessage = {
-              content: selectedText,
-              createdAt: new Date(),
               id: crypto.randomUUID(),
+              role: "user" as const,
               parts: [
                 {
-                  text: selectedText,
-                  type: "text" as const
+                  type: "text" as const,
+                  text: selectedText
                 }
-              ],
-              role: "user" as const
+              ]
             };
 
             // Add the message to the chat
@@ -939,7 +960,7 @@ function ProjectTabContent({
               onRetry={() => handleRetryWithTokenCheck(index)}
               isLoading={isLoading}
               formatTime={formatTime}
-              createdAt={message.createdAt}
+              createdAt={new Date()}
             />
           </div>
         );
@@ -1026,8 +1047,8 @@ function ProjectTabContent({
                           toolName,
                           toolCallId,
                           state: "output" in part ? "result" : "call",
-                          args: "input" in part ? part.input : {},
-                          result: "output" in part ? part.output : undefined
+                          args: "input" in part ? part.input as Record<string, unknown> : {},
+                          result: "output" in part ? part.output as { content?: { type: string; text: string; }[] | undefined; } | undefined : undefined
                         }}
                         toolCallId={toolCallId}
                         needsConfirmation={needsConfirmation}
@@ -1041,7 +1062,7 @@ function ProjectTabContent({
 
                 {/* Timestamp for the entire message */}
                 <p className="text-xs text-muted-foreground mt-1 text-left">
-                  {formatTime(new Date(message.createdAt as unknown as string))}
+                  {formatTime(new Date())}
                 </p>
               </div>
             </div>
@@ -1073,7 +1094,7 @@ function ProjectTabContent({
       agentMessages.length > 0 &&
       agentMessages[agentMessages.length - 1].role === "assistant" &&
       (agentMessages[agentMessages.length - 1].parts?.find(
-        (part) => part.type === "text"
+        (part: any) => part.type === "text"
       )?.text?.length || 0) > 0;
 
     // If we're loading (waiting for a response), show a typing indicator
@@ -1344,7 +1365,7 @@ function AuthenticatedTopPanel() {
           onClick={toggleTheme}
           title="Toggle theme"
         >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          {theme === "dark" ? <SunDim size={20} /> : <MoonStars size={20} />}
         </button>
         <div className="order-1 md:order-2">
           <UserProfile />
