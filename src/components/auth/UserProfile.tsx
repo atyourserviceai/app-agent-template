@@ -115,7 +115,7 @@ export function UserProfile() {
                           : "bg-blue-500 dark:bg-blue-400"
                       }`}
                       style={{
-                        width: `${Math.min(Math.max((userInfo.credits / (userInfo.starting_balance || 10)) * 100, 0), 100)}%`,
+                        width: `${Math.min(Math.max((userInfo.credits / (userInfo.starting_balance || 10)) * 100, 0), 100)}%`
                       }}
                     />
                   </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import {
   DropdownMenu,
-  type MenuItemProps,
+  type MenuItemProps
 } from "@/components/dropdown/DropdownMenu";
 import { CreateProject } from "./CreateProject";
 import { Plus, FolderOpen, Check } from "@phosphor-icons/react";
@@ -28,7 +28,7 @@ export function ProjectSelector({ className = "" }: ProjectSelectorProps) {
           )}
         </div>
       ),
-      onClick: () => switchProject(project.name),
+      onClick: () => switchProject(project.name)
     })),
     // Separator
     { type: "divider" as const },
@@ -41,8 +41,8 @@ export function ProjectSelector({ className = "" }: ProjectSelectorProps) {
           <span>Create New Project</span>
         </div>
       ),
-      onClick: () => setShowCreateModal(true),
-    },
+      onClick: () => setShowCreateModal(true)
+    }
   ];
 
   return (

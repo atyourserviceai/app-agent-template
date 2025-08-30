@@ -32,7 +32,7 @@ import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
 import {
   exportConversationToMarkdown,
-  copyToClipboard,
+  copyToClipboard
 } from "./utils/exportUtils";
 
 // Define agent data interface for typing
@@ -43,7 +43,7 @@ interface AgentData {
 
 // List of tools that require human confirmation for the generic template
 const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
-  "getWeatherInformation",
+  "getWeatherInformation"
   // Do not add suggestActions here as we want it to display without confirmation
 ];
 
@@ -51,7 +51,7 @@ const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
 function SuggestedActions({
   messages,
   addToolResult,
-  reload: _reload,
+  reload: _reload
 }: {
   messages: Message[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
@@ -134,9 +134,9 @@ function SuggestedActions({
                 actions,
                 message: "User selected an action",
                 selectedAction: value,
-                success: true,
+                success: true
               }),
-              toolCallId: toolInvocation.toolCallId,
+              toolCallId: toolInvocation.toolCallId
             });
           }
 
@@ -144,8 +144,8 @@ function SuggestedActions({
           const event = new CustomEvent("action-button-clicked", {
             detail: {
               isOther: isOther,
-              text: value,
-            },
+              text: value
+            }
           });
           window.dispatchEvent(event);
         }}
@@ -175,7 +175,7 @@ function Chat() {
 // Component for individual project tabs - each maintains its own agent instance
 function ProjectTab({
   projectName,
-  isActive,
+  isActive
 }: {
   projectName: string;
   isActive: boolean;
@@ -195,7 +195,7 @@ function ProjectTab({
       style={{
         display: isActive ? "block" : "none",
         height: "100%",
-        width: "100%",
+        width: "100%"
       }}
     >
       <ProjectTabContent
@@ -213,7 +213,7 @@ function ProjectTabContent({
   agentConfig,
   agent,
   agentMode,
-  changeAgentMode,
+  changeAgentMode
 }: {
   agentConfig: ReturnType<typeof useProjectAuth>;
   agent: ReturnType<typeof useAgentState>["agent"];
@@ -313,7 +313,7 @@ function ProjectTabContent({
     setInput,
     setMessages,
     reload,
-    isLoading,
+    isLoading
   } = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     maxSteps: 5,
@@ -325,18 +325,23 @@ function ProjectTabContent({
       );
 
       // Check if this is a tool validation error
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isToolValidationError = 
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isToolValidationError =
         errorMessage.includes("Invalid arguments for tool") &&
         errorMessage.includes("Type validation failed");
 
       if (isToolValidationError) {
-        console.log("[ERROR HANDLER] Tool validation error detected, creating synthetic tool call");
-        
+        console.log(
+          "[ERROR HANDLER] Tool validation error detected, creating synthetic tool call"
+        );
+
         // Extract tool name from error message
-        const toolNameMatch = errorMessage.match(/Invalid arguments for tool (\w+):/);
+        const toolNameMatch = errorMessage.match(
+          /Invalid arguments for tool (\w+):/
+        );
         const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
-        
+
         // Create a synthetic assistant message with failed tool call
         const syntheticMessage = {
           id: crypto.randomUUID(),
@@ -356,7 +361,7 @@ function ProjectTabContent({
                   error: {
                     message: "Tool parameter validation failed",
                     details: errorMessage,
-                    timestamp: new Date().toISOString(),
+                    timestamp: new Date().toISOString()
                   }
                 }
               }
@@ -422,10 +427,10 @@ function ProjectTabContent({
           parts: [
             {
               text: editedMessageText,
-              type: "text" as const,
-            },
+              type: "text" as const
+            }
           ],
-          role: "user" as const,
+          role: "user" as const
         });
 
         // Reset original refs
@@ -460,10 +465,10 @@ function ProjectTabContent({
             parts: [
               {
                 text: editedMessageText,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           });
         }
 
@@ -488,10 +493,10 @@ function ProjectTabContent({
             parts: [
               {
                 text: lastUserInput,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           });
         }
       }
@@ -504,10 +509,10 @@ function ProjectTabContent({
         parts: [
           {
             text: formattedErrorMessage,
-            type: "text" as const,
-          },
+            type: "text" as const
+          }
         ],
-        role: "assistant" as const,
+        role: "assistant" as const
       };
 
       console.log(
@@ -524,7 +529,7 @@ function ProjectTabContent({
       originalEditIndexRef.current = null;
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
-    },
+    }
   });
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
@@ -568,7 +573,7 @@ function ProjectTabContent({
     cancelEditing,
     handleEditMessage,
     handleRetry,
-    handleRetryLastUserMessage,
+    handleRetryLastUserMessage
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
 
   // Listen for thinking tokens from agent data stream
@@ -671,10 +676,10 @@ function ProjectTabContent({
             parts: [
               {
                 text: selectedText,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           };
 
           // Add the message to the chat
@@ -710,7 +715,7 @@ function ProjectTabContent({
     agentMessages,
     reloadWithTokenCheck,
     auth,
-    setMessages,
+    setMessages
   ]);
 
   // Handle action button clicks from the suggestActions tool
@@ -758,10 +763,10 @@ function ProjectTabContent({
               parts: [
                 {
                   text: selectedText,
-                  type: "text" as const,
-                },
+                  type: "text" as const
+                }
               ],
-              role: "user" as const,
+              role: "user" as const
             };
 
             // Add the message to the chat

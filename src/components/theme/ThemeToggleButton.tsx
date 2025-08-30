@@ -12,7 +12,7 @@ export function ThemeToggleButton({
   theme,
   onToggle,
   className = "",
-  title = "Toggle theme",
+  title = "Toggle theme"
 }: ThemeToggleButtonProps) {
   const [isMounted, setIsMounted] = useState(false);
 

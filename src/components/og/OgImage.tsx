@@ -7,7 +7,7 @@ interface OgImageProps {
 export default function OgImage({
   title = "App Agent Template",
   description = "AI-powered chat agent built with Cloudflare Agents",
-  mode = "onboarding",
+  mode = "onboarding"
 }: OgImageProps) {
   return (
     <div
@@ -22,7 +22,7 @@ export default function OgImage({
         color: "white",
         fontFamily: "Inter, system-ui, sans-serif",
         padding: "60px",
-        boxSizing: "border-box",
+        boxSizing: "border-box"
       }}
     >
       {/* Logo/Brand Area */}
@@ -30,7 +30,7 @@ export default function OgImage({
         style={{
           display: "flex",
           alignItems: "center",
-          marginBottom: "40px",
+          marginBottom: "40px"
         }}
       >
         <div
@@ -44,7 +44,7 @@ export default function OgImage({
             justifyContent: "center",
             marginRight: "20px",
             fontSize: "32px",
-            fontWeight: "bold",
+            fontWeight: "bold"
           }}
         >
           🤖
@@ -54,7 +54,7 @@ export default function OgImage({
             style={{
               fontSize: "24px",
               fontWeight: "600",
-              opacity: 0.9,
+              opacity: 0.9
             }}
           >
             App Agent Template
@@ -63,7 +63,7 @@ export default function OgImage({
             style={{
               fontSize: "14px",
               opacity: 0.7,
-              marginTop: "4px",
+              marginTop: "4px"
             }}
           >
             {mode.charAt(0).toUpperCase() + mode.slice(1)} Mode
@@ -79,7 +79,7 @@ export default function OgImage({
           textAlign: "center",
           margin: "0 0 20px 0",
           lineHeight: "1.1",
-          maxWidth: "1000px",
+          maxWidth: "1000px"
         }}
       >
         {title}
@@ -93,7 +93,7 @@ export default function OgImage({
           margin: "0",
           opacity: 0.9,
           maxWidth: "900px",
-          lineHeight: "1.4",
+          lineHeight: "1.4"
         }}
       >
         {description}
@@ -108,7 +108,7 @@ export default function OgImage({
           right: "60px",
           height: "4px",
           background: "rgba(255, 255, 255, 0.3)",
-          borderRadius: "2px",
+          borderRadius: "2px"
         }}
       />
 
@@ -121,7 +121,7 @@ export default function OgImage({
           width: "60px",
           height: "60px",
           border: "3px solid rgba(255, 255, 255, 0.2)",
-          borderRadius: "12px",
+          borderRadius: "12px"
         }}
       />
     </div>

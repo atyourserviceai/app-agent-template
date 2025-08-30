@@ -11,7 +11,7 @@ type LoadingIndicatorProps = {
 export function LoadingIndicator({
   formatTime,
   isThinking = false,
-  thinkingTokens,
+  thinkingTokens
 }: LoadingIndicatorProps) {
   const [showThinking, setShowThinking] = useState(false);
   return (

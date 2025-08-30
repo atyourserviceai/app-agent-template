@@ -24,7 +24,7 @@ import * as rawStateTools from "./state";
 // Import the wrapper function
 import {
   wrapAllToolsWithErrorHandling,
-  wrapToolWithErrorHandling,
+  wrapToolWithErrorHandling
 } from "./wrappers";
 
 // Define a type for a collection of tools
@@ -40,8 +40,8 @@ const rawTestErrorTool = tool({
     throw new Error(`Test error: ${message}`);
   },
   parameters: z.object({
-    message: z.string().describe("Any message to echo back"),
-  }),
+    message: z.string().describe("Any message to echo back")
+  })
 });
 
 // Wrap all tools with error handling
@@ -111,7 +111,7 @@ const toolCounts = {
   search: countTools(searchTools),
   simpleFetch: countTools(simpleFetchTools),
   special: 2,
-  state: countTools(stateTools), // testErrorTool and suggestActions
+  state: countTools(stateTools) // testErrorTool and suggestActions
 };
 
 const totalTools = Object.values(toolCounts).reduce(
@@ -170,7 +170,7 @@ export const tools = {
   runResearch,
 
   // Test error tool
-  testErrorTool,
+  testErrorTool
 };
 
 /**

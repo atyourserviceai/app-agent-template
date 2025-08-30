@@ -18,8 +18,8 @@ const scheduleSchema = z.object({
     cron: z.string().optional(),
     date: z.date().optional(),
     delayInSeconds: z.number().optional(),
-    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]),
-  }),
+    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"])
+  })
 });
 
 /**
@@ -29,7 +29,7 @@ export const scheduleTask = tool({
   description: "Schedule a task to be executed at a later time",
   execute: async ({
     when,
-    description,
+    description
   }: {
     when: ScheduleInput;
     description: string;
@@ -68,7 +68,7 @@ export const scheduleTask = tool({
       return `Error scheduling task: ${error}`;
     }
   },
-  parameters: scheduleSchema,
+  parameters: scheduleSchema
 });
 
 /**
@@ -93,7 +93,7 @@ export const getScheduledTasks = tool({
       return `Error retrieving tasks: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -117,6 +117,6 @@ export const cancelScheduledTask = tool({
     }
   },
   parameters: z.object({
-    taskId: z.string(),
-  }),
+    taskId: z.string()
+  })
 });

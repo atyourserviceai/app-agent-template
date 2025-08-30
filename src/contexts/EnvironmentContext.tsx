@@ -17,12 +17,12 @@ interface EnvironmentProviderProps {
 export function EnvironmentProvider({
   children,
   environment,
-  simulateThinkingTokens,
+  simulateThinkingTokens
 }: EnvironmentProviderProps) {
   const value: EnvironmentContextType = {
     environment,
     isDev: environment === "dev",
-    simulateThinkingTokens,
+    simulateThinkingTokens
   };
 
   return (

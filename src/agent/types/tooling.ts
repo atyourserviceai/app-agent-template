@@ -6,7 +6,7 @@ import type {
   AgentAction,
   DesiredAutomation,
   ExistingTool,
-  ResearchMethod,
+  ResearchMethod
 } from "./company-config";
 
 /**

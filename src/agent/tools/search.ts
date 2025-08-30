@@ -23,13 +23,13 @@ export const runResearch = tool({
   },
   parameters: z.object({
     query: z.string(),
-    sources: z.array(z.string()).optional().default(["web"]), // e.g., web, linkedin, clearbit
-  }),
+    sources: z.array(z.string()).optional().default(["web"]) // e.g., web, linkedin, clearbit
+  })
 });
 
 // Export searchTools for backward compatibility
 export const searchTools = {
-  runResearch,
+  runResearch
 };
 
 // Placeholder for searchExecutions if needed separately

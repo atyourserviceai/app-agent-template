@@ -19,7 +19,7 @@ declare global {
 export function PresentationPanel({
   agentState,
   agentMode,
-  showDebug,
+  showDebug
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const agentSettingsId = useId();
@@ -87,7 +87,7 @@ export function PresentationPanel({
     integration:
       "Connect tools, run checks and document capabilities. Ensure everything is safe before acting.",
     plan: "Analyze context and propose next steps without executing tools. Iterate safely before acting.",
-    act: "Execute approved actions with guardrails and visibility via the gateway.",
+    act: "Execute approved actions with guardrails and visibility via the gateway."
   };
 
   const quickActionsByMode: Record<
@@ -98,43 +98,43 @@ export function PresentationPanel({
       { label: "Set language", prompt: "Set language to English" },
       {
         label: "Add operator",
-        prompt: "Add operator Alice (alice@example.com) as Analyst",
+        prompt: "Add operator Alice (alice@example.com) as Analyst"
       },
       {
         label: "Define purpose",
-        prompt: "Define the agent purpose for product research",
-      },
+        prompt: "Define the agent purpose for product research"
+      }
     ],
     integration: [
       { label: "List tools", prompt: "List available tools and their status" },
       {
         label: "Run tests",
-        prompt: "Run integration tests for configured tools",
+        prompt: "Run integration tests for configured tools"
       },
-      { label: "Document a tool", prompt: "Document the 'fetchWebPage' tool" },
+      { label: "Document a tool", prompt: "Document the 'fetchWebPage' tool" }
     ],
     plan: [
       {
         label: "Summarize context",
-        prompt: "Summarize current context and known inputs",
+        prompt: "Summarize current context and known inputs"
       },
       {
         label: "Propose next steps",
-        prompt: "Propose next 3 steps and assumptions",
+        prompt: "Propose next 3 steps and assumptions"
       },
       {
         label: "Risk check",
-        prompt: "List risks and mitigations before execution",
-      },
+        prompt: "List risks and mitigations before execution"
+      }
     ],
     act: [
       { label: "Execute task", prompt: "Execute the top recommended action" },
       {
         label: "Schedule",
-        prompt: "Schedule a follow-up task for tomorrow 9am",
+        prompt: "Schedule a follow-up task for tomorrow 9am"
       },
-      { label: "Export data", prompt: "Export current agent data as backup" },
-    ],
+      { label: "Export data", prompt: "Export current agent data as backup" }
+    ]
   };
 
   const quickActions = quickActionsByMode[agentMode] || [];

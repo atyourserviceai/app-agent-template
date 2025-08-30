@@ -29,7 +29,7 @@ export function useErrorHandling() {
         return {
           details: "",
           message: "Unknown error",
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         };
 
       // Convert to MessagePart with text property
@@ -40,7 +40,7 @@ export function useErrorHandling() {
       return {
         details: "",
         message: "Error parsing error message",
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       };
     }
   };
@@ -53,7 +53,7 @@ export function useErrorHandling() {
     const errorData: ErrorData = {
       details: errorDetails,
       message: "The AI was unable to respond",
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
 
     return `__ERROR__${JSON.stringify(errorData)}`;
@@ -103,6 +103,6 @@ export function useErrorHandling() {
     formatErrorForMessage,
     formatErrorMessage,
     isErrorMessage,
-    parseErrorData,
+    parseErrorData
   };
 }

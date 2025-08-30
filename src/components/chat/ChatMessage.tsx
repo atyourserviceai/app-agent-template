@@ -39,7 +39,7 @@ export function ChatMessage({
   onEditingValueChange,
   formatTime,
   showDebug = false,
-  thinkingTokens,
+  thinkingTokens
 }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [showThinking, setShowThinking] = useState(false);
@@ -66,12 +66,12 @@ export function ChatMessage({
       transition:
         "from-amber-50/90 to-amber-100/90 dark:from-amber-950/90 dark:to-amber-900/90",
       welcome:
-        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90",
+        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90"
     };
 
     const borderColors = {
       transition: "border-amber-300 dark:border-amber-700",
-      welcome: "border-blue-300 dark:border-blue-700",
+      welcome: "border-blue-300 dark:border-blue-700"
     };
 
     return (

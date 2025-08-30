@@ -43,7 +43,7 @@ export function ChatContainer({
   onExportConversation,
   onInputChange,
   onInputSubmit,
-  onCloseChat,
+  onCloseChat
 }: ChatContainerProps) {
   return (
     <div

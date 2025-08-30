@@ -23,7 +23,7 @@ export enum ToolCategory {
   STATE = "State",
   SEARCH = "Search",
   EMAIL = "Email",
-  OTHER = "Other",
+  OTHER = "Other"
 }
 
 /**
@@ -45,151 +45,151 @@ export const toolRegistry: Record<string, ToolMetadata> = {
   browseWebPage: {
     category: ToolCategory.BROWSER,
     friendlyName: "Browse Web Page",
-    icon: "globe",
+    icon: "globe"
   },
   browseWithBrowserbase: {
     category: ToolCategory.BROWSER,
     friendlyName: "Browse With Browserbase",
-    icon: "globe",
+    icon: "globe"
   },
   cancelScheduledTask: {
     category: ToolCategory.SCHEDULING,
     friendlyName: "Cancel Scheduled Task",
-    icon: "calendar-x",
+    icon: "calendar-x"
   },
   controlledErrorTool: {
     category: ToolCategory.TESTING,
     friendlyName: "Controlled Error Tool",
-    icon: "bug",
+    icon: "bug"
   },
 
   // CRM tools
   createLead: {
     category: ToolCategory.CRM,
     friendlyName: "Create Lead",
-    icon: "user-plus",
+    icon: "user-plus"
   },
   documentTool: {
     category: ToolCategory.TESTING,
     friendlyName: "Document Tool",
-    icon: "file-text",
+    icon: "file-text"
   },
   fetchWebPage: {
     category: ToolCategory.BROWSER,
     friendlyName: "Fetch Web Page",
-    icon: "download",
+    icon: "download"
   },
 
   // Gmail tools
   GMAIL_CREATE_EMAIL_DRAFT: {
     category: ToolCategory.EMAIL,
     friendlyName: "Create Email Draft",
-    icon: "envelope-plus",
+    icon: "envelope-plus"
   },
   GMAIL_DELETE_DRAFT: {
     category: ToolCategory.EMAIL,
     friendlyName: "Delete Email Draft",
-    icon: "trash",
+    icon: "trash"
   },
   GMAIL_DELETE_MESSAGE: {
     category: ToolCategory.EMAIL,
     friendlyName: "Delete Email Message",
-    icon: "trash",
+    icon: "trash"
   },
   GMAIL_FETCH_EMAILS: {
     category: ToolCategory.EMAIL,
     friendlyName: "Fetch Emails",
-    icon: "envelope-download",
+    icon: "envelope-download"
   },
   GMAIL_GET_CONTACTS: {
     category: ToolCategory.EMAIL,
     friendlyName: "Get Contacts",
-    icon: "address-book",
+    icon: "address-book"
   },
   GMAIL_LIST_DRAFTS: {
     category: ToolCategory.EMAIL,
     friendlyName: "List Email Drafts",
-    icon: "clipboard-list",
+    icon: "clipboard-list"
   },
   GMAIL_MOVE_TO_TRASH: {
     category: ToolCategory.EMAIL,
     friendlyName: "Move Email to Trash",
-    icon: "trash",
+    icon: "trash"
   },
   GMAIL_REPLY_TO_THREAD: {
     category: ToolCategory.EMAIL,
     friendlyName: "Reply to Email Thread",
-    icon: "reply",
+    icon: "reply"
   },
   GMAIL_SEARCH_PEOPLE: {
     category: ToolCategory.EMAIL,
     friendlyName: "Search People",
-    icon: "users-magnifying-glass",
+    icon: "users-magnifying-glass"
   },
   GMAIL_SEND_EMAIL: {
     category: ToolCategory.EMAIL,
     friendlyName: "Send Email",
-    icon: "envelope",
+    icon: "envelope"
   },
   generateTestReport: {
     category: ToolCategory.TESTING,
     friendlyName: "Generate Test Report",
-    icon: "file-chart",
+    icon: "file-chart"
   },
   getLocalTime: {
     category: ToolCategory.CONTEXT,
     friendlyName: "Get Local Time",
-    icon: "clock",
+    icon: "clock"
   },
   getScheduledTasks: {
     category: ToolCategory.SCHEDULING,
     friendlyName: "Get Scheduled Tasks",
-    icon: "calendar",
+    icon: "calendar"
   },
   // Context tools
   getWeatherInformation: {
     category: ToolCategory.CONTEXT,
     friendlyName: "Get Weather Information",
-    icon: "cloud",
+    icon: "cloud"
   },
 
   // Testing tools
   recordTestResult: {
     category: ToolCategory.TESTING,
     friendlyName: "Record Test Result",
-    icon: "clipboard-check",
+    icon: "clipboard-check"
   },
 
   // Scheduling tools
   scheduleTask: {
     category: ToolCategory.SCHEDULING,
     friendlyName: "Schedule Task",
-    icon: "calendar-plus",
+    icon: "calendar-plus"
   },
   searchLeads: {
     category: ToolCategory.CRM,
     friendlyName: "Search Leads",
-    icon: "search",
+    icon: "search"
   },
 
   // Messaging tools
   suggestActions: {
     category: ToolCategory.MESSAGING,
     friendlyName: "Suggest Actions",
-    icon: "list-check",
+    icon: "list-check"
   },
 
   // Error testing tool
   testErrorTool: {
     category: ToolCategory.TESTING,
     friendlyName: "Test Error Tool",
-    icon: "bug",
+    icon: "bug"
   },
   updateLead: {
     category: ToolCategory.CRM,
     friendlyName: "Update Lead",
-    icon: "user-edit",
-  },
+    icon: "user-edit"
+  }
 
   // Add more tools as needed...
 };

@@ -1,4 +1,4 @@
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModelV1 } from "ai";
 
 /**
  * Middleware to simulate an LLM that streams thinking tokens during processing
@@ -7,7 +7,7 @@ import type { LanguageModelV1 } from 'ai';
 export function simulateThinkingLLM(): LanguageModelV1 {
   const thinkingTokens = `Let me carefully analyze this user request and determine the most appropriate response...
 
-First, I need to understand the context of their message. They said: "${process.env.LAST_USER_MESSAGE || 'debug test reasoning tokens'}"
+First, I need to understand the context of their message. They said: "${process.env.LAST_USER_MESSAGE || "debug test reasoning tokens"}"
 
 This appears to be a test message to verify that thinking tokens are working properly. I should provide a meaningful response that demonstrates the thinking process while also being helpful.
 
@@ -73,7 +73,7 @@ Ready to proceed with your actual assessment, or would you like to test anything
         usage: { promptTokens: 0, completionTokens: responseText.length },
         warnings: [],
         rawCall: { rawPrompt: null, rawSettings: {} },
-        rawResponse: { headers: {} },
+        rawResponse: { headers: {} }
       };
     },
 
@@ -82,15 +82,20 @@ Ready to proceed with your actual assessment, or would you like to test anything
       const simulatedStream = new ReadableStream({
         async start(controller) {
           console.log("*".repeat(80));
-          console.log("🎭🎭🎭 SIMULATION STREAM STARTING - THIS SHOULD SHOW IN LOGS 🎭🎭🎭");
+          console.log(
+            "🎭🎭🎭 SIMULATION STREAM STARTING - THIS SHOULD SHOW IN LOGS 🎭🎭🎭"
+          );
           console.log("*".repeat(80));
-          
+
           // First, stream the reasoning tokens in chunks for realistic effect
-          console.log("🧠 Streaming reasoning tokens:", thinkingTokens.substring(0, 100));
+          console.log(
+            "🧠 Streaming reasoning tokens:",
+            thinkingTokens.substring(0, 100)
+          );
           for (let i = 0; i < thinkingTokens.length; i += 60) {
             await new Promise((resolve) => setTimeout(resolve, 800)); // Much longer delay
             const chunk = thinkingTokens.slice(i, i + 60);
-            
+
             console.log("🧠 REASONING CHUNK:", chunk.substring(0, 40) + "..."); // Log each chunk
             controller.enqueue({
               type: "reasoning",
@@ -102,11 +107,14 @@ Ready to proceed with your actual assessment, or would you like to test anything
           await new Promise((resolve) => setTimeout(resolve, 200));
 
           // Then stream the text response in chunks
-          console.log("📝 Streaming simulated response:", responseText.substring(0, 100));
+          console.log(
+            "📝 Streaming simulated response:",
+            responseText.substring(0, 100)
+          );
           for (let i = 0; i < responseText.length; i += 25) {
             await new Promise((resolve) => setTimeout(resolve, 60));
             const chunk = responseText.slice(i, i + 25);
-            
+
             console.log("📝 Streaming chunk:", chunk);
             controller.enqueue({
               type: "text-delta",
@@ -130,8 +138,8 @@ Ready to proceed with your actual assessment, or would you like to test anything
         stream: simulatedStream,
         rawCall: { rawPrompt: null, rawSettings: {} },
         rawResponse: { headers: {} },
-        warnings: [],
+        warnings: []
       };
-    },
+    }
   };
 }

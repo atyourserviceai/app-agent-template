@@ -30,7 +30,7 @@ export default {
           client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
           auth_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/authorize`,
           // Return a same-origin token endpoint to avoid browser CORS issues
-          token_url: "/api/oauth/token",
+          token_url: "/api/oauth/token"
         }),
         { headers: { "Content-Type": "application/json" } }
       );
@@ -42,8 +42,8 @@ export default {
           headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          },
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+          }
         });
       }
       const resp = await handleTokenExchange(request, env);
@@ -52,8 +52,8 @@ export default {
         headers: {
           "Content-Type":
             resp.headers.get("Content-Type") || "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
+          "Access-Control-Allow-Origin": "*"
+        }
       });
     }
 
@@ -64,17 +64,17 @@ export default {
           JSON.stringify({ error: "Missing Authorization header" }),
           {
             status: 401,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" }
           }
         );
       }
       const resp = await fetch(`${env.GATEWAY_BASE_URL}/v1/user/info`, {
         method: "GET",
-        headers: { Authorization: auth },
+        headers: { Authorization: auth }
       });
       return new Response(await resp.text(), {
         status: resp.status,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
     }
 
@@ -117,7 +117,7 @@ export default {
     if (agentResp) return agentResp;
 
     return requestHandler(request, { cloudflare: { env, ctx } });
-  },
+  }
 } satisfies ExportedHandler<Env>;
 
 // OAuth callback is handled client-side in app/routes/auth.callback.tsx

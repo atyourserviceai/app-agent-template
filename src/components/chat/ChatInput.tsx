@@ -21,7 +21,7 @@ export function ChatInput({
   isLoading,
   isThinking,
   pendingConfirmation,
-  placeholder,
+  placeholder
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -83,8 +83,8 @@ export function ChatInput({
             disabled={pendingConfirmation || isLoading || isThinking}
             placeholder={getPlaceholder()}
             className={`pl-4 pr-10 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-transparent resize-none min-h-[40px] max-h-[200px] overflow-y-auto ${
-              isThinking 
-                ? "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 text-amber-800 dark:text-amber-200 placeholder:text-amber-600 dark:placeholder:text-amber-400" 
+              isThinking
+                ? "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 text-amber-800 dark:text-amber-200 placeholder:text-amber-600 dark:placeholder:text-amber-400"
                 : "border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 focus:border-border-neutral-300"
             }`}
             value={value}
@@ -108,7 +108,9 @@ export function ChatInput({
           type="submit"
           shape="square"
           className="rounded-full h-10 w-10 flex-shrink-0"
-          disabled={pendingConfirmation || !value.trim() || isLoading || isThinking}
+          disabled={
+            pendingConfirmation || !value.trim() || isLoading || isThinking
+          }
         >
           <PaperPlaneRight size={16} />
         </Button>

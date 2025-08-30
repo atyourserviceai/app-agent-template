@@ -26,7 +26,7 @@ export async function addProcessingHistory(
     entityId,
     id: crypto.randomUUID(),
     result,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   };
   console.log(`Placeholder: Adding processing history for entity ${entityId}`);
 

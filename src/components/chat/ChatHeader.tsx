@@ -26,7 +26,7 @@ export function ChatHeader({
   onChangeMode,
   onClearHistory,
   onExportConversation,
-  onCloseChat,
+  onCloseChat
 }: ChatHeaderProps) {
   const { isDev } = useEnvironment();
   const [exportStatus, setExportStatus] = useState<

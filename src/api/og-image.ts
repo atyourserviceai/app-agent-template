@@ -47,8 +47,8 @@ export async function handleOgImage(
     return new Response(svg, {
       headers: {
         "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
-      },
+        "Cache-Control": "public, max-age=3600" // Cache for 1 hour
+      }
     });
   } catch (error) {
     console.error("Error generating OG image:", error);
@@ -56,7 +56,7 @@ export async function handleOgImage(
     // Return a fallback image or error response
     return new Response("Error generating image", {
       status: 500,
-      headers: { "Content-Type": "text/plain" },
+      headers: { "Content-Type": "text/plain" }
     });
   }
 }

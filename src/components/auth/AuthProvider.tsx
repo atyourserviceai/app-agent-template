@@ -4,7 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useState
 } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
@@ -106,13 +106,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             credits: authData.userInfo.credits,
             email: authData.userInfo.email,
             payment_method: "credits", // Default value
-            user_id: authData.userInfo.id,
+            user_id: authData.userInfo.id
           }),
           headers: {
             Authorization: `Bearer ${authData.apiKey}`,
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          method: "POST",
+          method: "POST"
         }
       );
 
@@ -187,9 +187,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             try {
               const response = await fetch("/api/user/info", {
                 headers: {
-                  Authorization: `Bearer ${parsedAuth.apiKey}`,
+                  Authorization: `Bearer ${parsedAuth.apiKey}`
                 },
-                method: "GET",
+                method: "GET"
               });
 
               if (response.ok) {
@@ -265,9 +265,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           {
             headers: {
               Authorization: `Bearer ${currentAuth.apiKey}`,
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
-            method: "POST",
+            method: "POST"
           }
         );
 
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       apiKey: authMethod.apiKey,
       byokKeys: keys, // Keep AtYourService.ai API key for verification
       type: "byok",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -305,7 +305,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const newAuth: AuthMethod = {
       apiKey: authMethod.apiKey,
       type: "atyourservice",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -319,9 +319,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call the local server endpoint that proxies to the gateway
       const response = await fetch("/api/user/info", {
         headers: {
-          Authorization: `Bearer ${authMethod.apiKey}`,
+          Authorization: `Bearer ${authMethod.apiKey}`
         },
-        method: "GET",
+        method: "GET"
       });
 
       if (response.ok) {
@@ -341,8 +341,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             email: userInfo.email,
             id: userInfo.id,
             starting_balance: userInfo.starting_balance,
-            used_credits: userInfo.used_credits,
-          },
+            used_credits: userInfo.used_credits
+          }
         };
 
         setAuthMethod(updatedAuth);
@@ -383,7 +383,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     oauthConfig,
     refreshUserInfo,
     switchToBYOK,
-    switchToCredits,
+    switchToCredits
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

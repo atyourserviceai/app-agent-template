@@ -112,7 +112,7 @@ Add tools for your specific integrations:
 export const getYourDomainTools = async () => {
   const toolset = new VercelAIToolSet();
   return await toolset.getTools({
-    apps: ["your-integration", "another-integration"],
+    apps: ["your-integration", "another-integration"]
   });
 };
 ```
@@ -130,7 +130,7 @@ import { z } from "zod";
 export const yourCustomTool = {
   description: "Description of what this tool does",
   parameters: z.object({
-    input: z.string().describe("Input parameter description"),
+    input: z.string().describe("Input parameter description")
   }),
   execute: async ({ input }, { agent }) => {
     // Your tool logic here
@@ -140,11 +140,11 @@ export const yourCustomTool = {
     const currentState = agent.state as AppAgentState;
     await agent.setState({
       ...currentState,
-      yourCustomData: result,
+      yourCustomData: result
     });
 
     return `Result message: ${result}`;
-  },
+  }
 };
 ```
 
@@ -161,7 +161,7 @@ import { getYourDomainTools } from "./composio";
 // Add to the tools object
 export const tools = {
   // ... existing tools ...
-  yourCustomTool: withErrorHandling(yourCustomTool),
+  yourCustomTool: withErrorHandling(yourCustomTool)
 };
 
 // Add to executions if needed
@@ -298,7 +298,7 @@ Create Zod schemas for your data:
 import { z } from "zod";
 
 export const YourDataSchema = z.object({
-  id: z.string(),
+  id: z.string()
   // your validation rules
 });
 

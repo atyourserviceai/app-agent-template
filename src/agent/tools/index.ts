@@ -53,7 +53,7 @@ export const tools = {
 
   // Messaging tools
   suggestActions: messagingTools.suggestActions,
-  testErrorTool: integrationTools.testErrorTool,
+  testErrorTool: integrationTools.testErrorTool
 };
 
 /**

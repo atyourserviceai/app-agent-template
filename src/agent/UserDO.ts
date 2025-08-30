@@ -93,11 +93,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Internal server error",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
@@ -132,7 +132,7 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "User info stored successfully",
+          message: "User info stored successfully"
         }),
         { headers: { "Content-Type": "application/json" } }
       );
@@ -141,11 +141,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to store user info",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
@@ -174,7 +174,7 @@ export class UserDO extends DurableObject {
       if (userRows.length === 0) {
         return new Response(JSON.stringify({ error: "User not found" }), {
           status: 404,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         });
       }
 
@@ -182,18 +182,18 @@ export class UserDO extends DurableObject {
       const userInfo = userRows[0] as Omit<UserProfile, "api_key">;
 
       return new Response(JSON.stringify({ user: userInfo }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
     } catch (error) {
       console.error("UserDO: Failed to get user info:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to get user info",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
@@ -235,7 +235,7 @@ export class UserDO extends DurableObject {
       name: requestData.projectName,
       display_name: requestData.displayName || requestData.projectName,
       privacy: "private" as const, // Default to private for now
-      description: requestData.description || null,
+      description: requestData.description || null
     };
 
     try {
@@ -252,7 +252,7 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Project created successfully",
+          message: "Project created successfully"
         }),
         { headers: { "Content-Type": "application/json" } }
       );
@@ -261,11 +261,11 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to create project",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
@@ -285,22 +285,22 @@ export class UserDO extends DurableObject {
         display_name: row.display_name as string,
         privacy: row.privacy as string,
         description: row.description as string | null,
-        created_at: row.created_at as string,
+        created_at: row.created_at as string
       }));
 
       return new Response(JSON.stringify({ projects }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
     } catch (error) {
       console.error("UserDO: Failed to list projects:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to list projects",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
@@ -329,7 +329,7 @@ export class UserDO extends DurableObject {
       if (projectRows.length === 0) {
         return new Response(JSON.stringify({ error: "Project not found" }), {
           status: 404,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         });
       }
 
@@ -338,22 +338,22 @@ export class UserDO extends DurableObject {
         display_name: projectRows[0].display_name as string,
         privacy: projectRows[0].privacy as string,
         description: projectRows[0].description as string | null,
-        created_at: projectRows[0].created_at as string,
+        created_at: projectRows[0].created_at as string
       };
 
       return new Response(JSON.stringify({ project }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }
       });
     } catch (error) {
       console.error("UserDO: Failed to get project:", error);
       return new Response(
         JSON.stringify({
           error: "Failed to get project",
-          details: error instanceof Error ? error.message : String(error),
+          details: error instanceof Error ? error.message : String(error)
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }
         }
       );
     }

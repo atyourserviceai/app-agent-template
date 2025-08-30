@@ -28,7 +28,7 @@ export function useAgentState(
         setAgentMode(newState.mode);
       }
     },
-    query: agentConfig?.query,
+    query: agentConfig?.query
   });
 
   // Simplified function to change the agent mode
@@ -52,7 +52,7 @@ export function useAgentState(
         const response = await fetch(urlObj.toString(), {
           body: JSON.stringify({ mode: newMode }),
           headers: { "Content-Type": "application/json" },
-          method: "POST",
+          method: "POST"
         });
 
         if (!response.ok) {
@@ -70,6 +70,6 @@ export function useAgentState(
     agent,
     agentState,
     agentMode,
-    changeAgentMode,
+    changeAgentMode
   };
 }

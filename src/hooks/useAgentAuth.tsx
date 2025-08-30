@@ -21,8 +21,8 @@ export function useProjectAuth(projectName = "personal") {
         agent: "app-agent",
         name: agentName, // Project-specific room/agent name for isolation
         query: {
-          token: authMethod.apiKey, // JWT token for authentication
-        },
+          token: authMethod.apiKey // JWT token for authentication
+        }
       } as const;
     }
     // SECURITY: No fallback for unauthenticated users - return null

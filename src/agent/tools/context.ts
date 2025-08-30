@@ -18,16 +18,16 @@ export const getWeatherInformation = tool({
       location,
       temperature: {
         celsius: 22,
-        fahrenheit: 72,
+        fahrenheit: 72
       },
-      windSpeed: "10 km/h",
+      windSpeed: "10 km/h"
     };
   },
   parameters: z.object({
     location: z
       .string()
-      .describe("The location to get weather for (city name or coordinates)"),
-  }),
+      .describe("The location to get weather for (city name or coordinates)")
+  })
 });
 
 /**
@@ -48,7 +48,7 @@ export const getLocalTime = tool({
       localTime: now.toLocaleTimeString(),
       location,
       timeZone: "UTC (mock data)",
-      utcOffset: "+00:00 (mock data)",
+      utcOffset: "+00:00 (mock data)"
     };
   },
   parameters: z.object({
@@ -56,6 +56,6 @@ export const getLocalTime = tool({
       .string()
       .describe(
         "The location to get local time for (city, country, or time zone)"
-      ),
-  }),
+      )
+  })
 });

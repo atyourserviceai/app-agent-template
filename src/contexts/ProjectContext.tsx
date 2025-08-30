@@ -4,7 +4,7 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
+  useEffect
 } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -38,10 +38,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<Project>({
     name: "personal",
     displayName: "Personal",
-    isDefault: true,
+    isDefault: true
   });
   const [projects, setProjects] = useState<Project[]>([
-    { name: "personal", displayName: "Personal", isDefault: true },
+    { name: "personal", displayName: "Personal", isDefault: true }
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -88,13 +88,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               token: authMethod.apiKey,
               projectName,
-              displayName,
-            }),
+              displayName
+            })
           }
         );
 
@@ -145,14 +145,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
               .filter((p) => p.name !== "personal") // Don't duplicate personal
               .map((p) => ({
                 name: p.name,
-                displayName: p.display_name || p.name,
+                displayName: p.display_name || p.name
               }))
           : [];
 
         // Always include the default personal project first, then API projects
         const allProjects: Project[] = [
           { name: "personal", displayName: "Personal", isDefault: true },
-          ...apiProjects,
+          ...apiProjects
         ];
         setProjects(allProjects);
 
@@ -185,7 +185,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         switchProject,
         createProject,
         loadProjects,
-        isLoading,
+        isLoading
       }}
     >
       {children}

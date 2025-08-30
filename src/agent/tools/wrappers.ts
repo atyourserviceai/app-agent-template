@@ -105,9 +105,9 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
                   ? validationError.message
                   : undefined,
               message: errorMessage,
-              timestamp: new Date().toISOString(),
+              timestamp: new Date().toISOString()
             },
-            success: false,
+            success: false
           } as TResult;
         }
       }
@@ -118,7 +118,7 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
       }
       return {
         result,
-        success: true,
+        success: true
       } as TResult;
     } catch (error) {
       console.error(
@@ -129,16 +129,16 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
         error: {
           details: error instanceof Error ? error.stack : undefined,
           message: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         },
-        success: false,
+        success: false
       } as TResult;
     }
   };
 
   return {
     ...tool,
-    execute: wrappedExecute,
+    execute: wrappedExecute
   };
 }
 
@@ -146,7 +146,7 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
  * Wraps all tools in a record with error handling.
  */
 export function wrapAllToolsWithErrorHandling<
-  T extends Record<string, Tool<unknown, unknown>>,
+  T extends Record<string, Tool<unknown, unknown>>
 >(tools: T): T {
   const wrappedTools: Partial<T> = {};
   for (const [name, tool] of Object.entries(tools)) {
@@ -174,9 +174,9 @@ export function createToolErrorResult(
     error: {
       details,
       message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     },
-    success: false,
+    success: false
   };
 }
 
@@ -188,6 +188,6 @@ export function createToolErrorResult(
 export function createToolSuccessResult<T>(result: T): ToolSuccessResult<T> {
   return {
     result,
-    success: true,
+    success: true
   };
 }
