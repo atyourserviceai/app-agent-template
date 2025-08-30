@@ -313,7 +313,8 @@ function ProjectTabContent({
     setInput,
     setMessages,
     reload,
-    isLoading
+    isLoading,
+    stop
   } = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     maxSteps: 5,
@@ -1164,6 +1165,7 @@ function ProjectTabContent({
             onInputSubmit={(e) => {
               handleSubmitWithRetry(e);
             }}
+            onStop={stop}
             onCloseChat={() => setActiveTab("presentation")}
           >
             {renderMessages()}

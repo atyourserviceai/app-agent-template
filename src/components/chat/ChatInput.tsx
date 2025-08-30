@@ -1,4 +1,4 @@
-import { PaperPlaneRight } from "@phosphor-icons/react";
+import { PaperPlaneRight, Stop } from "@phosphor-icons/react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button/Button";
@@ -8,6 +8,7 @@ type ChatInputProps = {
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
   onSubmit: (e: FormEvent) => void;
+  onStop?: () => void;
   isLoading: boolean;
   isThinking: boolean;
   pendingConfirmation: boolean;
@@ -18,6 +19,7 @@ export function ChatInput({
   value,
   onChange,
   onSubmit,
+  onStop,
   isLoading,
   isThinking,
   pendingConfirmation,
@@ -104,16 +106,28 @@ export function ChatInput({
           )}
         </div>
 
-        <Button
-          type="submit"
-          shape="square"
-          className="rounded-full h-10 w-10 flex-shrink-0"
-          disabled={
-            pendingConfirmation || !value.trim() || isLoading || isThinking
-          }
-        >
-          <PaperPlaneRight size={16} />
-        </Button>
+        {isLoading && onStop ? (
+          <Button
+            type="button"
+            onClick={onStop}
+            shape="square"
+            className="rounded-full h-10 w-10 flex-shrink-0"
+            aria-label="Stop generation"
+          >
+            <Stop size={16} />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            shape="square"
+            className="rounded-full h-10 w-10 flex-shrink-0"
+            disabled={
+              pendingConfirmation || !value.trim() || isLoading || isThinking
+            }
+          >
+            <PaperPlaneRight size={16} />
+          </Button>
+        )}
       </div>
     </form>
   );

@@ -22,6 +22,7 @@ type ChatContainerProps = {
   onExportConversation?: () => Promise<void>;
   onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onInputSubmit: (e: FormEvent) => void;
+  onStop?: () => void;
   onCloseChat?: () => void; // optional close handler when used as floating panel
 };
 
@@ -43,6 +44,7 @@ export function ChatContainer({
   onExportConversation,
   onInputChange,
   onInputSubmit,
+  onStop,
   onCloseChat
 }: ChatContainerProps) {
   return (
@@ -77,6 +79,7 @@ export function ChatContainer({
         value={inputValue}
         onChange={onInputChange}
         onSubmit={onInputSubmit}
+        onStop={onStop}
         isLoading={isLoading}
         isThinking={isThinking}
         pendingConfirmation={pendingConfirmation}
