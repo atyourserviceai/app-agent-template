@@ -122,7 +122,7 @@ export function ChatInput({
             shape="square"
             className="rounded-full h-10 w-10 flex-shrink-0"
             disabled={
-              pendingConfirmation || !value.trim() || isLoading || isThinking
+              pendingConfirmation || !value || !value.trim() || isLoading || isThinking
             }
           >
             <PaperPlaneRight size={16} />

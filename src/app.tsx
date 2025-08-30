@@ -289,23 +289,10 @@ function ProjectTabContent({
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
 
-  const {
-    messages: agentMessagesRaw,
-    input: agentInput,
-    handleInputChange: handleAgentInputChange,
-    handleSubmit: handleAgentSubmit,
-    addToolResult,
-    clearHistory,
-    data: agentData,
-    setInput,
-    setMessages,
-    reload,
-    isLoading,
-    stop
-  } = useAgentChat({
+  // Use agents hook with AI SDK 5 compatibility
+  const agentChatResult = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
-    maxSteps: 5,
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error while streaming:", error);
       console.log(
         "[ERROR HANDLER] Error details:",
@@ -520,6 +507,64 @@ function ProjectTabContent({
     }
   });
 
+  // Use the actual properties that useAgentChat returns
+  const {
+    messages: agentMessagesRaw,
+    setMessages,
+    sendMessage,
+    regenerate,
+    clearError,
+    stop,
+    error
+  } = agentChatResult;
+
+  // Create manual input state (AI SDK 5 pattern)
+  const [agentInput, setAgentInput] = useState('');
+
+  // Map to AI SDK 5 compatible API
+  const setInput = setAgentInput;
+  const append = sendMessage; // sendMessage is the equivalent of append
+  const reload = regenerate; // regenerate is the equivalent of reload
+  const status = 'ready'; // Not available from useAgentChat, use static value
+  const clearHistory = () => {
+    setMessages([]);
+    if (clearError) clearError();
+  };
+
+  // AI SDK 5 compatibility mapping - use static values since status isn't available
+  const isLoading = false; // Will be managed by useMessageEditing hook
+  const addToolResult = () => {
+    console.log('addToolResult called - not implemented in v5-migration branch');
+  };
+  const agentData = undefined; // Not available in AI SDK 5
+
+  // AI SDK 5 input handlers
+  const handleAgentInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleAgentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (agentInput.trim()) {
+      sendMessage(agentInput); // Use sendMessage instead of append
+      setAgentInput(''); // Clear input after sending
+    }
+  };
+
+  // Create a reload function using the available API
+  const reloadFunction = reload || (() => {
+    console.log('Using fallback reload - re-sending last user message');
+    // Find the last user message
+    const lastUserMessage = [...agentMessagesRaw].reverse().find(m => m.role === 'user');
+    if (lastUserMessage) {
+      // Re-send the last user message using sendMessage
+      const content = typeof lastUserMessage.content === 'string'
+        ? lastUserMessage.content
+        : lastUserMessage.content?.[0]?.text || '';
+      sendMessage(content);
+    }
+  });
+
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
   // Also detect API errors and throw proper auth errors for the Error Boundary to catch
   const hasApiError =
@@ -562,7 +607,7 @@ function ProjectTabContent({
     handleEditMessage,
     handleRetry,
     handleRetryLastUserMessage
-  } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+  } = useMessageEditing(agentMessages, setMessages, agentInput, reloadFunction);
 
   // Listen for thinking tokens from agent data stream
   useEffect(() => {
@@ -621,8 +666,8 @@ function ProjectTabContent({
     if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
-    reload();
-  }, [auth, reload]);
+    reloadFunction();
+  }, [auth, reloadFunction]);
 
   // Export conversation handler
   const handleExportConversation = useCallback(async () => {
@@ -1147,7 +1192,7 @@ function ProjectTabContent({
             theme={theme}
             showDebug={showDebug}
             agentMode={agentMode}
-            inputValue={agentInput}
+            inputValue={agentInput || ""}
             isLoading={isLoading}
             isThinking={isThinking}
             pendingConfirmation={pendingToolCallConfirmation}

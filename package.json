@@ -60,7 +60,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
     "@types/marked": "^6.0.0",
-    "agents": "^0.0.113",
+    "agents": "file:../../../other/agents/packages/agents",
     "ai": "^5.0.28",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

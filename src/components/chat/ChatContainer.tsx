@@ -8,7 +8,7 @@ type ChatContainerProps = {
   theme: "dark" | "light";
   showDebug: boolean;
   agentMode: AgentMode;
-  inputValue: string;
+  inputValue: string; // Ensure this is always a string, not undefined
   isLoading: boolean;
   isThinking: boolean; // Add thinking state
   pendingConfirmation: boolean;
