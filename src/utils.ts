@@ -1,13 +1,13 @@
 // via https://github.com/vercel/ai/blob/main/examples/next-openai/app/api/use-chat-human-in-the-loop/utils.ts
 
-import { type UIMessage } from 'ai';
+import { type UIMessage } from "ai";
 import {
   convertToModelMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
   type ToolSet
 } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 import { APPROVAL } from "./shared";
 
 function isValidToolName<K extends PropertyKey, T extends object>(
@@ -94,16 +94,14 @@ export async function processToolCalls<
       }
 
       // Forward updated tool result to the client.
-      dataStream.write(
-        {
-          'type': 'tool-result',
+      dataStream.write({
+        type: "tool-result",
 
-          'value': {
-            toolCallId: toolInvocation.toolCallId,
-            result
-          }
+        value: {
+          toolCallId: toolInvocation.toolCallId,
+          result
         }
-      );
+      });
 
       // Return updated toolInvocation with the actual result.
       return {

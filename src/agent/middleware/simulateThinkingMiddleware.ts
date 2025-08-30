@@ -1,4 +1,4 @@
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2 } from "@ai-sdk/provider";
 
 /**
  * Middleware to simulate an LLM that streams thinking tokens during processing

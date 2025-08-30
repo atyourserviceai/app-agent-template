@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 
 /**
  * Placeholder for messaging-related tools (e.g., sending emails, LinkedIn messages).

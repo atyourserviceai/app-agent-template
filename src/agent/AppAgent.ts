@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import type { UIMessage } from 'ai';
+import type { UIMessage } from "ai";
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
@@ -431,9 +431,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const state = this.state as AppAgentState;
     const currentMode = state.mode;
 
-    console.log(
-      `[AppAgent] Processing chat message in ${currentMode} mode`
-    );
+    console.log(`[AppAgent] Processing chat message in ${currentMode} mode`);
 
     // We don't have MCP implementation yet, so just use mode tools
     // In the future, we can add MCP tools:
@@ -444,7 +442,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const allTools = modeTools;
 
     // Process any pending tool calls from previous messages
-    // This handles human-in-the-loop confirmations for tools  
+    // This handles human-in-the-loop confirmations for tools
     const processedMessages = this.messages;
 
     // Filter out empty messages for AI provider compatibility
@@ -466,9 +464,7 @@ export class AppAgent extends AIChatAgent<Env> {
         // Enable simulation for testing if environment variable is set
         if (this.env.SIMULATE_THINKING_TOKENS === "true") {
           model = simulateThinkingLLM();
-          console.log(
-            "[AppAgent] Using simulated thinking tokens for testing"
-          );
+          console.log("[AppAgent] Using simulated thinking tokens for testing");
         }
 
         // Stream the AI response
@@ -486,14 +482,10 @@ export class AppAgent extends AIChatAgent<Env> {
               error.status === 403 &&
               retryCount < maxRetries
             ) {
-              console.log(
-                "[AppAgent] Got 403 error, attempting token refresh"
-              );
+              console.log("[AppAgent] Got 403 error, attempting token refresh");
               const refreshed = await this.refreshTokenOnError();
               if (refreshed) {
-                console.log(
-                  "[AppAgent] Token refreshed, will retry request"
-                );
+                console.log("[AppAgent] Token refreshed, will retry request");
                 return; // This will cause the outer loop to retry
               }
             }
@@ -544,9 +536,11 @@ export class AppAgent extends AIChatAgent<Env> {
     }
 
     const dataStreamResponse = createUIMessageStreamResponse({
-      stream: result?.toUIMessageStream() || (async function* () {
-        // Fallback empty stream if result is undefined
-      })()
+      stream:
+        result?.toUIMessageStream() ||
+        (async function* () {
+          // Fallback empty stream if result is undefined
+        })()
     });
 
     return dataStreamResponse;

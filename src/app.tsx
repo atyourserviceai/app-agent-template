@@ -83,7 +83,7 @@ function SuggestedActions({
     isOther?: boolean;
   }> = [];
 
-  // In AI SDK 5, we need to check if it's a call or result  
+  // In AI SDK 5, we need to check if it's a call or result
   const toolPart = suggestActionsPart as any;
   if (toolPart.input) {
     // Handle call state - get actions from input
@@ -961,13 +961,18 @@ function ProjectTabContent({
                     }
 
                     // Extract tool name from type (e.g., "tool-getWeatherInformation" -> "getWeatherInformation")
-                    const toolName = part.type.replace("tool-", "") as keyof ToolTypes;
-                    const needsConfirmation = 
-                      toolsRequiringConfirmation.includes(toolName) && 
+                    const toolName = part.type.replace(
+                      "tool-",
+                      ""
+                    ) as keyof ToolTypes;
+                    const needsConfirmation =
+                      toolsRequiringConfirmation.includes(toolName) &&
                       "input" in part; // Has input means it's pending
 
                     // Get toolCallId if available
-                    const toolCallId = (part as any).toolCallId || `${message.id}-${toolName}-${i}`;
+                    const toolCallId =
+                      (part as any).toolCallId ||
+                      `${message.id}-${toolName}-${i}`;
 
                     return (
                       <ToolInvocationCard

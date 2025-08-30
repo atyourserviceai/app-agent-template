@@ -1,11 +1,11 @@
-import { type UIMessage } from 'ai';
+import { type UIMessage } from "ai";
 import {
   convertToModelMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
   type ToolSet
 } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 import { APPROVAL } from "../../shared";
 import type { AgentMode } from "../AppAgent";
 
@@ -178,16 +178,14 @@ export async function processToolCalls<
       }
 
       // Forward updated tool result to the client.
-      dataStream.write(
-        {
-          'type': 'tool-result',
+      dataStream.write({
+        type: "tool-result",
 
-          'value': {
-            result,
-            toolCallId: toolInvocation.toolCallId
-          }
+        value: {
+          result,
+          toolCallId: toolInvocation.toolCallId
         }
-      );
+      });
 
       // Return updated toolInvocation with the actual result.
       return {
@@ -245,16 +243,14 @@ export async function processToolCallsWithModeValidation<
         const errorResult = `Tool '${toolName}' is not available in ${mode} mode. Please use tools that are appropriate for the current mode.`;
 
         // Forward error to the client
-        dataStream.write(
-          {
-            'type': 'tool-result',
+        dataStream.write({
+          type: "tool-result",
 
-            'value': {
-              result: errorResult,
-              toolCallId: toolInvocation.toolCallId
-            }
+          value: {
+            result: errorResult,
+            toolCallId: toolInvocation.toolCallId
           }
-        );
+        });
 
         // Return updated toolInvocation with the error result
         // Using proper state values that match the ToolInvocation type
@@ -293,16 +289,14 @@ export async function processToolCallsWithModeValidation<
         }
 
         // Forward updated tool result to the client
-        dataStream.write(
-          {
-            'type': 'tool-result',
+        dataStream.write({
+          type: "tool-result",
 
-            'value': {
-              result,
-              toolCallId: toolInvocation.toolCallId
-            }
+          value: {
+            result,
+            toolCallId: toolInvocation.toolCallId
           }
-        );
+        });
 
         // Return updated toolInvocation with the actual result
         return {
