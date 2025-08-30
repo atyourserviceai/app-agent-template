@@ -1,4 +1,4 @@
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage } from "@ai-sdk/react";
 import { useAgentChat } from "agents/ai-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
@@ -17,7 +17,7 @@ import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvoca
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
-import { Moon, Sun } from "@phosphor-icons/react";
+import { Moon, Sun } from "@phosphor-icons/react/dist/ssr";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
@@ -53,7 +53,7 @@ function SuggestedActions({
   addToolResult,
   reload: _reload
 }: {
-  messages: Message[];
+  messages: UIMessage[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
   reload: () => void;
 }) {
@@ -68,20 +68,14 @@ function SuggestedActions({
   if (!lastAssistantMessage) return null;
 
   // Find the suggestActions tool invocation in the message parts
-  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.toolName` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
   const suggestActionsPart = lastAssistantMessage.parts?.find(
-    (part) =>
-      part.type === "tool-invocation" &&
-      "toolInvocation" in part &&
-      part.toolInvocation.toolName === "suggestActions"
+    (part) => part.type === "tool-suggestActions"
   );
 
-  if (!suggestActionsPart || !("toolInvocation" in suggestActionsPart))
+  if (!suggestActionsPart || suggestActionsPart.type !== "tool-suggestActions")
     return null;
 
-  const toolInvocation = suggestActionsPart.toolInvocation;
-
-  // Get the actions based on the state - they could be in args or result
+  // Get the actions based on the state - they could be in input or output
   let actions: Array<{
     label: string;
     value: string;
@@ -89,34 +83,26 @@ function SuggestedActions({
     isOther?: boolean;
   }> = [];
 
-  if (toolInvocation.state === "call") {
-    // Handle call state - get actions from args
-    actions =
-      (toolInvocation.args.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>) || [];
-  } else if (toolInvocation.state === "result" && toolInvocation.result) {
-    // Handle result state - get actions from result
-    // This ensures we can handle both cases where the tool execution may have modified the actions
-    if (typeof toolInvocation.result === "string") {
+  // In AI SDK 5, we need to check if it's a call or result  
+  const toolPart = suggestActionsPart as any;
+  if (toolPart.input) {
+    // Handle call state - get actions from input
+    const input = toolPart.input;
+    actions = input.actions || [];
+  } else if (toolPart.output) {
+    // Handle result state - get actions from output
+    const output = toolPart.output;
+    if (typeof output === "string") {
       try {
-        const parsedResult = JSON.parse(toolInvocation.result);
+        const parsedResult = JSON.parse(output);
         if (parsedResult.actions) {
           actions = parsedResult.actions;
         }
       } catch (e) {
         console.error("Failed to parse suggestActions result", e);
       }
-    } else if (toolInvocation.result && "actions" in toolInvocation.result) {
-      actions = toolInvocation.result.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>;
+    } else if (output && typeof output === "object" && "actions" in output) {
+      actions = (output as any).actions || [];
     }
   }
 
@@ -129,7 +115,7 @@ function SuggestedActions({
         actions={actions}
         onActionClick={(value, isOther) => {
           // Complete the tool call only if it's still in call state
-          if (toolInvocation.state === "call") {
+          if (toolPart.input && toolPart.toolCallId) {
             addToolResult({
               result: JSON.stringify({
                 actions,
@@ -137,7 +123,7 @@ function SuggestedActions({
                 selectedAction: value,
                 success: true
               }),
-              toolCallId: toolInvocation.toolCallId
+              toolCallId: toolPart.toolCallId
             });
           }
 
@@ -867,17 +853,15 @@ function ProjectTabContent({
     );
   }
 
-  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.toolName` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
-  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.state` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
-  const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
-    m.parts?.some(
-      (part) =>
-        part.type === "tool-invocation" &&
-        part.toolInvocation.state === "call" &&
-        toolsRequiringConfirmation.includes(
-          part.toolInvocation.toolName as keyof ToolTypes
-        )
-    )
+  const pendingToolCallConfirmation = agentMessages.some((m: UIMessage) =>
+    m.parts?.some((part) => {
+      // Check if this is a tool call that requires confirmation and is still pending
+      if (part.type.startsWith("tool-") && "input" in part) {
+        const toolName = part.type.replace("tool-", "") as keyof ToolTypes;
+        return toolsRequiringConfirmation.includes(toolName);
+      }
+      return false;
+    })
   );
 
   const formatTime = (date: Date) => {
@@ -892,7 +876,7 @@ function ProjectTabContent({
     }
 
     // Render all regular messages
-    const messageElements = agentMessages.map((message: Message, index) => {
+    const messageElements = agentMessages.map((message: UIMessage, index) => {
       // Common variable setup
       const isUser = message.role === "user";
       const isMessageError = isErrorMessage(message);
@@ -969,24 +953,32 @@ function ProjectTabContent({
                     );
                   }
 
-                  // For tool invocation parts
-                  if (part.type === "tool-invocation") {
-                    const toolInvocation = part.toolInvocation;
-                    const toolCallId = toolInvocation.toolCallId;
-                    const needsConfirmation =
-                      toolsRequiringConfirmation.includes(
-                        toolInvocation.toolName as keyof ToolTypes
-                      ) && toolInvocation.state === "call";
-
+                  // For tool invocation parts - handle different tool types
+                  if (part.type.startsWith("tool-")) {
                     // Skip suggestActions invocations since they are handled separately
-                    if (toolInvocation.toolName === "suggestActions") {
+                    if (part.type === "tool-suggestActions") {
                       return null;
                     }
+
+                    // Extract tool name from type (e.g., "tool-getWeatherInformation" -> "getWeatherInformation")
+                    const toolName = part.type.replace("tool-", "") as keyof ToolTypes;
+                    const needsConfirmation = 
+                      toolsRequiringConfirmation.includes(toolName) && 
+                      "input" in part; // Has input means it's pending
+
+                    // Get toolCallId if available
+                    const toolCallId = (part as any).toolCallId || `${message.id}-${toolName}-${i}`;
 
                     return (
                       <ToolInvocationCard
                         key={`${message.id}-tool-${toolCallId}`}
-                        toolInvocation={toolInvocation}
+                        toolInvocation={{
+                          toolName,
+                          toolCallId,
+                          state: "output" in part ? "result" : "call",
+                          args: "input" in part ? part.input : {},
+                          result: "output" in part ? part.output : undefined
+                        }}
                         toolCallId={toolCallId}
                         needsConfirmation={needsConfirmation}
                         addToolResult={addToolResult}

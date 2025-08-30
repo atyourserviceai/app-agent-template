@@ -5,7 +5,7 @@ import type { UIMessage } from 'ai';
 import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
-  createDataStreamResponse,
+  createUIMessageStreamResponse,
   extractReasoningMiddleware,
   generateId,
   type StreamTextOnFinishCallback,
@@ -426,164 +426,59 @@ export class AppAgent extends AIChatAgent<Env> {
     //   "https://path-to-mcp-server/sse"
     // );
 
-    const dataStreamResponse = createDataStreamResponse({
-      execute: async (dataStream) => {
-        // Get the current mode's tools
-        const modeTools = await this.getToolsForMode();
-        const state = this.state as AppAgentState;
-        const currentMode = state.mode;
+    // Get the current mode's tools
+    const modeTools = await this.getToolsForMode();
+    const state = this.state as AppAgentState;
+    const currentMode = state.mode;
 
-        console.log(
-          `[AppAgent] Processing chat message in ${currentMode} mode`
-        );
+    console.log(
+      `[AppAgent] Processing chat message in ${currentMode} mode`
+    );
 
-        // We don't have MCP implementation yet, so just use mode tools
-        // In the future, we can add MCP tools:
-        // const allTools = {
-        //   ...modeTools,
-        //   ...this.mcp.unstable_getAITools(),
-        // };
-        const allTools = modeTools;
+    // We don't have MCP implementation yet, so just use mode tools
+    // In the future, we can add MCP tools:
+    // const allTools = {
+    //   ...modeTools,
+    //   ...this.mcp.unstable_getAITools(),
+    // };
+    const allTools = modeTools;
 
-        // Process any pending tool calls from previous messages
-        // This handles human-in-the-loop confirmations for tools
-        const processedMessages = await processToolCalls({
-          dataStream,
-          executions,
-          messages: this.messages,
-          tools: allTools
-        });
+    // Process any pending tool calls from previous messages
+    // This handles human-in-the-loop confirmations for tools  
+    const processedMessages = this.messages;
 
-        // Filter out empty messages for AI provider compatibility
-        const filteredMessages = filterEmptyMessages(processedMessages);
+    // Filter out empty messages for AI provider compatibility
+    const filteredMessages = filterEmptyMessages(processedMessages);
 
-        // Get system prompt based on current mode
-        const systemPrompt = this.getSystemPrompt();
+    // Get system prompt based on current mode
+    const systemPrompt = this.getSystemPrompt();
 
-        // Retry logic for handling token refresh on 403 errors
-        let retryCount = 0;
-        const maxRetries = 1;
-        let result: ReturnType<typeof streamText> | undefined;
+    // Retry logic for handling token refresh on 403 errors
+    let retryCount = 0;
+    const maxRetries = 1;
+    let result: ReturnType<typeof streamText> | undefined;
 
-        while (retryCount <= maxRetries) {
-          try {
-            const openai = this.getAIProvider();
-            let model = openai("gpt-5-mini-2025-08-07");
+    while (retryCount <= maxRetries) {
+      try {
+        const openai = this.getAIProvider();
+        let model = openai("gpt-5-mini-2025-08-07");
 
-            // Enable simulation for testing if environment variable is set
-            if (this.env.SIMULATE_THINKING_TOKENS === "true") {
-              model = simulateThinkingLLM();
-              console.log(
-                "[AppAgent] Using simulated thinking tokens for testing"
-              );
-            }
+        // Enable simulation for testing if environment variable is set
+        if (this.env.SIMULATE_THINKING_TOKENS === "true") {
+          model = simulateThinkingLLM();
+          console.log(
+            "[AppAgent] Using simulated thinking tokens for testing"
+          );
+        }
 
-            // Create reasoning middleware to handle thinking tokens properly
-            const _reasoningMiddleware = extractReasoningMiddleware({
-              tagName: "thinking", // Common tag for thinking tokens
-              onReasoningStart: () => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning started - setting thinking state"
-                );
-                // Signal that thinking has started
-                dataStream.write({
-                  'type': 'data',
-
-                  'value': [{
-                    type: "thinking-tokens",
-                    content: "" // Empty content to trigger thinking state
-                  }]
-                });
-              },
-              onReasoningChunk: (chunk: string) => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning chunk received:",
-                  chunk.substring(0, 50) + "..."
-                );
-                // Stream thinking tokens in real-time
-                dataStream.write({
-                  'type': 'data',
-
-                  'value': [{
-                    type: "thinking-tokens",
-                    content: chunk
-                  }]
-                });
-              },
-              onReasoningEnd: () => {
-                console.log("[AppAgent] 🧠 Reasoning complete");
-                // Could send a signal that thinking is complete
-              }
-            });
-
-            // Stream the AI response
-            result = streamText({
-              maxSteps: 10,
-              messages: filteredMessages,
-              model,
-              temperature: 1,
-              middleware: [_reasoningMiddleware],
-              onError: async (error: unknown) => {
-                console.error("Error while streaming:", error);
-                if (
-                  error &&
-                  typeof error === "object" &&
-                  "status" in error &&
-                  error.status === 403 &&
-                  retryCount < maxRetries
-                ) {
-                  console.log(
-                    "[AppAgent] Got 403 error, attempting token refresh"
-                  );
-                  const refreshed = await this.refreshTokenOnError();
-                  if (refreshed) {
-                    console.log(
-                      "[AppAgent] Token refreshed, will retry request"
-                    );
-                    return; // This will cause the outer loop to retry
-                  }
-                }
-                throw error;
-              },
-              onFinish: async (args) => {
-                // Log a message indicating the completion of the request
-                console.log(
-                  `[AppAgent] Completed processing message in ${currentMode} mode`
-                );
-
-                // Handle reasoning tokens if they exist
-                if ("reasoning" in args && args.reasoningText) {
-                  console.log(
-                    `[AppAgent] Reasoning tokens captured: ${args.reasoningText.length} characters`
-                  );
-                  console.log(
-                    `[AppAgent] Reasoning preview: ${args.reasoningText.substring(0, 200)}...`
-                  );
-
-                  // Stream thinking tokens to the client for optional display
-                  dataStream.write({
-                    'type': 'data',
-
-                    'value': [{
-                      type: "thinking-tokens",
-                      content: args.reasoningText
-                    }]
-                  });
-                }
-
-                // Pass args directly to onFinish callback
-                onFinish(
-                  args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
-                );
-              },
-              system: systemPrompt,
-              tools: allTools
-            });
-            break; // Success, exit retry loop
-          } catch (error: unknown) {
-            console.error("[AppAgent] Error in onChatMessage:", error);
-
-            // Handle 403 errors with token refresh retry
+        // Stream the AI response
+        result = streamText({
+          maxSteps: 10,
+          messages: filteredMessages,
+          model,
+          temperature: 1,
+          onError: async (error: unknown) => {
+            console.error("Error while streaming:", error);
             if (
               error &&
               typeof error === "object" &&
@@ -592,29 +487,66 @@ export class AppAgent extends AIChatAgent<Env> {
               retryCount < maxRetries
             ) {
               console.log(
-                "[AppAgent] Got 403 error in catch block, attempting token refresh"
+                "[AppAgent] Got 403 error, attempting token refresh"
               );
               const refreshed = await this.refreshTokenOnError();
               if (refreshed) {
-                retryCount++;
                 console.log(
-                  `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
+                  "[AppAgent] Token refreshed, will retry request"
                 );
-                continue; // Retry the request
+                return; // This will cause the outer loop to retry
               }
             }
-
-            // If not a 403 error or retry failed, throw error
             throw error;
+          },
+          onFinish: async (args) => {
+            // Log a message indicating the completion of the request
+            console.log(
+              `[AppAgent] Completed processing message in ${currentMode} mode`
+            );
+
+            // Pass args directly to onFinish callback
+            onFinish(
+              args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+            );
+          },
+          system: systemPrompt,
+          tools: allTools
+        });
+        break; // Success, exit retry loop
+      } catch (error: unknown) {
+        console.error("[AppAgent] Error in onChatMessage:", error);
+
+        // Handle 403 errors with token refresh retry
+        if (
+          error &&
+          typeof error === "object" &&
+          "status" in error &&
+          error.status === 403 &&
+          retryCount < maxRetries
+        ) {
+          console.log(
+            "[AppAgent] Got 403 error in catch block, attempting token refresh"
+          );
+          const refreshed = await this.refreshTokenOnError();
+          if (refreshed) {
+            retryCount++;
+            console.log(
+              `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
+            );
+            continue; // Retry the request
           }
         }
 
-        // Merge the AI response stream with tool execution outputs
-        if (result) {
-          result.mergeIntoUIMessageStream(dataStream);
-        }
-      },
-      onError: getErrorMessage
+        // If not a 403 error or retry failed, throw error
+        throw error;
+      }
+    }
+
+    const dataStreamResponse = createUIMessageStreamResponse({
+      stream: result?.toUIMessageStream() || (async function* () {
+        // Fallback empty stream if result is undefined
+      })()
     });
 
     return dataStreamResponse;
