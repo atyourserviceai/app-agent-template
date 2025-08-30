@@ -1,11 +1,11 @@
-import { formatDataStreamPart, type Message } from "@ai-sdk/ui-utils";
+import { formatDataStreamPart, type UIMessage } from 'ai';
 import {
-  convertToCoreMessages,
+  convertToModelMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
   type ToolSet
 } from "ai";
-import type { z } from "zod";
+import { z } from 'zod/v3';
 import { APPROVAL } from "../../shared";
 import type { AgentMode } from "../AppAgent";
 
@@ -126,14 +126,14 @@ export async function processToolCalls<
 }: {
   tools: Tools; // used for type inference
   dataStream: DataStreamWriter;
-  messages: Message[];
+  messages: UIMessage[];
   executions: {
     [K in keyof Tools & keyof ExecutableTools]?: (
       args: z.infer<ExecutableTools[K]["parameters"]>,
       context: ToolExecutionOptions
     ) => Promise<unknown>;
   };
-}): Promise<Message[]> {
+}): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
   if (!parts) return messages;
@@ -164,7 +164,7 @@ export async function processToolCalls<
         const toolInstance = executions[toolName];
         if (toolInstance) {
           result = await toolInstance(toolInvocation.args, {
-            messages: convertToCoreMessages(messages),
+            messages: convertToModelMessages(messages),
             toolCallId: toolInvocation.toolCallId
           });
         } else {
@@ -179,10 +179,14 @@ export async function processToolCalls<
 
       // Forward updated tool result to the client.
       dataStream.write(
-        formatDataStreamPart("tool_result", {
-          result,
-          toolCallId: toolInvocation.toolCallId
-        })
+        {
+          'type': 'tool-result',
+
+          'value': {
+            result,
+            toolCallId: toolInvocation.toolCallId
+          }
+        }
       );
 
       // Return updated toolInvocation with the actual result.
@@ -214,7 +218,7 @@ export async function processToolCallsWithModeValidation<
   executions,
   mode
 }: {
-  messages: Message[];
+  messages: UIMessage[];
   dataStream: DataStreamWriter;
   tools: Tools; // unused but needed for type inference
   executions: Record<
@@ -222,7 +226,7 @@ export async function processToolCallsWithModeValidation<
     (args: unknown, context: ToolExecutionOptions) => Promise<unknown>
   >;
   mode: AgentMode;
-}): Promise<Message[]> {
+}): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
   if (!parts) return messages;
@@ -242,10 +246,14 @@ export async function processToolCallsWithModeValidation<
 
         // Forward error to the client
         dataStream.write(
-          formatDataStreamPart("tool_result", {
-            result: errorResult,
-            toolCallId: toolInvocation.toolCallId
-          })
+          {
+            'type': 'tool-result',
+
+            'value': {
+              result: errorResult,
+              toolCallId: toolInvocation.toolCallId
+            }
+          }
         );
 
         // Return updated toolInvocation with the error result
@@ -270,7 +278,7 @@ export async function processToolCallsWithModeValidation<
             const toolInstance = executions[toolName];
             if (toolInstance) {
               result = await toolInstance(toolInvocation.args, {
-                messages: convertToCoreMessages(messages),
+                messages: convertToModelMessages(messages),
                 toolCallId: toolInvocation.toolCallId
               });
             } else {
@@ -286,10 +294,14 @@ export async function processToolCallsWithModeValidation<
 
         // Forward updated tool result to the client
         dataStream.write(
-          formatDataStreamPart("tool_result", {
-            result,
-            toolCallId: toolInvocation.toolCallId
-          })
+          {
+            'type': 'tool-result',
+
+            'value': {
+              result,
+              toolCallId: toolInvocation.toolCallId
+            }
+          }
         );
 
         // Return updated toolInvocation with the actual result
@@ -310,7 +322,7 @@ export async function processToolCallsWithModeValidation<
   // Return the processed messages with type assertion to avoid type error
   return [
     ...messages.slice(0, -1),
-    { ...lastMessage, parts: processedParts } as Message
+    { ...lastMessage, parts: processedParts } as UIMessage
   ];
 }
 

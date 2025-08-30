@@ -1,4 +1,4 @@
-import type { LanguageModelV1 } from "ai";
+import type { LanguageModelV2 } from '@ai-sdk/provider';
 
 /**
  * Middleware to simulate an LLM that streams thinking tokens during processing
@@ -68,9 +68,9 @@ Ready to proceed with your actual assessment, or would you like to test anything
     doGenerate: async () => {
       return {
         text: responseText,
-        reasoning: thinkingTokens,
+        reasoningText: thinkingTokens,
         finishReason: "stop" as const,
-        usage: { promptTokens: 0, completionTokens: responseText.length },
+        usage: { inputTokens: 0, outputTokens: responseText.length },
         warnings: [],
         rawCall: { rawPrompt: null, rawSettings: {} },
         rawResponse: { headers: {} }
@@ -127,7 +127,7 @@ Ready to proceed with your actual assessment, or would you like to test anything
           controller.enqueue({
             type: "finish",
             finishReason: "stop" as const,
-            usage: { promptTokens: 0, completionTokens: responseText.length }
+            usage: { inputTokens: 0, outputTokens: responseText.length }
           });
 
           controller.close();

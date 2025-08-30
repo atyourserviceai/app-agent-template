@@ -6,7 +6,7 @@
  */
 
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 // Import raw, unwrapped tools from their source modules
 import * as rawBrowserTools from "./browser";
 import * as rawBrowserbaseTools from "./browserbase";
@@ -39,7 +39,7 @@ const rawTestErrorTool = tool({
     console.log("[testErrorTool] About to throw error with message:", message);
     throw new Error(`Test error: ${message}`);
   },
-  parameters: z.object({
+  inputSchema: z.object({
     message: z.string().describe("Any message to echo back")
   })
 });

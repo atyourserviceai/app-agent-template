@@ -81,7 +81,7 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
         });
 
         // Merge the AI response stream with tool execution outputs
-        result.mergeIntoDataStream(dataStream);
+        result.mergeIntoUIMessageStream(dataStream);
       }
     });
 
@@ -120,8 +120,7 @@ export default {
     }
     return (
       // Route the request to our agent or return 404 if not found
-      (await routeAgentRequest(request, env)) ||
-      new Response("Not found", { status: 404 })
+      ((await routeAgentRequest(request, env)) || new Response("Not found", { status: 404 }))
     );
   }
 } satisfies ExportedHandler<Env>;

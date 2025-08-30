@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent } from "../AppAgent";
 
 // Define a schedule input type
@@ -68,7 +68,7 @@ export const scheduleTask = tool({
       return `Error scheduling task: ${error}`;
     }
   },
-  parameters: scheduleSchema
+  inputSchema: scheduleSchema
 });
 
 /**
@@ -93,7 +93,7 @@ export const getScheduledTasks = tool({
       return `Error retrieving tasks: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -116,7 +116,7 @@ export const cancelScheduledTask = tool({
       return `Error canceling task: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     taskId: z.string()
   })
 });

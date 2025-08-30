@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { generateId, tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent, AppAgentState } from "../AppAgent";
 
 /**
@@ -50,7 +50,7 @@ export const recordTestResult = tool({
       return `Error recording test result: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     error: z.string().optional().describe("Error message if the test failed"),
     input: z.unknown().optional().describe("Input provided to the tool"),
     notes: z.string().optional().describe("Additional notes about the test"),
@@ -81,7 +81,7 @@ export const documentTool = tool({
         examples,
         lastTested: new Date().toISOString(),
         name: toolName,
-        parameters,
+        inputSchema,
         status: status || "unknown"
       };
 
@@ -99,10 +99,10 @@ export const documentTool = tool({
       return `Error documenting tool: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     description: z.string().describe("Description of what the tool does"),
     examples: z.array(z.string()).optional().describe("Usage examples"),
-    parameters: z.record(z.unknown()).describe("Tool parameters schema"),
+    inputSchema: z.record(z.unknown()).describe("Tool parameters schema"),
     status: z
       .enum(["working", "issues", "unknown"])
       .optional()
@@ -189,7 +189,7 @@ export const generateTestReport = tool({
       return `Error generating test report: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -237,7 +237,7 @@ export const completeIntegrationTesting = tool({
       return `Error completing integration testing: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     force: z
       .boolean()
       .optional()
@@ -262,7 +262,7 @@ export const testErrorTool = tool({
         throw new Error(`Test error: ${message}`);
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     errorType: z
       .enum(["simple", "timeout", "network"])
       .optional()

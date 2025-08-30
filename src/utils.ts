@@ -1,13 +1,13 @@
 // via https://github.com/vercel/ai/blob/main/examples/next-openai/app/api/use-chat-human-in-the-loop/utils.ts
 
-import { formatDataStreamPart, type Message } from "@ai-sdk/ui-utils";
+import { formatDataStreamPart, type UIMessage } from 'ai';
 import {
-  convertToCoreMessages,
+  convertToModelMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
   type ToolSet
 } from "ai";
-import type { z } from "zod";
+import { z } from 'zod/v3';
 import { APPROVAL } from "./shared";
 
 function isValidToolName<K extends PropertyKey, T extends object>(
@@ -42,14 +42,14 @@ export async function processToolCalls<
 }: {
   tools: Tools; // used for type inference
   dataStream: DataStreamWriter;
-  messages: Message[];
+  messages: UIMessage[];
   executions: {
     [K in keyof Tools & keyof ExecutableTools]?: (
       args: z.infer<ExecutableTools[K]["parameters"]>,
       context: ToolExecutionOptions
     ) => Promise<unknown>;
   };
-}): Promise<Message[]> {
+}): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
   if (!parts) return messages;
@@ -80,7 +80,7 @@ export async function processToolCalls<
         const toolInstance = executions[toolName];
         if (toolInstance) {
           result = await toolInstance(toolInvocation.args, {
-            messages: convertToCoreMessages(messages),
+            messages: convertToModelMessages(messages),
             toolCallId: toolInvocation.toolCallId
           });
         } else {
@@ -95,10 +95,14 @@ export async function processToolCalls<
 
       // Forward updated tool result to the client.
       dataStream.write(
-        formatDataStreamPart("tool_result", {
-          toolCallId: toolInvocation.toolCallId,
-          result
-        })
+        {
+          'type': 'tool-result',
+
+          'value': {
+            toolCallId: toolInvocation.toolCallId,
+            result
+          }
+        }
       );
 
       // Return updated toolInvocation with the actual result.

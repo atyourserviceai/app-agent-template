@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 
 /**
  * Placeholder for messaging-related tools (e.g., sending emails, LinkedIn messages).
@@ -19,7 +19,7 @@ export const messagingTools = {
       // Integrate with email service (SendGrid, Resend, etc.) using API key from env/config
       return "Email sent successfully";
     },
-    parameters: z.object({
+    inputSchema: z.object({
       body: z.string().describe("Body of the email"),
       from: z.string().optional().describe("Email address of the sender"),
       subject: z.string().describe("Subject of the email"),
@@ -37,7 +37,7 @@ export const messagingTools = {
       // Integrate with LinkedIn API (requires app approval and careful handling)
       return "LinkedIn message sent successfully";
     },
-    parameters: z.object({
+    inputSchema: z.object({
       message: z.string().describe("Message to send"),
       profileUrl: z.string().describe("URL of the LinkedIn profile")
     })
@@ -69,7 +69,7 @@ export const suggestActions = tool({
       success: true
     };
   },
-  parameters: z.object({
+  inputSchema: z.object({
     actions: z
       .array(
         z.object({

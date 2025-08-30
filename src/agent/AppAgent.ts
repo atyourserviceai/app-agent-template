@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import type { Message } from "@ai-sdk/ui-utils";
+import type { UIMessage } from 'ai';
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
@@ -70,7 +70,7 @@ const getGemini = (env: Env, apiKey?: string) => {
 */
 
 // Helper function to filter out empty messages for AI provider compatibility
-const filterEmptyMessages = (messages: Message[]) => {
+const filterEmptyMessages = (messages: UIMessage[]) => {
   return messages.filter((message, index) => {
     // Allow empty content only for the final assistant message
     const isLastMessage = index === messages.length - 1;
@@ -486,9 +486,13 @@ export class AppAgent extends AIChatAgent<Env> {
                   "[AppAgent] 🧠 Reasoning started - setting thinking state"
                 );
                 // Signal that thinking has started
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: "" // Empty content to trigger thinking state
+                dataStream.write({
+                  'type': 'data',
+
+                  'value': [{
+                    type: "thinking-tokens",
+                    content: "" // Empty content to trigger thinking state
+                  }]
                 });
               },
               onReasoningChunk: (chunk: string) => {
@@ -497,9 +501,13 @@ export class AppAgent extends AIChatAgent<Env> {
                   chunk.substring(0, 50) + "..."
                 );
                 // Stream thinking tokens in real-time
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: chunk
+                dataStream.write({
+                  'type': 'data',
+
+                  'value': [{
+                    type: "thinking-tokens",
+                    content: chunk
+                  }]
                 });
               },
               onReasoningEnd: () => {
@@ -544,18 +552,22 @@ export class AppAgent extends AIChatAgent<Env> {
                 );
 
                 // Handle reasoning tokens if they exist
-                if ("reasoning" in args && args.reasoning) {
+                if ("reasoning" in args && args.reasoningText) {
                   console.log(
-                    `[AppAgent] Reasoning tokens captured: ${args.reasoning.length} characters`
+                    `[AppAgent] Reasoning tokens captured: ${args.reasoningText.length} characters`
                   );
                   console.log(
-                    `[AppAgent] Reasoning preview: ${args.reasoning.substring(0, 200)}...`
+                    `[AppAgent] Reasoning preview: ${args.reasoningText.substring(0, 200)}...`
                   );
 
                   // Stream thinking tokens to the client for optional display
-                  dataStream.writeData({
-                    type: "thinking-tokens",
-                    content: args.reasoning
+                  dataStream.write({
+                    'type': 'data',
+
+                    'value': [{
+                      type: "thinking-tokens",
+                      content: args.reasoningText
+                    }]
                   });
                 }
 
@@ -599,7 +611,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
         // Merge the AI response stream with tool execution outputs
         if (result) {
-          result.mergeIntoDataStream(dataStream);
+          result.mergeIntoUIMessageStream(dataStream);
         }
       },
       onError: getErrorMessage

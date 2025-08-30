@@ -68,6 +68,7 @@ function SuggestedActions({
   if (!lastAssistantMessage) return null;
 
   // Find the suggestActions tool invocation in the message parts
+  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.toolName` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
   const suggestActionsPart = lastAssistantMessage.parts?.find(
     (part) =>
       part.type === "tool-invocation" &&
@@ -866,6 +867,8 @@ function ProjectTabContent({
     );
   }
 
+  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.toolName` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
+  /* FIXME(@ai-sdk-upgrade-v5): The `part.toolInvocation.state` property has been removed. Please manually migrate following https://ai-sdk.dev/docs/migration-guides/migration-guide-5-0#tool-part-type-changes-uimessage */
   const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
     m.parts?.some(
       (part) =>

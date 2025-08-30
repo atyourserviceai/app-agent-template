@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent, AppAgentState } from "../AppAgent";
 
 /**
@@ -64,7 +64,7 @@ export const saveSettings = tool({
       return `Error saving settings: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     adminContactEmail: z
       .string()
       .optional()
@@ -108,7 +108,7 @@ export const completeOnboarding = tool({
       return `Error completing onboarding: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -143,7 +143,7 @@ export const getOnboardingStatus = tool({
       return `Error getting onboarding status: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -175,5 +175,5 @@ export const checkExistingConfig = tool({
       return `Error checking existing config: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });

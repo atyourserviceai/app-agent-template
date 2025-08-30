@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 
 /**
  * Tool for getting current weather information for a location
@@ -23,7 +23,7 @@ export const getWeatherInformation = tool({
       windSpeed: "10 km/h"
     };
   },
-  parameters: z.object({
+  inputSchema: z.object({
     location: z
       .string()
       .describe("The location to get weather for (city name or coordinates)")
@@ -51,7 +51,7 @@ export const getLocalTime = tool({
       utcOffset: "+00:00 (mock data)"
     };
   },
-  parameters: z.object({
+  inputSchema: z.object({
     location: z
       .string()
       .describe(
