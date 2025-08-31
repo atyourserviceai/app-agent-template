@@ -228,11 +228,14 @@ export class AppAgent extends AIChatAgent<Env> {
       const userId = state.userInfo?.id;
 
       console.log(`[AppAgent] getJWTFromUserDO called for user: ${userId}`);
-      console.log(`[AppAgent] Current state:`, JSON.stringify({
-        userInfo: state.userInfo,
-        hasUserInfo: !!state.userInfo,
-        userId: userId
-      }));
+      console.log(
+        `[AppAgent] Current state:`,
+        JSON.stringify({
+          userInfo: state.userInfo,
+          hasUserInfo: !!state.userInfo,
+          userId: userId
+        })
+      );
 
       if (!userId) {
         console.error(
@@ -259,14 +262,17 @@ export class AppAgent extends AIChatAgent<Env> {
       );
 
       console.log(`[AppAgent] UserDO response status: ${response.status}`);
-      
+
       if (response.ok) {
         const data = (await response.json()) as { api_key?: string };
-        console.log(`[AppAgent] UserDO response data:`, JSON.stringify({
-          hasApiKey: !!data.api_key,
-          apiKeyLength: data.api_key?.length || 0
-        }));
-        
+        console.log(
+          `[AppAgent] UserDO response data:`,
+          JSON.stringify({
+            hasApiKey: !!data.api_key,
+            apiKeyLength: data.api_key?.length || 0
+          })
+        );
+
         if (data.api_key) {
           const redactedToken = `${data.api_key.substring(0, 10)}...${data.api_key.substring(-4)} (${data.api_key.length} chars)`;
           console.log(
@@ -278,7 +284,9 @@ export class AppAgent extends AIChatAgent<Env> {
         }
       } else {
         const errorText = await response.text();
-        console.error(`[AppAgent] UserDO request failed: ${response.status} - ${errorText}`);
+        console.error(
+          `[AppAgent] UserDO request failed: ${response.status} - ${errorText}`
+        );
       }
 
       console.warn(
@@ -683,11 +691,10 @@ export class AppAgent extends AIChatAgent<Env> {
         )
       `;
 
-      // User authentication and billing info table
+      // User authentication and billing info table (JWT token stored in UserDO only)
       await this.sql`
         CREATE TABLE IF NOT EXISTS user_info (
           user_id TEXT PRIMARY KEY,
-          api_key TEXT NOT NULL,
           email TEXT NOT NULL,
           credits REAL NOT NULL,
           payment_method TEXT NOT NULL,
@@ -782,13 +789,12 @@ export class AppAgent extends AIChatAgent<Env> {
           : "null";
         console.log(`[AppAgent] Storing JWT token: ${redactedToken}`);
 
-        // Store user info in local database for backwards compatibility
-        await this.sql`
+        // Store user info in local database (excluding api_key - only in UserDO)
+        this.sql`
           INSERT OR REPLACE INTO user_info (
-            user_id, api_key, email, credits, payment_method, updated_at
+            user_id, email, credits, payment_method, updated_at
           ) VALUES (
             ${userInfo.user_id},
-            ${userInfo.api_key},
             ${userInfo.email},
             ${userInfo.credits},
             ${userInfo.payment_method},
@@ -797,11 +803,13 @@ export class AppAgent extends AIChatAgent<Env> {
         `;
 
         // ALSO store in centralized UserDO (this is the important fix!)
-        console.log(`[AppAgent] Also storing user info in centralized UserDO...`);
+        console.log(
+          `[AppAgent] Also storing user info in centralized UserDO...`
+        );
         try {
           const userDOId = this.env.UserDO.idFromName(userInfo.user_id);
           const userDO = this.env.UserDO.get(userDOId);
-          
+
           const userDOResponse = await userDO.fetch(
             new Request(`https://user-do/store-user-info`, {
               method: "POST",
@@ -809,31 +817,22 @@ export class AppAgent extends AIChatAgent<Env> {
               body: JSON.stringify(userInfo)
             })
           );
-          
+
           if (userDOResponse.ok) {
-            console.log(`[AppAgent] Successfully stored user info in UserDO for user: ${userInfo.user_id}`);
+            console.log(
+              `[AppAgent] Successfully stored user info in UserDO for user: ${userInfo.user_id}`
+            );
           } else {
             const errorText = await userDOResponse.text();
-            console.error(`[AppAgent] Failed to store in UserDO: ${userDOResponse.status} - ${errorText}`);
+            console.error(
+              `[AppAgent] Failed to store in UserDO: ${userDOResponse.status} - ${errorText}`
+            );
           }
         } catch (userDOError) {
           console.error(`[AppAgent] Error storing in UserDO:`, userDOError);
         }
 
-        // Verify the token was stored correctly in local database
-        const storedResult = this.sql`
-          SELECT api_key FROM user_info WHERE user_id = ${userInfo.user_id} LIMIT 1
-        `;
-
-        for (const row of storedResult) {
-          const storedRow = row as { api_key: string };
-          const storedRedacted = storedRow.api_key
-            ? `${storedRow.api_key.substring(0, 10)}...${storedRow.api_key.substring(-4)} (${storedRow.api_key.length} chars)`
-            : "null";
-          console.log(
-            `[AppAgent] Verification - token now in local database: ${storedRedacted}`
-          );
-        }
+        // JWT token is now stored only in centralized UserDO, not in local database
 
         // Also update agent state for immediate use (without JWT for security)
         const updatedState: AppAgentState = {
@@ -1400,20 +1399,52 @@ export class AppAgent extends AIChatAgent<Env> {
         `[AppAgent] Fetched user info from OAuth for user: ${userInfo.id}`
       );
 
-      // Store in database for future use
-      // OAuth token IS the gateway API key
-      await this.sql`
+      // Store user info in local database (excluding api_key - only in UserDO)
+      // OAuth token IS the gateway API key but stored only in UserDO
+      this.sql`
         INSERT OR REPLACE INTO user_info (
-          user_id, api_key, email, credits, payment_method, updated_at
+          user_id, email, credits, payment_method, updated_at
         ) VALUES (
           ${userInfo.id},
-          ${token},
           ${userInfo.email},
           ${userInfo.credits},
           ${userInfo.payment_method},
           ${new Date().toISOString()}
         )
       `;
+
+      // Store JWT token ONLY in centralized UserDO
+      try {
+        const userDOId = this.env.UserDO.idFromName(userInfo.id);
+        const userDO = this.env.UserDO.get(userDOId);
+
+        const userDOResponse = await userDO.fetch(
+          new Request(`https://user-do/store-user-info`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userInfo.id,
+              api_key: token,
+              email: userInfo.email,
+              credits: userInfo.credits,
+              payment_method: userInfo.payment_method
+            })
+          })
+        );
+
+        if (userDOResponse.ok) {
+          console.log(
+            `[AppAgent] Successfully stored JWT token in UserDO for user: ${userInfo.id}`
+          );
+        } else {
+          const errorText = await userDOResponse.text();
+          console.error(
+            `[AppAgent] Failed to store JWT in UserDO: ${userDOResponse.status} - ${errorText}`
+          );
+        }
+      } catch (userDOError) {
+        console.error(`[AppAgent] Error storing JWT in UserDO:`, userDOError);
+      }
 
       // Update agent state
       const state = this.state as AppAgentState;
@@ -1449,7 +1480,6 @@ export class AppAgent extends AIChatAgent<Env> {
       if (userInfoResults && userInfoResults.length > 0) {
         const userInfo = userInfoResults[0] as {
           user_id: string;
-          api_key: string;
           email: string;
           credits: number;
           payment_method: string;
