@@ -265,19 +265,9 @@ export class AppAgent extends AIChatAgent<Env> {
 
       if (response.ok) {
         const data = (await response.json()) as { api_key?: string };
-        console.log(
-          `[AppAgent] UserDO response data:`,
-          JSON.stringify({
-            hasApiKey: !!data.api_key,
-            apiKeyLength: data.api_key?.length || 0
-          })
-        );
 
         if (data.api_key) {
-          const redactedToken = `${data.api_key.substring(0, 10)}...${data.api_key.substring(-4)} (${data.api_key.length} chars)`;
-          console.log(
-            `[AppAgent] Found JWT in centralized UserDO: ${redactedToken}`
-          );
+          console.log(`[AppAgent] Found JWT in centralized UserDO`);
           return data.api_key;
         } else {
           console.warn(`[AppAgent] UserDO returned empty api_key field`);
@@ -309,15 +299,8 @@ export class AppAgent extends AIChatAgent<Env> {
     const userApiKey = await this.getJWTFromUserDO();
 
     if (userApiKey) {
-      const redactedApiKey =
-        userApiKey.length <= 4
-          ? `[REDACTED] (${userApiKey.length} chars)`
-          : `${userApiKey.substring(0, 2)}...${userApiKey.substring(-2)} (${userApiKey.length} chars)`;
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
-      );
-      console.log(
-        `[AppAgent] API key being used for AI requests: ${redactedApiKey}`
       );
       return getOpenAI(this.env, userApiKey);
     }
@@ -783,11 +766,7 @@ export class AppAgent extends AIChatAgent<Env> {
           `[AppAgent] Storing user info for user: ${userInfo.user_id}`
         );
 
-        // Log the JWT token being stored (redacted)
-        const redactedToken = userInfo.api_key
-          ? `${userInfo.api_key.substring(0, 10)}...${userInfo.api_key.substring(-4)} (${userInfo.api_key.length} chars)`
-          : "null";
-        console.log(`[AppAgent] Storing JWT token: ${redactedToken}`);
+        console.log(`[AppAgent] Storing user info and JWT token in UserDO`);
 
         // Store user info in local database (excluding api_key - only in UserDO)
         this.sql`
