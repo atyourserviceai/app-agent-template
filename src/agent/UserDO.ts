@@ -75,6 +75,10 @@ export class UserDO extends DurableObject {
         return await this.handleGetUserInfo(request);
       }
 
+      if (request.method === "GET" && path === "/get-jwt") {
+        return await this.handleGetJWT(request);
+      }
+
       if (request.method === "POST" && path === "/create-project") {
         return await this.handleCreateProject(request);
       }
@@ -189,6 +193,54 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to get user info",
+          details: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+  }
+
+  // Get JWT token via HTTP endpoint (internal use only)
+  private async handleGetJWT(request: Request): Promise<Response> {
+    try {
+      // Get the first user in this UserDO instance (there should only be one)
+      const userResult = await this.sql.exec(`
+        SELECT user_id, api_key FROM user_info LIMIT 1
+      `);
+
+      const userRows = [...userResult];
+      if (userRows.length === 0) {
+        console.warn(`[UserDO] No user data found in this UserDO instance`);
+        return new Response(
+          JSON.stringify({ error: "No user found in this UserDO instance" }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const user = userRows[0] as { user_id: string; api_key: string };
+
+      if (!user.api_key) {
+        return new Response(JSON.stringify({ error: "JWT token not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      console.log(
+        `[UserDO] JWT token successfully retrieved for user: ${user.user_id}`
+      );
+      return new Response(JSON.stringify({ api_key: user.api_key }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      console.error("UserDO: Failed to handle get JWT:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to get JWT token",
           details: error instanceof Error ? error.message : String(error)
         }),
         {
