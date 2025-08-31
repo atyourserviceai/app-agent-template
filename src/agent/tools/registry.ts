@@ -191,7 +191,7 @@ export const getGmailTools = async () => {
 // Define a generic Tool type that matches the actual tool implementations
 export type Tool<TParams = unknown, TResult = unknown> = {
   description: string;
-  parameters: z.ZodType<TParams>;
+  inputSchema: z.ZodType<TParams>;
   execute: (
     args: TParams,
     options?: { signal?: AbortSignal }

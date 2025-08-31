@@ -65,7 +65,7 @@ export const recordTestResult = tool({
  */
 export const documentTool = tool({
   description: "Document a tool's purpose, parameters, and usage examples",
-  execute: async ({ toolName, description, parameters, examples, status }) => {
+  execute: async ({ toolName, description, parametersSchema, examples, status }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
     if (!agent) {
@@ -81,7 +81,7 @@ export const documentTool = tool({
         examples,
         lastTested: new Date().toISOString(),
         name: toolName,
-        inputSchema,
+        inputSchema: parametersSchema,
         status: status || "unknown"
       };
 
@@ -102,7 +102,7 @@ export const documentTool = tool({
   inputSchema: z.object({
     description: z.string().describe("Description of what the tool does"),
     examples: z.array(z.string()).optional().describe("Usage examples"),
-    inputSchema: z.record(z.unknown()).describe("Tool parameters schema"),
+    parametersSchema: z.record(z.unknown()).describe("Tool parameters schema"),
     status: z
       .enum(["working", "issues", "unknown"])
       .optional()

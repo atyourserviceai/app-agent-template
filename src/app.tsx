@@ -291,244 +291,39 @@ function ProjectTabContent({
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
-  
+
   // Log the agent configuration details after context hooks are available
-  console.log('[DEBUG] Agent configuration:', {
-    authMethod: auth?.authMethod?.userInfo ? 'authenticated' : 'not authenticated',
+  console.log("[DEBUG] Agent configuration:", {
+    authMethod: auth?.authMethod?.userInfo
+      ? "authenticated"
+      : "not authenticated",
     userId: auth?.authMethod?.userInfo?.id,
     project: projectName,
-    agentUrl: `/agents/app-agent/${auth?.authMethod?.userInfo?.id}${projectName !== 'personal' ? `-${projectName}` : ''}`,
+    agentUrl: `/agents/app-agent/${auth?.authMethod?.userInfo?.id}${projectName !== "personal" ? `-${projectName}` : ""}`,
     hasAgent: !!agent
   });
 
   // Use agents hook with AI SDK 5 compatibility
-  const agentChatResult = useAgentChat({
-    agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
-    onError: (error: any) => {
-      console.error("Error while streaming:", error);
-      console.log(
-        "[ERROR HANDLER] Error details:",
-        JSON.stringify(error, null, 2)
-      );
-
-      // Check if this is a tool validation error
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      const isToolValidationError =
-        errorMessage.includes("Invalid arguments for tool") &&
-        errorMessage.includes("Type validation failed");
-
-      if (isToolValidationError) {
-        console.log(
-          "[ERROR HANDLER] Tool validation error detected, creating synthetic tool call"
-        );
-
-        // Extract tool name from error message
-        const toolNameMatch = errorMessage.match(
-          /Invalid arguments for tool (\w+):/
-        );
-        const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
-
-        // Create a synthetic assistant message with failed tool call
-        const syntheticMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant" as const,
-          parts: [
-            {
-              type: "tool-invocation" as const,
-              toolInvocation: {
-                toolCallId: `error-${Date.now()}`,
-                toolName,
-                state: "result" as const,
-                args: {},
-                result: {
-                  success: false,
-                  error: {
-                    message: "Tool parameter validation failed",
-                    details: errorMessage,
-                    timestamp: new Date().toISOString()
-                  }
-                }
-              }
-            },
-            {
-              type: "text" as const,
-              text: `I encountered a parameter validation error with the ${toolName} tool. Please check the error details above.`
-            }
-          ]
-        };
-
-        // Set this synthetic message instead of the error message
-        setMessages([...agentMessages, syntheticMessage]);
-        return; // Exit early to avoid the normal error handling
-      }
-
-      // Use values from the editing hook for error handling (normal error flow)
-      console.log(
-        `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
-      );
-      console.log(
-        `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
-      );
-
-      // Create a new assistant message with the error (normal error flow)
-      const formattedErrorMessage = formatErrorForMessage(error);
-
-      // Initialize with current messages
-      let currentMessages = [...agentMessages];
-
-      // If we have an original edit index from a recent edit
-      if (
-        originalEditIndexRef.current !== null &&
-        editedMessageContentRef.current
-      ) {
-        console.log(
-          `[Error] Using original edit context, index: ${originalEditIndexRef.current}`
-        );
-        console.log(
-          `[Error] Using stored edited content: "${editedMessageContentRef.current.substring(0, 30)}..."`
-        );
-
-        // We had an edit in progress - truncate to before the edit using ORIGINAL values
-        const originalLength = currentMessages.length;
-        const editIndex = originalEditIndexRef.current;
-
-        currentMessages =
-          editIndex > 0 ? agentMessages.slice(0, editIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Add the stored edited message (rather than whatever might be in the input)
-        const editedMessageText = editedMessageContentRef.current;
-        console.log(
-          `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
-        );
-        currentMessages.push({
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          parts: [
-            {
-              type: "text" as const,
-              text: editedMessageText
-            }
-          ]
-        });
-
-        // Reset original refs
-        originalEditIndexRef.current = null;
-        originalMessagesLengthRef.current = 0;
-        editedMessageContentRef.current = "";
-      } else if (currentEditIndex !== null) {
-        // Fallback to current edit index (for retry operations)
-        console.log(
-          `[Error] Using current edit context, index: ${currentEditIndex}`
-        );
-
-        // We're in the middle of editing - truncate to before the edit
-        const originalLength = currentMessages.length;
-        currentMessages =
-          currentEditIndex > 0 ? agentMessages.slice(0, currentEditIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Also add the message being edited (from input)
-        const editedMessageText = agentInput.trim();
-        if (editedMessageText) {
-          console.log(
-            `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
-          );
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: editedMessageText
-              }
-            ]
-          });
-        }
-
-        // Reset editing state
-        setCurrentEditIndex(null);
-      } else {
-        // For regular messages, make sure the user message is included
-        const lastUserInput = agentInput.trim();
-        const lastMessageIsUser =
-          currentMessages.length > 0 &&
-          currentMessages[currentMessages.length - 1].role === "user";
-
-        if (lastUserInput && !lastMessageIsUser) {
-          console.log(
-            `[Error] Adding user message: "${lastUserInput.substring(0, 30)}..."`
-          );
-          // Add the user message that caused the error
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: lastUserInput
-              }
-            ]
-          });
-        }
-      }
-
-      // Create a new error message with required format
-      const newErrorMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        parts: [
-          {
-            type: "text" as const,
-            text: formattedErrorMessage
-          }
-        ]
-      };
-
-      console.log(
-        `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
-      );
-
-      // Add the error message to the messages
-      setMessages([...currentMessages, newErrorMessage]);
-
-      // Reset retry state
-      setIsRetrying(false);
-
-      // Clear any refs
-      originalEditIndexRef.current = null;
-      originalMessagesLengthRef.current = 0;
-      editedMessageContentRef.current = "";
-    }
+  // TESTING: Match playground pattern exactly - direct destructuring
+  const {
+    messages: agentMessagesRaw,
+    sendMessage,
+    clearHistory,
+    reload: agentReload,
+    setMessages,
+    stop,
+    status,
+    addToolResult
+  } = useAgentChat({
+    agent: agent || undefined // Pass undefined if agent is null to prevent WebSocket connection
   });
 
   // Log what useAgentChat actually returns
-  console.log('[DEBUG] useAgentChat result keys:', Object.keys(agentChatResult));
-  console.log('[DEBUG] useAgentChat result:', agentChatResult);
-  
-  // Use the actual properties that useAgentChat returns (which wraps useChat from AI SDK 5)
-  const {
-    messages: agentMessagesRaw,
-    setMessages,
-    sendMessage,
-    stop,
-    status,
-    addToolResult,
-    clearHistory: agentClearHistory,
-    // reload might not be available, let's check
-    reload: agentReload
-  } = agentChatResult as any; // Cast to any due to type definition issues
-  
-  console.log('[DEBUG] sendMessage function type:', typeof sendMessage);
-  console.log('[DEBUG] messages length:', agentMessagesRaw?.length);
-  console.log('[DEBUG] current status:', status);
+  console.log("[DEBUG] useAgentChat messages:", agentMessagesRaw);
+  console.log("[DEBUG] sendMessage function available:", !!sendMessage);
+  console.log("[DEBUG] sendMessage function type:", typeof sendMessage);
+  console.log("[DEBUG] messages length:", agentMessagesRaw?.length);
+  console.log("[DEBUG] current status:", status);
 
   // Create manual input state (AI SDK 5 pattern)
   const [agentInput, setAgentInput] = useState("");
@@ -536,7 +331,6 @@ function ProjectTabContent({
   // AI SDK 5 native API from useChat
   const setInput = setAgentInput;
   const isLoading = status === "streaming" || status === "submitted";
-  const clearHistory = agentClearHistory;
 
   const agentData = undefined; // Not available in AI SDK 5
 
@@ -550,56 +344,79 @@ function ProjectTabContent({
   const handleAgentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (agentInput.trim()) {
-      console.log('[DEBUG] Sending message:', {
+      console.log("[DEBUG] Sending message:", {
         role: "user",
         parts: [{ type: "text", text: agentInput }]
       });
-      console.log('[DEBUG] Current status before send:', status);
-      console.log('[DEBUG] Messages count before send:', agentMessagesRaw.length);
-      
+      console.log("[DEBUG] Current status before send:", status);
+      console.log(
+        "[DEBUG] Messages count before send:",
+        agentMessagesRaw.length
+      );
+
       try {
-        console.log('[DEBUG] About to call sendMessage...');
-        console.log('[DEBUG] sendMessage function:', sendMessage.toString().substring(0, 200));
-        
+        console.log("[DEBUG] About to call sendMessage...");
+        console.log(
+          "[DEBUG] sendMessage function:",
+          sendMessage.toString().substring(0, 200)
+        );
+
         const result = await sendMessage({
           role: "user",
           parts: [{ type: "text", text: agentInput }]
         }); // Proper AI SDK 5 UIMessage format
-        
-        console.log('[DEBUG] SendMessage result:', result);
-        console.log('[DEBUG] Status after send:', status);
-        console.log('[DEBUG] Messages count after send:', agentMessagesRaw.length);
-        
+
+        console.log("[DEBUG] SendMessage result:", result);
+        console.log("[DEBUG] Status after send:", status);
+        console.log(
+          "[DEBUG] Messages count after send:",
+          agentMessagesRaw.length
+        );
+
         // Wait a moment and check again
         setTimeout(() => {
-          console.log('[DEBUG] Status after timeout:', status);
-          console.log('[DEBUG] Messages after timeout:', agentMessagesRaw.length);
+          console.log("[DEBUG] Status after timeout:", status);
+          console.log(
+            "[DEBUG] Messages after timeout:",
+            agentMessagesRaw.length
+          );
         }, 1000);
-        
       } catch (error) {
-        console.error('[DEBUG] SendMessage error:', error);
-        console.error('[DEBUG] Error stack:', (error as Error).stack);
+        console.error("[DEBUG] SendMessage error:", error);
+        console.error("[DEBUG] Error stack:", (error as Error).stack);
       }
-      
+
       setAgentInput(""); // Clear input after sending
     }
   };
 
   // Use AI SDK 5 reload function if available, otherwise create a fallback
-  const reloadFunction = agentReload || (() => {
-    console.log('Reload not available from useAgentChat, using sendMessage fallback');
-    // Find the last user message and resend it
-    const lastUserMessage = [...agentMessagesRaw].reverse().find(m => m.role === 'user');
-    if (lastUserMessage && lastUserMessage.parts && lastUserMessage.parts[0]) {
-      const textPart = lastUserMessage.parts.find((p: any) => p.type === 'text');
-      if (textPart) {
-        sendMessage({
-          role: "user",
-          parts: [{ type: "text", text: textPart.text }]
-        });
+  const reloadFunction =
+    agentReload ||
+    (() => {
+      console.log(
+        "Reload not available from useAgentChat, using sendMessage fallback"
+      );
+      // Find the last user message and resend it
+      const lastUserMessage = [...agentMessagesRaw]
+        .reverse()
+        .find((m) => m.role === "user");
+      if (
+        lastUserMessage &&
+        lastUserMessage.parts &&
+        lastUserMessage.parts[0]
+      ) {
+        const textPart = lastUserMessage.parts.find(
+          (p: any) => p.type === "text"
+        );
+        if (textPart) {
+          sendMessage({
+            role: "user",
+            parts: [{ type: "text", text: textPart.text }]
+          });
+        }
       }
-    }
-  });
+    });
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
   // Also detect API errors and throw proper auth errors for the Error Boundary to catch
@@ -1047,8 +864,20 @@ function ProjectTabContent({
                           toolName,
                           toolCallId,
                           state: "output" in part ? "result" : "call",
-                          args: "input" in part ? part.input as Record<string, unknown> : {},
-                          result: "output" in part ? part.output as { content?: { type: string; text: string; }[] | undefined; } | undefined : undefined
+                          args:
+                            "input" in part
+                              ? (part.input as Record<string, unknown>)
+                              : {},
+                          result:
+                            "output" in part
+                              ? (part.output as
+                                  | {
+                                      content?:
+                                        | { type: string; text: string }[]
+                                        | undefined;
+                                    }
+                                  | undefined)
+                              : undefined
                         }}
                         toolCallId={toolCallId}
                         needsConfirmation={needsConfirmation}

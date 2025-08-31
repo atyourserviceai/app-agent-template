@@ -124,7 +124,7 @@ export function ChatInput({
             disabled={
               pendingConfirmation ||
               !value ||
-              !value.trim() ||
+              !value?.trim() ||
               isLoading ||
               isThinking
             }

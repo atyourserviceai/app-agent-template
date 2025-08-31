@@ -2,7 +2,7 @@ import { z } from "zod/v3";
 
 export interface Tool<TParams = unknown, TResult = unknown> {
   description: string;
-  parameters: z.ZodType<TParams>;
+  inputSchema: z.ZodType<TParams>;
   execute: (
     args: TParams,
     options?: { signal?: AbortSignal }

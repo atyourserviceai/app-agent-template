@@ -95,7 +95,7 @@ export interface TestResult {
 export interface ToolDocumentation {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  inputSchema: Record<string, unknown>;
   examples?: unknown[];
   lastTested?: string;
   status?: "working" | "issues" | "unknown";
