@@ -228,6 +228,11 @@ export class AppAgent extends AIChatAgent<Env> {
       const userId = state.userInfo?.id;
 
       console.log(`[AppAgent] getJWTFromUserDO called for user: ${userId}`);
+      console.log(`[AppAgent] Current state:`, JSON.stringify({
+        userInfo: state.userInfo,
+        hasUserInfo: !!state.userInfo,
+        userId: userId
+      }));
 
       if (!userId) {
         console.error(
@@ -244,6 +249,8 @@ export class AppAgent extends AIChatAgent<Env> {
       const userDOId = this.env.UserDO.idFromName(userId);
       const userDO = this.env.UserDO.get(userDOId);
 
+      console.log(`[AppAgent] UserDO ID: ${userDOId.toString()}`);
+
       const response = await userDO.fetch(
         new Request(`https://user-do/get-jwt`, {
           method: "GET",
@@ -251,15 +258,27 @@ export class AppAgent extends AIChatAgent<Env> {
         })
       );
 
+      console.log(`[AppAgent] UserDO response status: ${response.status}`);
+      
       if (response.ok) {
         const data = (await response.json()) as { api_key?: string };
+        console.log(`[AppAgent] UserDO response data:`, JSON.stringify({
+          hasApiKey: !!data.api_key,
+          apiKeyLength: data.api_key?.length || 0
+        }));
+        
         if (data.api_key) {
           const redactedToken = `${data.api_key.substring(0, 10)}...${data.api_key.substring(-4)} (${data.api_key.length} chars)`;
           console.log(
             `[AppAgent] Found JWT in centralized UserDO: ${redactedToken}`
           );
           return data.api_key;
+        } else {
+          console.warn(`[AppAgent] UserDO returned empty api_key field`);
         }
+      } else {
+        const errorText = await response.text();
+        console.error(`[AppAgent] UserDO request failed: ${response.status} - ${errorText}`);
       }
 
       console.warn(
@@ -763,7 +782,7 @@ export class AppAgent extends AIChatAgent<Env> {
           : "null";
         console.log(`[AppAgent] Storing JWT token: ${redactedToken}`);
 
-        // Store user info in database for persistence
+        // Store user info in local database for backwards compatibility
         await this.sql`
           INSERT OR REPLACE INTO user_info (
             user_id, api_key, email, credits, payment_method, updated_at
@@ -777,7 +796,31 @@ export class AppAgent extends AIChatAgent<Env> {
           )
         `;
 
-        // Verify the token was stored correctly
+        // ALSO store in centralized UserDO (this is the important fix!)
+        console.log(`[AppAgent] Also storing user info in centralized UserDO...`);
+        try {
+          const userDOId = this.env.UserDO.idFromName(userInfo.user_id);
+          const userDO = this.env.UserDO.get(userDOId);
+          
+          const userDOResponse = await userDO.fetch(
+            new Request(`https://user-do/store-user-info`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(userInfo)
+            })
+          );
+          
+          if (userDOResponse.ok) {
+            console.log(`[AppAgent] Successfully stored user info in UserDO for user: ${userInfo.user_id}`);
+          } else {
+            const errorText = await userDOResponse.text();
+            console.error(`[AppAgent] Failed to store in UserDO: ${userDOResponse.status} - ${errorText}`);
+          }
+        } catch (userDOError) {
+          console.error(`[AppAgent] Error storing in UserDO:`, userDOError);
+        }
+
+        // Verify the token was stored correctly in local database
         const storedResult = this.sql`
           SELECT api_key FROM user_info WHERE user_id = ${userInfo.user_id} LIMIT 1
         `;
@@ -788,7 +831,7 @@ export class AppAgent extends AIChatAgent<Env> {
             ? `${storedRow.api_key.substring(0, 10)}...${storedRow.api_key.substring(-4)} (${storedRow.api_key.length} chars)`
             : "null";
           console.log(
-            `[AppAgent] Verification - token now in database: ${storedRedacted}`
+            `[AppAgent] Verification - token now in local database: ${storedRedacted}`
           );
         }
 
