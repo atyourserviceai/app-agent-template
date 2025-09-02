@@ -43,6 +43,7 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [showThinking, setShowThinking] = useState(false);
+  const [touchTimeout, setTouchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Find the first text part for display
   const textPart = message.parts?.find((p) => p.type === "text");
@@ -58,6 +59,30 @@ export function ChatMessage({
 
   // Remove any HTML comments from the message (these are just instructions for the AI)
   const cleanMessageText = messageText.replace(/<!--.*?-->/gs, "");
+
+  // Touch handlers for mobile long-press edit
+  const handleTouchStart = () => {
+    if (isUser && !isEditing) {
+      const timeout = setTimeout(() => {
+        onStartEditing(message);
+      }, 500); // 500ms long press
+      setTouchTimeout(timeout);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimeout) {
+      clearTimeout(touchTimeout);
+      setTouchTimeout(null);
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (touchTimeout) {
+      clearTimeout(touchTimeout);
+      setTouchTimeout(null);
+    }
+  };
 
   // If it's a mode message, use a special system notification style
   if (isModeMessage) {
@@ -148,6 +173,10 @@ export function ChatMessage({
                 onDoubleClick={
                   isUser ? () => onStartEditing(message) : undefined
                 }
+                // Touch handlers for mobile long-press edit
+                onTouchStart={isUser ? handleTouchStart : undefined}
+                onTouchEnd={isUser ? handleTouchEnd : undefined}
+                onTouchMove={isUser ? handleTouchMove : undefined}
                 style={{ cursor: isUser ? "pointer" : undefined }}
               >
                 {isScheduledMessage && (
