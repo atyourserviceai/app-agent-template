@@ -81,7 +81,7 @@ const DropdownMenu = ({
       id={id}
       className={cn(
         children
-          ? "radix-state-open:!text-neutral-950 dark:radix-state-open:!text-white text-neutral-500 focus-visible:opacity-100 dark:text-neutral-400"
+          ? "radix-state-open:!text-neutral-950 dark:radix-state-open:!text-white text-neutral-500 focus-visible:opacity-100 dark:text-neutral-400 cursor-pointer"
           : buttonVariants(
               buttonProps ?? {
                 variant: "ghost",
@@ -89,7 +89,7 @@ const DropdownMenu = ({
                 // shape: 'square',
                 // interaction: 'none',
                 class:
-                  "radix-state-open:text-neutral-950 dark:radix-state-open:text-white focus-visible:opacity-100"
+                  "radix-state-open:text-neutral-950 dark:radix-state-open:text-white focus-visible:opacity-100 cursor-pointer"
               }
             ),
         className
@@ -108,7 +108,7 @@ const DropdownMenu = ({
           onCloseRmFocus ? e.preventDefault() : null;
         }}
         className={cn(
-          "z-modal radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
+          "z-[9999] radix-state-closed:animate-scaleFadeOutSm radix-state-open:animate-scaleFadeInSm overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 py-1.5 text-base font-medium text-neutral-900 shadow-lg shadow-black/5 transition-transform duration-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white",
           {
             "origin-top-right": align === "end" && side === "bottom",
             "origin-top-left": align === "start" && side === "bottom",
