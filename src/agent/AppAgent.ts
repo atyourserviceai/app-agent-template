@@ -337,17 +337,7 @@ export class AppAgent extends AIChatAgent<Env> {
       const newApiKey = await this.getJWTFromUserDO();
 
       if (newApiKey && newApiKey !== currentApiKey) {
-        const redactedOld =
-          currentApiKey.length <= 4
-            ? "[REDACTED]"
-            : `${currentApiKey.substring(0, 2)}...${currentApiKey.substring(-2)} (${currentApiKey.length} chars)`;
-        const redactedNew =
-          newApiKey.length <= 4
-            ? "[REDACTED]"
-            : `${newApiKey.substring(0, 2)}...${newApiKey.substring(-2)} (${newApiKey.length} chars)`;
-        console.log(
-          `[AppAgent] ✅ Token refreshed: ${redactedOld} → ${redactedNew}`
-        );
+        console.log(`[AppAgent] ✅ Token refreshed successfully`);
         return true;
       }
       console.log("[AppAgent] Token refresh did not result in new token");
