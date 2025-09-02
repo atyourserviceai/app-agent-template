@@ -31,6 +31,7 @@ import {
   importAgentData
 } from "./utils/export-import-utils";
 import { processToolCalls } from "./utils/tool-utils";
+import { ShareAssetGenerator } from "../services/share-asset-generator.tsx";
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
@@ -968,9 +969,9 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
-    // Export endpoint to export the entire Agent data
-    if (url.pathname.endsWith("/export")) {
-      console.log("[AppAgent] Data export requested");
+    // Backup endpoint to export the entire Agent data as JSON
+    if (url.pathname.endsWith("/backup/export")) {
+      console.log("[AppAgent] Backup export requested");
 
       // Use the utility function to handle export
       const exportResult = await exportAgentData(this);
@@ -1085,8 +1086,8 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
-    // Import endpoint to restore data from a previous export
-    if (url.pathname.endsWith("/import")) {
+    // Backup import endpoint to restore data from a previous export
+    if (url.pathname.endsWith("/backup/import")) {
       // Only accept POST requests for import
       if (request.method !== "POST") {
         return Response.json(
@@ -1207,6 +1208,56 @@ export class AppAgent extends AIChatAgent<Env> {
       // Process import
       const importResult = await importAgentData(this, importRequest);
       return Response.json(importResult);
+    }
+
+    // Handle image export requests (PNG/SVG)
+    if (url.pathname.endsWith("/export") && request.method === "POST") {
+      console.log("[AppAgent] Image export requested");
+
+      try {
+        const body = (await request.json()) as {
+          type?: "png" | "svg";
+          format?: "social" | "document" | "mobile";
+          theme?: "light" | "dark";
+          includeDebug?: boolean;
+        };
+
+        const {
+          type = "png",
+          format = "social",
+          theme = "light",
+          includeDebug = false
+        } = body;
+
+        // Get current agent state
+        const state = this.state as AppAgentState;
+
+        // Create export generator service
+        const exportGenerator = new ShareAssetGenerator(this.env);
+
+        // Generate PNG export
+        const pngBuffer = await exportGenerator.generatePNGExport(state, {
+          format,
+          theme,
+          includeDebug
+        });
+
+        return new Response(pngBuffer, {
+          headers: {
+            "Content-Type": "image/png",
+            "Content-Disposition": `attachment; filename="agent-export-${format}-${theme}.png"`
+          }
+        });
+      } catch (error) {
+        console.error("[AppAgent] Error generating export:", error);
+        return Response.json(
+          {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error"
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // For all other cases, let the regular chat flow handle it

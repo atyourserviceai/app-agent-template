@@ -26,5 +26,9 @@ export default defineConfig({
   server: {
     port: 5273,
     strictPort: true
-  }
+  },
+  optimizeDeps: {
+    exclude: ["workers-og"]
+  },
+  assetsInclude: ["**/*.woff2", "**/*.wasm"]
 });

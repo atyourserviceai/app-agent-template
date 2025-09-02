@@ -1,7 +1,8 @@
-import { ClipboardText } from "@phosphor-icons/react";
+import { ClipboardText, Export, Image } from "@phosphor-icons/react";
 import { useState, useId } from "react";
 import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
+import { ExportModal } from "../ui/ExportModal";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
 interface PresentationPanelProps {
@@ -22,6 +23,7 @@ export function PresentationPanel({
   showDebug
 }: PresentationPanelProps) {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const agentSettingsId = useId();
 
   // Function to copy text to clipboard
@@ -37,6 +39,11 @@ export function PresentationPanel({
     window.dispatchEvent(
       new CustomEvent("set-chat-input", { detail: { text: input } })
     );
+  };
+
+  // Function to open export modal
+  const handleOpenExportModal = () => {
+    setExportModalOpen(true);
   };
 
   // Check if we have any meaningful content to display
@@ -219,11 +226,26 @@ export function PresentationPanel({
         })()}
       </div>
 
-      <div className="flex items-center gap-2 mb-3">
-        <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
-        <h3 className="text-sm md:text-base font-medium">
-          Agent Configuration
-        </h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <ClipboardText size={18} className="text-neutral-500 md:w-5 md:h-5" />
+          <h3 className="text-sm md:text-base font-medium">
+            Agent Configuration
+          </h3>
+        </div>
+
+        {/* Export Button */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-[#F48120] text-white hover:bg-[#F48120]/90 transition-colors"
+            onClick={handleOpenExportModal}
+            title="Export as image"
+          >
+            <Export size={14} />
+            Export
+          </button>
+        </div>
       </div>
 
       {!hasAnyContent && (
@@ -333,6 +355,13 @@ export function PresentationPanel({
           )}
         </div>
       )}
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        agentUserId={agentState.userInfo?.id || "anonymous"}
+      />
     </div>
   );
 }
