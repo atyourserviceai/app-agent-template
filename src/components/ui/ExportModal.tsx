@@ -7,6 +7,7 @@ import {
   Code,
   Upload
 } from "@phosphor-icons/react";
+import { useCurrentProjectAuth } from "../../hooks/useAgentAuth";
 
 export interface ExportModalProps {
   isOpen: boolean;
@@ -74,6 +75,9 @@ export function ExportModal({
     message: string;
   } | null>(null);
 
+  // Get the current project-specific agent configuration
+  const agentConfig = useCurrentProjectAuth();
+
   // Generate preview URLs when modal opens or theme changes
   useEffect(() => {
     if (!isOpen) return;
@@ -85,7 +89,7 @@ export function ExportModal({
         if (option.type === "png") {
           try {
             const response = await fetch(
-              `/agents/app-agent/${agentUserId}/export`,
+              `/agents/app-agent/${agentConfig?.name}/export`,
               {
                 method: "POST",
                 headers: {
@@ -125,7 +129,7 @@ export function ExportModal({
         window.URL.revokeObjectURL(url);
       });
     };
-  }, [isOpen, theme, agentUserId]);
+  }, [isOpen, theme, agentConfig?.name]);
 
   if (!isOpen) return null;
 
@@ -138,7 +142,7 @@ export function ExportModal({
       formData.append("file", file);
 
       const response = await fetch(
-        `/agents/app-agent/${agentUserId}/backup/import`,
+        `/agents/app-agent/${agentConfig?.name}/backup/import`,
         {
           method: "POST",
           body: formData
@@ -197,7 +201,7 @@ export function ExportModal({
       if (option.type === "json") {
         // JSON backup export
         response = await fetch(
-          `/agents/app-agent/${agentUserId}/backup/export`,
+          `/agents/app-agent/${agentConfig?.name}/backup/export`,
           {
             method: "GET"
           }
@@ -205,18 +209,21 @@ export function ExportModal({
         filename = `agent-backup-${new Date().toISOString().split("T")[0]}.json`;
       } else {
         // Image export
-        response = await fetch(`/agents/app-agent/${agentUserId}/export`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            type: option.type,
-            format: option.format,
-            theme,
-            includeDebug: false
-          })
-        });
+        response = await fetch(
+          `/agents/app-agent/${agentConfig?.name}/export`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              type: option.type,
+              format: option.format,
+              theme,
+              includeDebug: false
+            })
+          }
+        );
         filename = `agent-export-${option.format}-${theme}.${option.type}`;
       }
 
