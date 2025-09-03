@@ -1214,7 +1214,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
         const {
           type = "png",
-          format = "social",
+          format = "square",
           theme = "light",
           includeDebug = false
         } = body;

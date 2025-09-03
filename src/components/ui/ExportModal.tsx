@@ -20,37 +20,28 @@ interface ExportOption {
   description: string;
   icon: React.ReactNode;
   type: "png" | "svg" | "json" | "import";
-  format?: "social" | "document" | "mobile";
+  format?: "square" | "mobile";
   dimensions?: string;
 }
 
 const exportOptions: ExportOption[] = [
   {
-    id: "social-png",
-    name: "Social Media",
-    description: "Perfect for Twitter, LinkedIn posts",
+    id: "square-png",
+    name: "Square",
+    description: "Perfect for Instagram, LinkedIn, and social posts",
     icon: <Image weight="duotone" />,
     type: "png",
-    format: "social",
-    dimensions: "1200×630"
-  },
-  {
-    id: "document-png",
-    name: "Document",
-    description: "High-resolution for presentations",
-    icon: <Image weight="duotone" />,
-    type: "png",
-    format: "document",
-    dimensions: "1920×1080"
+    format: "square",
+    dimensions: "1080×1080"
   },
   {
     id: "mobile-png",
-    name: "Mobile",
-    description: "Optimized for mobile screens",
+    name: "Mobile Story",
+    description: "Vertical format, height fits content automatically",
     icon: <Image weight="duotone" />,
     type: "png",
     format: "mobile",
-    dimensions: "750×1334"
+    dimensions: "750×auto"
   },
   {
     id: "agent-backup-export",
