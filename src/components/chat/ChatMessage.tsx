@@ -162,22 +162,24 @@ export function ChatMessage({
               </div>
             </div>
           ) : (
-            <div className="relative group">
+            <div
+              className="relative group"
+              role={isUser ? "button" : undefined}
+              tabIndex={isUser ? 0 : undefined}
+              // Double-click to edit user messages
+              onDoubleClick={isUser ? () => onStartEditing(message) : undefined}
+              // Touch handlers for mobile long-press edit
+              onTouchStart={isUser ? handleTouchStart : undefined}
+              onTouchEnd={isUser ? handleTouchEnd : undefined}
+              onTouchMove={isUser ? handleTouchMove : undefined}
+              style={{ cursor: isUser ? "pointer" : undefined }}
+            >
               <Card
                 className={`p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 ${
                   isUser
                     ? "rounded-br-none"
                     : "rounded-bl-none border-assistant-border"
                 } ${isScheduledMessage ? "border-accent/50" : ""} relative`}
-                // Double-click to edit user messages
-                onDoubleClick={
-                  isUser ? () => onStartEditing(message) : undefined
-                }
-                // Touch handlers for mobile long-press edit
-                onTouchStart={isUser ? handleTouchStart : undefined}
-                onTouchEnd={isUser ? handleTouchEnd : undefined}
-                onTouchMove={isUser ? handleTouchMove : undefined}
-                style={{ cursor: isUser ? "pointer" : undefined }}
               >
                 {isScheduledMessage && (
                   <span className="absolute -top-3 -left-2 text-base">🕒</span>

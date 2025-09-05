@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  X,
-  Download,
-  Image,
-  FileText,
-  Code,
-  Upload
-} from "@phosphor-icons/react";
+import { X, Download, Image, Upload } from "@phosphor-icons/react";
 import { useCurrentProjectAuth } from "../../hooks/useAgentAuth";
 
 export interface ExportModalProps {
@@ -63,7 +56,7 @@ const exportOptions: ExportOption[] = [
 export function ExportModal({
   isOpen,
   onClose,
-  agentUserId
+  agentUserId: _agentUserId
 }: ExportModalProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [exportingIds, setExportingIds] = useState<Set<string>>(new Set());
@@ -129,7 +122,7 @@ export function ExportModal({
         window.URL.revokeObjectURL(url);
       });
     };
-  }, [isOpen, theme, agentConfig?.name]);
+  }, [isOpen, theme, agentConfig?.name, previewUrls.forEach]);
 
   if (!isOpen) return null;
 
@@ -149,7 +142,10 @@ export function ExportModal({
         }
       );
 
-      const result = await response.json();
+      const result = (await response.json()) as {
+        message?: string;
+        error?: string;
+      };
 
       if (response.ok) {
         setImportResult({
@@ -269,6 +265,7 @@ export function ExportModal({
               </p>
             </div>
             <button
+              type="button"
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
             >
@@ -284,6 +281,7 @@ export function ExportModal({
               </span>
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setTheme("light")}
                   className={`px-3 py-1 rounded-md text-sm transition-colors ${
                     theme === "light"
@@ -294,6 +292,7 @@ export function ExportModal({
                   Light
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTheme("dark")}
                   className={`px-3 py-1 rounded-md text-sm transition-colors ${
                     theme === "dark"
@@ -335,6 +334,7 @@ export function ExportModal({
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleExport(option)}
                       disabled={isExporting}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${

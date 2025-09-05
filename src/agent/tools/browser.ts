@@ -58,8 +58,8 @@ export const browseWebPage = tool({
       }
 
       // Get API key and base URL
-      const apiKey = agent.getBrowserApiKey();
-      const baseUrl = agent.getBrowserApiBaseUrl();
+      const apiKey = await agent.getBrowserApiKey();
+      const baseUrl = await agent.getBrowserApiBaseUrl();
 
       if (!apiKey || !baseUrl) {
         return "Browser API configuration is incomplete. Please check your environment variables.";

@@ -204,7 +204,7 @@ export class UserDO extends DurableObject {
   }
 
   // Get JWT token via HTTP endpoint (internal use only)
-  private async handleGetJWT(request: Request): Promise<Response> {
+  private async handleGetJWT(_request: Request): Promise<Response> {
     try {
       // Get the first user in this UserDO instance (there should only be one)
       const userResult = await this.sql.exec(`

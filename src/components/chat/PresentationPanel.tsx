@@ -1,4 +1,4 @@
-import { ClipboardText, Export, Image } from "@phosphor-icons/react";
+import { ClipboardText, Export } from "@phosphor-icons/react";
 import { useState, useId } from "react";
 import { Card } from "@/components/card/Card";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";

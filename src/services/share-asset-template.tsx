@@ -1,4 +1,3 @@
-import React from "react";
 import type { AppAgentState } from "../agent/AppAgent";
 import type { ShareExportOptions } from "./share-asset-generator";
 
@@ -19,8 +18,6 @@ export function ShareAssetTemplate({
 }: ShareAssetTemplateProps) {
   const { theme, format } = options;
   const isDark = theme === "dark";
-  const isSquare = format === "square";
-  const isMobile = format === "mobile";
 
   // Debug: Log the agent state to understand the structure
   console.log(
@@ -100,7 +97,7 @@ export function ShareAssetTemplate({
   };
 
   const config =
-    formatConfig[format as keyof typeof formatConfig] || formatConfig["square"];
+    formatConfig[format as keyof typeof formatConfig] || formatConfig.square;
 
   return (
     <div

@@ -6,7 +6,6 @@ import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
   createDataStreamResponse,
-  extractReasoningMiddleware,
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
@@ -31,7 +30,7 @@ import {
   importAgentData
 } from "./utils/export-import-utils";
 import { processToolCalls } from "./utils/tool-utils";
-import { ShareAssetGenerator } from "../services/share-asset-generator.tsx";
+import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
 const getOpenAI = (env: Env, apiKey?: string) => {
@@ -498,42 +497,14 @@ export class AppAgent extends AIChatAgent<Env> {
             let model = openai("gpt-5-mini-2025-08-07");
 
             // Enable simulation for testing if environment variable is set
-            if (this.env.SIMULATE_THINKING_TOKENS === "true") {
+            if ((this.env as any).SIMULATE_THINKING_TOKENS === "true") {
               model = simulateThinkingLLM();
               console.log(
                 "[AppAgent] Using simulated thinking tokens for testing"
               );
             }
 
-            // Create reasoning middleware to handle thinking tokens properly
-            const _reasoningMiddleware = extractReasoningMiddleware({
-              tagName: "thinking", // Common tag for thinking tokens
-              onReasoningStart: () => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning started - setting thinking state"
-                );
-                // Signal that thinking has started
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: "" // Empty content to trigger thinking state
-                });
-              },
-              onReasoningChunk: (chunk: string) => {
-                console.log(
-                  "[AppAgent] 🧠 Reasoning chunk received:",
-                  chunk.substring(0, 50) + "..."
-                );
-                // Stream thinking tokens in real-time
-                dataStream.writeData({
-                  type: "thinking-tokens",
-                  content: chunk
-                });
-              },
-              onReasoningEnd: () => {
-                console.log("[AppAgent] 🧠 Reasoning complete");
-                // Could send a signal that thinking is complete
-              }
-            });
+            // Note: Reasoning middleware would be configured here if needed
 
             // Stream the AI response
             result = streamText({
@@ -541,7 +512,6 @@ export class AppAgent extends AIChatAgent<Env> {
               messages: filteredMessages,
               model,
               temperature: 1,
-              middleware: [_reasoningMiddleware],
               onError: async (error: unknown) => {
                 console.error("Error while streaming:", error);
                 if (
@@ -1252,26 +1222,29 @@ export class AppAgent extends AIChatAgent<Env> {
         };
 
         const {
-          type = "png",
           format = "square",
           theme = "light",
           includeDebug = false
         } = body;
 
+        // Validate format for share asset generator
+        const validFormat =
+          format === "mobile" || format === "square" ? format : "square";
+
         // Get current agent state
         const state = this.state as AppAgentState;
 
         // Create export generator service
-        const exportGenerator = new ShareAssetGenerator(this.env);
+        const exportGenerator = new ShareAssetGenerator();
 
         // Generate PNG export
         const pngBuffer = await exportGenerator.generatePNGExport(state, {
-          format,
+          format: validFormat,
           theme,
           includeDebug
         });
 
-        return new Response(pngBuffer, {
+        return new Response(pngBuffer as any, {
           headers: {
             "Content-Type": "image/png",
             "Content-Disposition": `attachment; filename="agent-export-${format}-${theme}.png"`

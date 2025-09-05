@@ -1,4 +1,3 @@
-import React from "react";
 import type { AppAgentState } from "../agent/AppAgent";
 import { ShareAssetTemplate } from "./share-asset-template";
 
@@ -19,12 +18,6 @@ export interface ShareResult {
  * Creates shareable PNG images from agent state
  */
 export class ShareAssetGenerator {
-  private env: Env;
-
-  constructor(env: Env) {
-    this.env = env;
-  }
-
   async generatePNGExport(
     agentState: AppAgentState,
     options: ShareExportOptions = {
@@ -42,9 +35,7 @@ export class ShareAssetGenerator {
       square: { width: 1080, height: 1080 }, // Square format for Instagram, LinkedIn, etc.
       mobile: { width: 750, height: null } // Mobile width, height will be dynamic
     };
-    return (
-      dimensions[format as keyof typeof dimensions] || dimensions["square"]
-    );
+    return dimensions[format as keyof typeof dimensions] || dimensions.square;
   }
 
   private async createPNGContent(
@@ -55,7 +46,7 @@ export class ShareAssetGenerator {
     try {
       // Use workers-og ImageResponse designed for Cloudflare Workers
       // Handle WASM "Already initialized" error that occurs in development with hot reloads
-      let ImageResponse;
+      let ImageResponse: any;
       try {
         const workersOg = await import("workers-og");
         ImageResponse = workersOg.ImageResponse;

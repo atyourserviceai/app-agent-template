@@ -96,7 +96,7 @@ Ready to proceed with your actual assessment, or would you like to test anything
             await new Promise((resolve) => setTimeout(resolve, 800)); // Much longer delay
             const chunk = thinkingTokens.slice(i, i + 60);
 
-            console.log("🧠 REASONING CHUNK:", chunk.substring(0, 40) + "..."); // Log each chunk
+            console.log("🧠 REASONING CHUNK:", `${chunk.substring(0, 40)}...`); // Log each chunk
             controller.enqueue({
               type: "reasoning",
               textDelta: chunk
