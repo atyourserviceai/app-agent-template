@@ -731,20 +731,30 @@ export class AppAgent extends AIChatAgent<Env> {
 
     // Validate that the URL follows project-specific format
     // Expected: /agents/app-agent/{userId}-{projectName}/...
-    const pathParts = url.pathname.split('/');
-    if (pathParts.length >= 4 && pathParts[1] === 'agents' && pathParts[2] === 'app-agent') {
+    const pathParts = url.pathname.split("/");
+    if (
+      pathParts.length >= 4 &&
+      pathParts[1] === "agents" &&
+      pathParts[2] === "app-agent"
+    ) {
       const agentPath = pathParts[3];
-      const dashParts = agentPath.split('-');
-      
+      const dashParts = agentPath.split("-");
+
       // Check if this looks like a non-project-specific URL
-      if (agentPath === 'not-project-specific' || !agentPath.includes('-') || dashParts.length < 2) {
+      if (
+        agentPath === "not-project-specific" ||
+        !agentPath.includes("-") ||
+        dashParts.length < 2
+      ) {
         const errorMessage = `Invalid agent URL: '${url.pathname}' must follow project-specific format '/agents/app-agent/{userId}-{projectName}/...'. Non-project-specific agents are not supported.`;
         console.error("[AppAgent]", errorMessage);
         throw new Error(errorMessage);
       }
-      
-      const [userId, projectName] = agentPath.split('-', 2);
-      console.log(`[AppAgent] Processing request for project-specific agent - User: ${userId}, Project: ${projectName}`);
+
+      const [userId, projectName] = agentPath.split("-", 2);
+      console.log(
+        `[AppAgent] Processing request for project-specific agent - User: ${userId}, Project: ${projectName}`
+      );
     }
 
     // Extra logging for store-user-info requests
