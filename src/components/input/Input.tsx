@@ -60,7 +60,6 @@ export const Input = ({
 
   return preText ? (
     // biome-ignore lint/a11y/useKeyWithClickEvents: todo
-    // biome-ignore lint/a11y/noStaticElementInteractions: todo
     <div
       className={cn(
         "has-[:disabled]:ob-disable has-[:enabled]:active:border-ob-border-active has-[:focus]:border-ob-border-active flex cursor-text",
