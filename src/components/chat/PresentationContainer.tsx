@@ -16,13 +16,13 @@ export function PresentationContainer({
   agentMode,
   agentState,
   showDebug,
-  variant = "panel",
+  variant = "panel"
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
     isOnboardingComplete: false,
     mode: agentMode,
-    onboardingStep: "start",
+    onboardingStep: "start"
   };
 
   // Use the provided state or the default state

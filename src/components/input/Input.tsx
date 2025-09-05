@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useMemo, useRef, useState } from "react";
 
 export const inputClasses = cn(
   "bg-ob-btn-secondary-bg text-ob-base-300 border-ob-border focus:border-ob-border-active placeholder:text-ob-base-100 add-disable border border-1 transition-colors focus:outline-none"
@@ -60,15 +60,14 @@ export const Input = ({
 
   return preText ? (
     // biome-ignore lint/a11y/useKeyWithClickEvents: todo
-    // biome-ignore lint/a11y/noStaticElementInteractions: todo
     <div
       className={cn(
         "has-[:disabled]:ob-disable has-[:enabled]:active:border-ob-border-active has-[:focus]:border-ob-border-active flex cursor-text",
         inputClasses,
         {
-          "add-size-base": size === "base",
-          "add-size-md": size === "md",
           "add-size-sm": size === "sm",
+          "add-size-md": size === "md",
+          "add-size-base": size === "base"
         },
         className
       )}
@@ -82,7 +81,7 @@ export const Input = ({
         className={cn(
           "placeholder:text-ob-base-100 w-full bg-transparent focus:outline-none",
           {
-            "text-ob-destructive": !isValid,
+            "text-ob-destructive": !isValid
           }
         )}
         onChange={updateCurrentValue}
@@ -100,10 +99,10 @@ export const Input = ({
       className={cn(
         inputClasses,
         {
-          "add-size-base": size === "base",
-          "add-size-md": size === "md",
-          "add-size-sm": size === "sm",
           "text-ob-destructive transition-colors": !isValid,
+          "add-size-sm": size === "sm",
+          "add-size-md": size === "md",
+          "add-size-base": size === "base"
         },
         className
       )}

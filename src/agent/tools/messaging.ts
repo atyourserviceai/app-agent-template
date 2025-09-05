@@ -23,8 +23,8 @@ export const messagingTools = {
       body: z.string().describe("Body of the email"),
       from: z.string().optional().describe("Email address of the sender"),
       subject: z.string().describe("Subject of the email"),
-      to: z.string().describe("Email address of the recipient"),
-    }),
+      to: z.string().describe("Email address of the recipient")
+    })
   }),
 
   sendLinkedInMessage: tool({
@@ -39,9 +39,9 @@ export const messagingTools = {
     },
     parameters: z.object({
       message: z.string().describe("Message to send"),
-      profileUrl: z.string().describe("URL of the LinkedIn profile"),
-    }),
-  }),
+      profileUrl: z.string().describe("URL of the LinkedIn profile")
+    })
+  })
 };
 
 // Export suggestActions using the tool() pattern with Zod schema
@@ -59,14 +59,14 @@ export const suggestActions = tool({
         isOther: true,
         label: "Other...",
         primary: false,
-        value: "",
+        value: ""
       });
     }
 
     return {
       actions: processedActions,
       message: "Action buttons displayed to user",
-      success: true,
+      success: true
     };
   },
   parameters: z.object({
@@ -90,7 +90,7 @@ export const suggestActions = tool({
             .string()
             .describe(
               "Value to send when clicked (usually the text to send as a user message)"
-            ),
+            )
         })
       )
       .describe("Array of action buttons to display to the user"),
@@ -99,8 +99,8 @@ export const suggestActions = tool({
       .optional()
       .describe(
         "Whether to include an 'Other...' option that allows the user to type a custom response"
-      ),
-  }),
+      )
+  })
 });
 
 // Placeholder for messagingExecutions if needed separately

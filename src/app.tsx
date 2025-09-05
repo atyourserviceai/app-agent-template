@@ -23,10 +23,17 @@ import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
-import { useAgentAuth } from "./hooks/useAgentAuth";
+import { useCurrentProjectAuth, useProjectAuth } from "./hooks/useAgentAuth";
+import { ProjectProvider, useProject } from "./contexts/ProjectContext";
+import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
 import { useErrorHandling } from "./hooks/useErrorHandling";
+import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
+import {
+  exportConversationToMarkdown,
+  copyToClipboard
+} from "./utils/exportUtils";
 
 // Define agent data interface for typing
 interface AgentData {
@@ -36,7 +43,7 @@ interface AgentData {
 
 // List of tools that require human confirmation for the generic template
 const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
-  "getWeatherInformation",
+  "getWeatherInformation"
   // Do not add suggestActions here as we want it to display without confirmation
 ];
 
@@ -44,7 +51,7 @@ const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
 function SuggestedActions({
   messages,
   addToolResult,
-  reload: _reload,
+  reload: _reload
 }: {
   messages: Message[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
@@ -127,9 +134,9 @@ function SuggestedActions({
                 actions,
                 message: "User selected an action",
                 selectedAction: value,
-                success: true,
+                success: true
               }),
-              toolCallId: toolInvocation.toolCallId,
+              toolCallId: toolInvocation.toolCallId
             });
           }
 
@@ -137,8 +144,8 @@ function SuggestedActions({
           const event = new CustomEvent("action-button-clicked", {
             detail: {
               isOther: isOther,
-              text: value,
-            },
+              text: value
+            }
           });
           window.dispatchEvent(event);
         }}
@@ -147,7 +154,72 @@ function SuggestedActions({
   );
 }
 
+// Multi-instance Chat - manages multiple project tabs
 function Chat() {
+  const { currentProject, projects } = useProject();
+
+  return (
+    <div className="h-full w-full">
+      {/* Render all project tabs, but only show the active one */}
+      {projects.map((project) => (
+        <ProjectTab
+          key={project.name}
+          projectName={project.name}
+          isActive={project.name === currentProject.name}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Component for individual project tabs - each maintains its own agent instance
+function ProjectTab({
+  projectName,
+  isActive
+}: {
+  projectName: string;
+  isActive: boolean;
+}) {
+  const agentConfig = useProjectAuth(projectName);
+  const { agent, agentMode, changeAgentMode } = useAgentState(
+    agentConfig,
+    "onboarding"
+  );
+
+  if (!agentConfig) {
+    return <div>Loading project {projectName}...</div>;
+  }
+
+  return (
+    <div
+      style={{
+        display: isActive ? "block" : "none",
+        height: "100%",
+        width: "100%"
+      }}
+    >
+      <ProjectTabContent
+        agentConfig={agentConfig}
+        agent={agent}
+        agentMode={agentMode}
+        changeAgentMode={changeAgentMode}
+      />
+    </div>
+  );
+}
+
+// The actual content of each project tab - contains the original Chat logic
+function ProjectTabContent({
+  agentConfig,
+  agent,
+  agentMode,
+  changeAgentMode
+}: {
+  agentConfig: ReturnType<typeof useProjectAuth>;
+  agent: ReturnType<typeof useAgentState>["agent"];
+  agentMode: AgentMode;
+  changeAgentMode: (mode: AgentMode) => Promise<void>;
+}) {
   // Mobile viewport height fix
   useEffect(() => {
     // Only run on client and mobile
@@ -215,31 +287,20 @@ function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Add temporary loading state for smoother mode transitions
   const [temporaryLoading, setTemporaryLoading] = useState(false);
+  // Thinking tokens state
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingTokens, setThinkingTokens] = useState<string>("");
 
   // Add auth context for token expiration checks
   const auth = useAuth();
 
   // Theme persistence and DOM classes are handled by useThemePreference
 
-  // Get authenticated agent configuration
-  const agentConfig = useAgentAuth();
-
-  // Use the agent state hook (must be called before any conditional returns)
-  const { agent, agentState, agentMode, changeAgentMode } = useAgentState(
-    agentConfig, // Pass null if not authenticated - useAgentState handles this
-    "onboarding"
-  );
+  // agentConfig, agent, agentState, agentMode, changeAgentMode are now passed as props from ProjectTab
 
   // Use the error handling hook
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
-
-  // Debug effect to log dropdown values on every render
-  useEffect(() => {
-    console.log(
-      `[UI Debug] Dropdown values - agentMode: ${agentMode}, agentState?.mode: ${agentState?.mode || "none"}`
-    );
-  }, [agentMode, agentState]);
 
   const {
     messages: agentMessagesRaw,
@@ -253,6 +314,7 @@ function Chat() {
     setMessages,
     reload,
     isLoading,
+    stop
   } = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     maxSteps: 5,
@@ -262,21 +324,62 @@ function Chat() {
         "[ERROR HANDLER] Error details:",
         JSON.stringify(error, null, 2)
       );
-      console.log("[ERROR HANDLER] Error type:", typeof error);
-      console.log(
-        "[ERROR HANDLER] Error keys:",
-        error ? Object.keys(error) : "no keys"
-      );
-      console.log(
-        "[ERROR HANDLER] Error message:",
-        error instanceof Error ? error.message : String(error)
-      );
-      console.log(
-        "[ERROR HANDLER] Error stack:",
-        error instanceof Error ? error.stack : "no stack"
-      );
 
-      // Use values from the editing hook for error handling
+      // Check if this is a tool validation error
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isToolValidationError =
+        errorMessage.includes("Invalid arguments for tool") &&
+        errorMessage.includes("Type validation failed");
+
+      if (isToolValidationError) {
+        console.log(
+          "[ERROR HANDLER] Tool validation error detected, creating synthetic tool call"
+        );
+
+        // Extract tool name from error message
+        const toolNameMatch = errorMessage.match(
+          /Invalid arguments for tool (\w+):/
+        );
+        const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
+
+        // Create a synthetic assistant message with failed tool call
+        const syntheticMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant" as const,
+          content: `I encountered a parameter validation error with the ${toolName} tool.`,
+          createdAt: new Date(),
+          parts: [
+            {
+              type: "tool-invocation" as const,
+              toolInvocation: {
+                toolCallId: `error-${Date.now()}`,
+                toolName,
+                state: "result" as const,
+                args: {},
+                result: {
+                  success: false,
+                  error: {
+                    message: "Tool parameter validation failed",
+                    details: errorMessage,
+                    timestamp: new Date().toISOString()
+                  }
+                }
+              }
+            },
+            {
+              type: "text" as const,
+              text: `I encountered a parameter validation error with the ${toolName} tool. Please check the error details above.`
+            }
+          ]
+        };
+
+        // Set this synthetic message instead of the error message
+        setMessages([...agentMessages, syntheticMessage]);
+        return; // Exit early to avoid the normal error handling
+      }
+
+      // Use values from the editing hook for error handling (normal error flow)
       console.log(
         `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
       );
@@ -284,8 +387,8 @@ function Chat() {
         `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
       );
 
-      // Create a new assistant message with the error
-      const errorMessage = formatErrorForMessage(error);
+      // Create a new assistant message with the error (normal error flow)
+      const formattedErrorMessage = formatErrorForMessage(error);
 
       // Initialize with current messages
       let currentMessages = [...agentMessages];
@@ -325,10 +428,10 @@ function Chat() {
           parts: [
             {
               text: editedMessageText,
-              type: "text" as const,
-            },
+              type: "text" as const
+            }
           ],
-          role: "user" as const,
+          role: "user" as const
         });
 
         // Reset original refs
@@ -363,10 +466,10 @@ function Chat() {
             parts: [
               {
                 text: editedMessageText,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           });
         }
 
@@ -391,26 +494,26 @@ function Chat() {
             parts: [
               {
                 text: lastUserInput,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           });
         }
       }
 
       // Create a new error message with required format
       const newErrorMessage = {
-        content: errorMessage,
+        content: formattedErrorMessage,
         createdAt: new Date(),
         id: crypto.randomUUID(),
         parts: [
           {
-            text: errorMessage,
-            type: "text" as const,
-          },
+            text: formattedErrorMessage,
+            type: "text" as const
+          }
         ],
-        role: "assistant" as const,
+        role: "assistant" as const
       };
 
       console.log(
@@ -427,7 +530,7 @@ function Chat() {
       originalEditIndexRef.current = null;
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
-    },
+    }
   });
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
@@ -471,8 +574,36 @@ function Chat() {
     cancelEditing,
     handleEditMessage,
     handleRetry,
-    handleRetryLastUserMessage,
+    handleRetryLastUserMessage
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
+  // Listen for thinking tokens from agent data stream
+  useEffect(() => {
+    if (agentData && Array.isArray(agentData)) {
+      // Check if we have thinking tokens data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const thinkingData = agentData.find(
+        (data: any) => data?.type === "thinking-tokens"
+      );
+      if (
+        thinkingData &&
+        typeof thinkingData === "object" &&
+        "content" in thinkingData &&
+        typeof thinkingData.content === "string"
+      ) {
+        setIsThinking(true);
+        setThinkingTokens(thinkingData.content);
+      }
+    }
+  }, [agentData]);
+
+  // Reset thinking state when loading stops
+  useEffect(() => {
+    if (!isLoading) {
+      setIsThinking(false);
+      setThinkingTokens("");
+    }
+  }, [isLoading]);
 
   // Token expiration wrapper functions
   const handleRetryWithTokenCheck = (index: number) => {
@@ -506,6 +637,16 @@ function Chat() {
     reload();
   }, [auth, reload]);
 
+  // Export conversation handler
+  const handleExportConversation = useCallback(async () => {
+    const markdownContent = exportConversationToMarkdown(agentMessages);
+    const success = await copyToClipboard(markdownContent);
+
+    if (!success) {
+      throw new Error("Failed to copy conversation to clipboard");
+    }
+  }, [agentMessages]);
+
   // Handle custom event for setting chat input from PresentationPanel
   useEffect(() => {
     // Function to set input and switch to chat tab if needed
@@ -536,10 +677,10 @@ function Chat() {
             parts: [
               {
                 text: selectedText,
-                type: "text" as const,
-              },
+                type: "text" as const
+              }
             ],
-            role: "user" as const,
+            role: "user" as const
           };
 
           // Add the message to the chat
@@ -575,7 +716,7 @@ function Chat() {
     agentMessages,
     reloadWithTokenCheck,
     auth,
-    setMessages,
+    setMessages
   ]);
 
   // Handle action button clicks from the suggestActions tool
@@ -623,10 +764,10 @@ function Chat() {
               parts: [
                 {
                   text: selectedText,
-                  type: "text" as const,
-                },
+                  type: "text" as const
+                }
               ],
-              role: "user" as const,
+              role: "user" as const
             };
 
             // Add the message to the chat
@@ -706,9 +847,6 @@ function Chat() {
           "isModeMessage" in messageData;
 
         if (isModeMessage) {
-          console.log(
-            `[UI] Auto-triggering AI response for ${messageData.modeType} message`
-          );
           // Trigger AI response just like a user sent a message
           reloadWithTokenCheck();
         }
@@ -900,7 +1038,11 @@ function Chat() {
       // but not when there's already an assistant message being streamed
       messageElements.push(
         <div key="loading-indicator">
-          <LoadingIndicator formatTime={formatTime} />
+          <LoadingIndicator
+            formatTime={formatTime}
+            isThinking={isThinking && !!thinkingTokens}
+            thinkingTokens={thinkingTokens}
+          />
         </div>
       );
     }
@@ -971,17 +1113,9 @@ function Chat() {
     setTemporaryLoading(true);
     setTimeout(() => setTemporaryLoading(false), 1500);
 
-    // After clearing, force refresh the current mode to generate a welcome message
+    // After clearing, refresh the current mode to generate a welcome message
     if (changeAgentMode) {
-      console.log("[UI] Refreshing mode after clearing history");
-
-      // Pass true for both force and isAfterClearHistory
-      // The isAfterClearHistory flag is critical to ensure proper behavior:
-      // - On page reload, the agent's onConnect method ensures a welcome message
-      // - When clearing history, we don't trigger onConnect, so we need this flag
-      // - This makes the mode transition create a fresh welcome message
-      // - Without this flag, clearing history would leave an empty chat with no welcome message
-      changeAgentMode(agentMode, true, true);
+      changeAgentMode(agentMode);
     }
   };
 
@@ -1015,6 +1149,7 @@ function Chat() {
             agentMode={agentMode}
             inputValue={agentInput}
             isLoading={isLoading}
+            isThinking={isThinking}
             pendingConfirmation={pendingToolCallConfirmation}
             activeTab={"chat"}
             onToggleTheme={toggleTheme}
@@ -1025,10 +1160,12 @@ function Chat() {
               changeAgentMode(newMode);
             }}
             onClearHistory={handleClearHistory}
+            onExportConversation={handleExportConversation}
             onInputChange={handleAgentInputChange}
             onInputSubmit={(e) => {
               handleSubmitWithRetry(e);
             }}
+            onStop={stop}
             onCloseChat={() => setActiveTab("presentation")}
           >
             {renderMessages()}
@@ -1051,23 +1188,32 @@ export default function App() {
       >
         <ErrorBoundary>
           <AuthProvider>
-            <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
-              {/* Background Presentation Panel - always visible */}
-              <div className="absolute inset-0 z-50">
-                <BackgroundPresentationPanel />
-              </div>
-              {/* Always-available theme toggle when unauthenticated */}
-              <RootThemeToggle />
-              {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-              <AuthenticatedTopPanel />
-              {/* Auth overlay and authenticated content */}
-              <AuthGuard>
-                <Chat />
-              </AuthGuard>
-            </div>
+            <ProjectProvider>
+              <AppContent />
+            </ProjectProvider>
           </AuthProvider>
         </ErrorBoundary>
       </div>
+    </div>
+  );
+}
+
+// App content that has access to project context
+function AppContent() {
+  return (
+    <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
+      {/* Background Presentation Panel - always visible */}
+      <div className="absolute inset-0 z-50">
+        <BackgroundPresentationPanel />
+      </div>
+      {/* Always-available theme toggle when unauthenticated */}
+      <RootThemeToggle />
+      {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+      <AuthenticatedTopPanel />
+      {/* Auth overlay and authenticated content */}
+      <AuthGuard>
+        <Chat />
+      </AuthGuard>
     </div>
   );
 }
@@ -1095,8 +1241,8 @@ function BackgroundPresentationPanel() {
 
 // Component that renders the presentation panel with agent state when authenticated
 function AuthenticatedPresentationPanel() {
-  // Get authenticated agent configuration
-  const agentConfig = useAgentAuth();
+  // Get authenticated agent configuration for current project
+  const agentConfig = useCurrentProjectAuth();
 
   // Use the agent state hook
   const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
@@ -1126,7 +1272,7 @@ function RootThemeToggle() {
 function AuthenticatedTopPanel() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
-  const agentConfig = useAgentAuth();
+  const agentConfig = useCurrentProjectAuth();
   const { agentMode } = useAgentState(agentConfig, "onboarding");
   const [_showDebug, _setShowDebug] = useState(false);
   const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
@@ -1140,9 +1286,12 @@ function AuthenticatedTopPanel() {
 
   return (
     <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-2 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
+      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
     >
       <div className="flex items-center gap-2">
+        <div className="order-0 md:order-0">
+          <ProjectSelector />
+        </div>
         <button
           type="button"
           aria-label="Toggle theme"

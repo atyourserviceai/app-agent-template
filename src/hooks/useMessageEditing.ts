@@ -71,10 +71,10 @@ export function useMessageEditing(
         parts: [
           {
             text: editedText,
-            type: "text" as const,
-          },
+            type: "text" as const
+          }
         ],
-        role: "user" as const,
+        role: "user" as const
       };
 
       // Set messages with both the previous messages and the new edited message
@@ -159,10 +159,10 @@ export function useMessageEditing(
           parts: [
             {
               text: userMessageContent,
-              type: "text" as const,
-            },
+              type: "text" as const
+            }
           ],
-          role: "user" as const,
+          role: "user" as const
         };
 
         // Set messages with both the previous messages and the user message
@@ -305,6 +305,6 @@ export function useMessageEditing(
     // Actions
     setEditingValue,
     setIsRetrying,
-    startEditing,
+    startEditing
   };
 }

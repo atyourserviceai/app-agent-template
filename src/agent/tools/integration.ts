@@ -33,15 +33,15 @@ export const recordTestResult = tool({
         startTime: new Date().toISOString(),
         status,
         success: status === "passed",
-        toolName,
+        toolName
       };
 
       await agent.setState({
         ...currentState,
         testResults: {
           ...testResults,
-          [toolName]: testResult,
-        },
+          [toolName]: testResult
+        }
       });
 
       return `Test result recorded for ${toolName}: ${status}`;
@@ -56,8 +56,8 @@ export const recordTestResult = tool({
     notes: z.string().optional().describe("Additional notes about the test"),
     output: z.unknown().optional().describe("Output received from the tool"),
     status: z.enum(["passed", "failed", "skipped"]).describe("Test result"),
-    toolName: z.string().describe("Name of the tool that was tested"),
-  }),
+    toolName: z.string().describe("Name of the tool that was tested")
+  })
 });
 
 /**
@@ -82,15 +82,15 @@ export const documentTool = tool({
         lastTested: new Date().toISOString(),
         name: toolName,
         parameters,
-        status: status || "unknown",
+        status: status || "unknown"
       };
 
       await agent.setState({
         ...currentState,
         toolDocumentation: {
           ...toolDocumentation,
-          [toolName]: documentation,
-        },
+          [toolName]: documentation
+        }
       });
 
       return `Documentation updated for ${toolName}`;
@@ -107,8 +107,8 @@ export const documentTool = tool({
       .enum(["working", "issues", "unknown"])
       .optional()
       .describe("Current status of the tool"),
-    toolName: z.string().describe("Name of the tool to document"),
-  }),
+    toolName: z.string().describe("Name of the tool to document")
+  })
 });
 
 /**
@@ -171,25 +171,25 @@ export const generateTestReport = tool({
         passedTests,
         recommendations,
         skippedTests: totalTests - passedTests - failedTests,
-        totalTests,
+        totalTests
       };
 
       await agent.setState({
         ...currentState,
-        testReport,
+        testReport
       });
 
       return {
         message: `Test report generated: ${passedTests}/${totalTests} tests passed`,
         report: testReport,
-        success: true,
+        success: true
       };
     } catch (error) {
       console.error("Error generating test report:", error);
       return `Error generating test report: ${error}`;
     }
   },
-  parameters: z.object({}),
+  parameters: z.object({})
 });
 
 /**
@@ -228,7 +228,7 @@ export const completeIntegrationTesting = tool({
 
       await agent.setState({
         ...currentState,
-        isIntegrationComplete: true,
+        isIntegrationComplete: true
       });
 
       return "Integration testing phase completed successfully!";
@@ -241,8 +241,8 @@ export const completeIntegrationTesting = tool({
     force: z
       .boolean()
       .optional()
-      .describe("Force completion even if tests failed"),
-  }),
+      .describe("Force completion even if tests failed")
+  })
 });
 
 /**
@@ -267,6 +267,6 @@ export const testErrorTool = tool({
       .enum(["simple", "timeout", "network"])
       .optional()
       .default("simple"),
-    message: z.string().optional().default("Test error message"),
-  }),
+    message: z.string().optional().default("Test error message")
+  })
 });

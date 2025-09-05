@@ -21,12 +21,12 @@ export const myTool = tool({
   description: "Description of what the tool does",
   parameters: z.object({
     param1: z.string().describe("Description of parameter 1"),
-    param2: z.number().optional().describe("Description of parameter 2"),
+    param2: z.number().optional().describe("Description of parameter 2")
   }),
   execute: async ({ param1, param2 }, { agent }) => {
     // Implementation of the tool
     return "Result of the tool execution";
-  },
+  }
 });
 ```
 
@@ -38,8 +38,8 @@ Some tools should require human approval before execution. These are defined wit
 export const toolRequiringApproval = tool({
   description: "Description of what the tool does",
   parameters: z.object({
-    param1: z.string().describe("Description of parameter 1"),
-  }),
+    param1: z.string().describe("Description of parameter 1")
+  })
   // No execute function = requires approval
 });
 ```
@@ -51,7 +51,7 @@ export const executions = {
   toolRequiringApproval: async ({ param1 }) => {
     // Implementation for when the tool is approved
     return "Result of the approved tool execution";
-  },
+  }
 };
 ```
 

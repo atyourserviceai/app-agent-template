@@ -4,7 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useState
 } from "react";
 import { getOAuthConfig, type OAuthConfig } from "../../config/oauth";
 
@@ -40,6 +40,8 @@ export interface UserInfo {
   id: string;
   email: string;
   credits: number;
+  starting_balance?: number;
+  used_credits?: number;
 }
 
 export interface AuthMethod {
@@ -81,10 +83,10 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  // To avoid hydration mismatches, start with isLoading = true on both server and client
-  // and render a consistent loading shell until client effects run
-  // Start false so SSR shows LandingPage; client effect will validate and update
+  // Start with loading false for SSR/bots, will be set to true on client mount
+  // This prevents bots from seeing loading spinners while still preventing auth flash on client
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
   // Function to sync token with agent database
@@ -104,13 +106,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             credits: authData.userInfo.credits,
             email: authData.userInfo.email,
             payment_method: "credits", // Default value
-            user_id: authData.userInfo.id,
+            user_id: authData.userInfo.id
           }),
           headers: {
             Authorization: `Bearer ${authData.apiKey}`,
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          method: "POST",
+          method: "POST"
         }
       );
 
@@ -129,7 +131,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  // Client-side hydration effect - prevents auth flash only on client
   useEffect(() => {
+    // This only runs on the client after hydration
+    setHasHydrated(true);
+    setIsLoading(true);
+  }, []);
+
+  useEffect(() => {
+    // Don't run auth check until after hydration
+    if (!hasHydrated) return;
+
     // Load OAuth config and check for stored auth on component mount
     const init = async () => {
       try {
@@ -175,9 +187,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             try {
               const response = await fetch("/api/user/info", {
                 headers: {
-                  Authorization: `Bearer ${parsedAuth.apiKey}`,
+                  Authorization: `Bearer ${parsedAuth.apiKey}`
                 },
-                method: "GET",
+                method: "GET"
               });
 
               if (response.ok) {
@@ -211,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, [syncTokenWithAgent]);
+  }, [hasHydrated, syncTokenWithAgent]);
 
   const login = async () => {
     try {
@@ -253,9 +265,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           {
             headers: {
               Authorization: `Bearer ${currentAuth.apiKey}`,
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
-            method: "POST",
+            method: "POST"
           }
         );
 
@@ -280,7 +292,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       apiKey: authMethod.apiKey,
       byokKeys: keys, // Keep AtYourService.ai API key for verification
       type: "byok",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -293,7 +305,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const newAuth: AuthMethod = {
       apiKey: authMethod.apiKey,
       type: "atyourservice",
-      userInfo: authMethod.userInfo,
+      userInfo: authMethod.userInfo
     };
 
     setAuthMethod(newAuth);
@@ -307,9 +319,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call the local server endpoint that proxies to the gateway
       const response = await fetch("/api/user/info", {
         headers: {
-          Authorization: `Bearer ${authMethod.apiKey}`,
+          Authorization: `Bearer ${authMethod.apiKey}`
         },
-        method: "GET",
+        method: "GET"
       });
 
       if (response.ok) {
@@ -317,6 +329,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           id: string;
           email: string;
           credits: number;
+          starting_balance?: number;
+          used_credits?: number;
         };
 
         // Update the stored auth method with fresh user info
@@ -326,7 +340,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             credits: userInfo.credits,
             email: userInfo.email,
             id: userInfo.id,
-          },
+            starting_balance: userInfo.starting_balance,
+            used_credits: userInfo.used_credits
+          }
         };
 
         setAuthMethod(updatedAuth);
@@ -367,7 +383,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     oauthConfig,
     refreshUserInfo,
     switchToBYOK,
-    switchToCredits,
+    switchToCredits
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

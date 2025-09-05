@@ -20,7 +20,7 @@ export function ErrorMessage({
   onRetry,
   isLoading,
   formatTime,
-  createdAt,
+  createdAt
 }: ErrorMessageProps) {
   // Default to current date if createdAt is undefined
   const displayDate = createdAt ? new Date(createdAt) : new Date();

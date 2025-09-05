@@ -288,8 +288,8 @@ const searchDatabase = tool({
   description: "Search the database for user records",
   parameters: z.object({
     query: z.string(),
-    limit: z.number().optional(),
-  }),
+    limit: z.number().optional()
+  })
   // No execute function = requires confirmation
 });
 
@@ -297,7 +297,7 @@ const searchDatabase = tool({
 const getCurrentTime = tool({
   description: "Get current server time",
   parameters: z.object({}),
-  execute: async () => new Date().toISOString(),
+  execute: async () => new Date().toISOString()
 });
 
 // Scheduling tool implementation
@@ -307,11 +307,11 @@ const scheduleTask = tool({
   parameters: z.object({
     type: z.enum(["scheduled", "delayed", "cron"]),
     when: z.union([z.number(), z.string()]),
-    payload: z.string(),
+    payload: z.string()
   }),
   execute: async ({ type, when, payload }) => {
     // ... see the implementation in tools.ts
-  },
+  }
 });
 ```
 
@@ -321,7 +321,7 @@ To handle tool confirmations, add execution functions to the `executions` object
 export const executions = {
   searchDatabase: async ({
     query,
-    limit,
+    limit
   }: {
     query: string;
     limit?: number;
@@ -329,7 +329,7 @@ export const executions = {
     // Implementation for when the tool is confirmed
     const results = await db.search(query, limit);
     return results;
-  },
+  }
   // Add more execution handlers for other tools that require confirmation
 };
 ```
@@ -533,7 +533,7 @@ By default, the integration includes the "googlesuper" app, which provides acces
 ```typescript
 // To support multiple apps:
 export const composioTools = await toolset.getTools({
-  apps: ["googlesuper", "github", "notion"],
+  apps: ["googlesuper", "github", "notion"]
 });
 ```
 

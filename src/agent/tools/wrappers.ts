@@ -74,13 +74,51 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
     options?: { signal?: AbortSignal }
   ) => {
     try {
+      // First validate parameters using the tool's schema to catch validation errors
+      if (tool.parameters && params) {
+        try {
+          tool.parameters.parse(params);
+        } catch (validationError) {
+          console.error(
+            `[Tool Validation Error] ${tool.description || "unnamed tool"} parameter validation failed:`,
+            validationError
+          );
+
+          // Create a user-friendly error message for common validation issues
+          let errorMessage = "Invalid parameters provided to tool";
+          if (validationError instanceof Error) {
+            // Parse Zod error for more helpful message
+            if (validationError.message.includes("Invalid enum value")) {
+              const match = validationError.message.match(/Expected '([^']+)'/);
+              if (match) {
+                errorMessage = `Invalid parameter value. Expected one of: ${match[1]}`;
+              }
+            } else {
+              errorMessage = validationError.message;
+            }
+          }
+
+          return {
+            error: {
+              details:
+                validationError instanceof Error
+                  ? validationError.message
+                  : undefined,
+              message: errorMessage,
+              timestamp: new Date().toISOString()
+            },
+            success: false
+          } as TResult;
+        }
+      }
+
       const result = await originalExecute(params, options);
       if (result && typeof result === "object" && "success" in result) {
         return result as TResult;
       }
       return {
         result,
-        success: true,
+        success: true
       } as TResult;
     } catch (error) {
       console.error(
@@ -91,16 +129,16 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
         error: {
           details: error instanceof Error ? error.stack : undefined,
           message: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         },
-        success: false,
+        success: false
       } as TResult;
     }
   };
 
   return {
     ...tool,
-    execute: wrappedExecute,
+    execute: wrappedExecute
   };
 }
 
@@ -108,7 +146,7 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
  * Wraps all tools in a record with error handling.
  */
 export function wrapAllToolsWithErrorHandling<
-  T extends Record<string, Tool<unknown, unknown>>,
+  T extends Record<string, Tool<unknown, unknown>>
 >(tools: T): T {
   const wrappedTools: Partial<T> = {};
   for (const [name, tool] of Object.entries(tools)) {
@@ -136,9 +174,9 @@ export function createToolErrorResult(
     error: {
       details,
       message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     },
-    success: false,
+    success: false
   };
 }
 
@@ -150,6 +188,6 @@ export function createToolErrorResult(
 export function createToolSuccessResult<T>(result: T): ToolSuccessResult<T> {
   return {
     result,
-    success: true,
+    success: true
   };
 }

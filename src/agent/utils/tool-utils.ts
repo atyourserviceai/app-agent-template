@@ -3,7 +3,7 @@ import {
   convertToCoreMessages,
   type DataStreamWriter,
   type ToolExecutionOptions,
-  type ToolSet,
+  type ToolSet
 } from "ai";
 import type { z } from "zod";
 import { APPROVAL } from "../../shared";
@@ -37,7 +37,7 @@ export function validateToolAccessForMode(
     "getAgentState",
     "getCompanyConfig",
     "getTestingState",
-    "getCrmState",
+    "getCrmState"
   ];
 
   // CRM-specific tools (only available in CRM and testing modes)
@@ -50,7 +50,7 @@ export function validateToolAccessForMode(
     "sendLeadEmail",
     "createTask",
     "logInteraction",
-    "advanceFunnelStage",
+    "advanceFunnelStage"
   ];
 
   // Testing-specific tools (only available in testing mode)
@@ -59,7 +59,7 @@ export function validateToolAccessForMode(
     "documentTool",
     "generateTestReport",
     "saveCrmToolDocumentation",
-    "completeTestingPhase",
+    "completeTestingPhase"
   ];
 
   // Onboarding-specific tools (only available in onboarding mode)
@@ -76,7 +76,7 @@ export function validateToolAccessForMode(
     "saveToolingPlan",
     "completeOnboarding",
     "checkExistingConfig",
-    "getOnboardingStatus",
+    "getOnboardingStatus"
   ];
 
   // If it's a universal tool, always allow
@@ -118,11 +118,11 @@ export async function processToolCalls<
     [Tool in keyof Tools as Tools[Tool] extends { execute: Function }
       ? never
       : Tool]: Tools[Tool];
-  },
+  }
 >({
   dataStream,
   messages,
-  executions,
+  executions
 }: {
   tools: Tools; // used for type inference
   dataStream: DataStreamWriter;
@@ -165,7 +165,7 @@ export async function processToolCalls<
         if (toolInstance) {
           result = await toolInstance(toolInvocation.args, {
             messages: convertToCoreMessages(messages),
-            toolCallId: toolInvocation.toolCallId,
+            toolCallId: toolInvocation.toolCallId
           });
         } else {
           result = "Error: No execute function found on tool";
@@ -181,7 +181,7 @@ export async function processToolCalls<
       dataStream.write(
         formatDataStreamPart("tool_result", {
           result,
-          toolCallId: toolInvocation.toolCallId,
+          toolCallId: toolInvocation.toolCallId
         })
       );
 
@@ -190,8 +190,8 @@ export async function processToolCalls<
         ...part,
         toolInvocation: {
           ...toolInvocation,
-          result,
-        },
+          result
+        }
       };
     })
   );
@@ -206,13 +206,13 @@ export async function processToolCalls<
  * @returns Processed messages
  */
 export async function processToolCallsWithModeValidation<
-  Tools extends ToolSet,
+  Tools extends ToolSet
 >({
   messages,
   dataStream,
   tools: _tools,
   executions,
-  mode,
+  mode
 }: {
   messages: Message[];
   dataStream: DataStreamWriter;
@@ -244,7 +244,7 @@ export async function processToolCallsWithModeValidation<
         dataStream.write(
           formatDataStreamPart("tool_result", {
             result: errorResult,
-            toolCallId: toolInvocation.toolCallId,
+            toolCallId: toolInvocation.toolCallId
           })
         );
 
@@ -255,8 +255,8 @@ export async function processToolCallsWithModeValidation<
           toolInvocation: {
             ...toolInvocation,
             result: errorResult,
-            state: "result",
-          },
+            state: "result"
+          }
         };
       }
 
@@ -271,7 +271,7 @@ export async function processToolCallsWithModeValidation<
             if (toolInstance) {
               result = await toolInstance(toolInvocation.args, {
                 messages: convertToCoreMessages(messages),
-                toolCallId: toolInvocation.toolCallId,
+                toolCallId: toolInvocation.toolCallId
               });
             } else {
               result = "Error: No execute function found on tool";
@@ -288,7 +288,7 @@ export async function processToolCallsWithModeValidation<
         dataStream.write(
           formatDataStreamPart("tool_result", {
             result,
-            toolCallId: toolInvocation.toolCallId,
+            toolCallId: toolInvocation.toolCallId
           })
         );
 
@@ -297,8 +297,8 @@ export async function processToolCallsWithModeValidation<
           ...part,
           toolInvocation: {
             ...toolInvocation,
-            result,
-          },
+            result
+          }
         };
       }
 
@@ -310,7 +310,7 @@ export async function processToolCallsWithModeValidation<
   // Return the processed messages with type assertion to avoid type error
   return [
     ...messages.slice(0, -1),
-    { ...lastMessage, parts: processedParts } as Message,
+    { ...lastMessage, parts: processedParts } as Message
   ];
 }
 
@@ -394,9 +394,9 @@ export function processToolCallsFromContent(
           state: "result" as const,
           step: undefined,
           toolCallId: toolCall.id,
-          toolName: toolCall.name,
+          toolName: toolCall.name
         },
-        type: "tool-invocation" as const,
+        type: "tool-invocation" as const
       };
       processedParts.push(toolInvocationPart);
     }
@@ -405,7 +405,7 @@ export function processToolCallsFromContent(
   // Create a clone of the last message with the updated parts
   const updatedLastMessage = {
     ...lastMessage,
-    parts: processedParts,
+    parts: processedParts
   };
 
   // Return the updated messages array, replacing the last message

@@ -46,10 +46,10 @@ export default function AuthCallback() {
           body: JSON.stringify({
             client_id: config.client_id,
             code,
-            grant_type: "authorization_code",
+            grant_type: "authorization_code"
           }),
           headers: { "Content-Type": "application/json" },
-          method: "POST",
+          method: "POST"
         });
 
         if (!response.ok) {
@@ -65,7 +65,7 @@ export default function AuthCallback() {
         console.log("[OAuth Callback] Token exchange successful, user info:", {
           credits: tokenData.user_info?.credits,
           email: tokenData.user_info?.email,
-          userId: tokenData.user_info?.id,
+          userId: tokenData.user_info?.id
         });
 
         // Store the AtYourService.ai API key and user info
@@ -75,8 +75,8 @@ export default function AuthCallback() {
           userInfo: {
             credits: tokenData.user_info.credits,
             email: tokenData.user_info.email,
-            id: tokenData.user_info.id,
-          },
+            id: tokenData.user_info.id
+          }
         };
 
         localStorage.setItem("auth_method", JSON.stringify(authMethod));
@@ -95,13 +95,13 @@ export default function AuthCallback() {
                 credits: tokenData.user_info.credits,
                 email: tokenData.user_info.email,
                 payment_method: tokenData.user_info.payment_method || "credits",
-                user_id: tokenData.user_info.id,
+                user_id: tokenData.user_info.id
               }),
               headers: {
                 Authorization: `Bearer ${tokenData.access_token}`,
-                "Content-Type": "application/json",
+                "Content-Type": "application/json"
               },
-              method: "POST",
+              method: "POST"
             }
           );
 

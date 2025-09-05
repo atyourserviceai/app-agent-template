@@ -10,6 +10,7 @@ type ChatContainerProps = {
   agentMode: AgentMode;
   inputValue: string;
   isLoading: boolean;
+  isThinking: boolean; // Add thinking state
   pendingConfirmation: boolean;
   activeTab: "chat" | "presentation";
   children: ReactNode;
@@ -18,8 +19,10 @@ type ChatContainerProps = {
   onToggleDebug: () => void;
   onChangeMode: (mode: AgentMode) => void;
   onClearHistory: () => void;
+  onExportConversation?: () => Promise<void>;
   onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onInputSubmit: (e: FormEvent) => void;
+  onStop?: () => void;
   onCloseChat?: () => void; // optional close handler when used as floating panel
 };
 
@@ -29,6 +32,7 @@ export function ChatContainer({
   agentMode,
   inputValue,
   isLoading,
+  isThinking,
   pendingConfirmation,
   activeTab,
   children,
@@ -37,9 +41,11 @@ export function ChatContainer({
   onToggleDebug,
   onChangeMode,
   onClearHistory,
+  onExportConversation,
   onInputChange,
   onInputSubmit,
-  onCloseChat,
+  onStop,
+  onCloseChat
 }: ChatContainerProps) {
   return (
     <div
@@ -56,6 +62,7 @@ export function ChatContainer({
         onToggleDebug={onToggleDebug}
         onChangeMode={onChangeMode}
         onClearHistory={onClearHistory}
+        onExportConversation={onExportConversation}
         onCloseChat={onCloseChat}
       />
 
@@ -72,7 +79,9 @@ export function ChatContainer({
         value={inputValue}
         onChange={onInputChange}
         onSubmit={onInputSubmit}
+        onStop={onStop}
         isLoading={isLoading}
+        isThinking={isThinking}
         pendingConfirmation={pendingConfirmation}
       />
     </div>

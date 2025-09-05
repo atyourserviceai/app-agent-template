@@ -73,7 +73,7 @@ export function UserProfile() {
       </button>
 
       {showDropdown && (
-        <div className="absolute left-0 right-auto md:left-auto md:right-0 mt-2 w-72 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-50">
+        <div className="absolute left-0 right-auto md:left-auto md:right-0 mt-2 w-72 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-2 z-10">
           <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-lg font-semibold">
@@ -89,19 +89,39 @@ export function UserProfile() {
 
           {/* Credit Balance Section */}
           <div className="px-4 py-3">
-            <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-              Credit Balance
-              {isRefreshing && (
-                <span className="ml-1 inline-block animate-spin">⟳</span>
-              )}
-            </div>
             {userInfo.credits !== undefined ? (
               <>
-                <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                  ${userInfo.credits.toFixed(2)}
+                <div className="bg-blue-500/20 dark:bg-blue-400/20 p-3 rounded text-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                      User Balance
+                      {isRefreshing && (
+                        <span className="ml-1 inline-block animate-spin">
+                          ⟳
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">
+                      ${userInfo.credits.toFixed(2)} remaining
+                    </span>
+                  </div>
+                  <div className="relative bg-neutral-200 dark:bg-neutral-700 h-2 rounded overflow-hidden">
+                    {/* Used portion (gray background shows through) */}
+                    {/* Remaining portion (blue or yellow overlay depending on balance) */}
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        userInfo.credits < 0.2
+                          ? "bg-yellow-500 dark:bg-yellow-400"
+                          : "bg-blue-500 dark:bg-blue-400"
+                      }`}
+                      style={{
+                        width: `${Math.min(Math.max((userInfo.credits / (userInfo.starting_balance || 10)) * 100, 0), 100)}%`
+                      }}
+                    />
+                  </div>
                 </div>
-                {userInfo.credits < 1 && (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                {userInfo.credits < 0.2 && (
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
                     Low balance - consider topping up
                   </div>
                 )}
@@ -109,14 +129,24 @@ export function UserProfile() {
                   href={accountUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2 block"
                 >
                   Manage credits →
                 </a>
               </>
             ) : (
-              <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                Loading...
+              <div className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded text-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                    User Balance
+                  </span>
+                  <span className="text-neutral-500 dark:text-neutral-400">
+                    Loading...
+                  </span>
+                </div>
+                <div className="bg-neutral-200 dark:bg-neutral-700 h-2 rounded overflow-hidden">
+                  <div className="bg-neutral-400 dark:bg-neutral-500 h-full w-0 rounded animate-pulse" />
+                </div>
               </div>
             )}
           </div>

@@ -1,5 +1,15 @@
 import { Providers } from "../../src/providers";
 import App from "../../src/app";
+import type { LoaderFunctionArgs } from "react-router";
+
+export async function loader({ context }: LoaderFunctionArgs) {
+  // Get the environment variable from the server context
+  const env = context?.cloudflare?.env;
+  return {
+    environment: env?.SETTINGS_ENVIRONMENT || "production",
+    simulateThinkingTokens: env?.SIMULATE_THINKING_TOKENS === "true"
+  };
+}
 
 export default function Index() {
   return (

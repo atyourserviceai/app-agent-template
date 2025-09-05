@@ -20,8 +20,8 @@ export const fetchWebPage = tool({
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.5",
           "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-        },
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+        }
       });
 
       if (!response.ok) {
@@ -44,7 +44,7 @@ export const fetchWebPage = tool({
         return {
           content: truncatedText,
           contentType,
-          url,
+          url
         };
       }
 
@@ -73,7 +73,7 @@ export const fetchWebPage = tool({
         content: truncatedText, // This may differ from input URL if redirects occurred
         contentType,
         title,
-        url: response.url,
+        url: response.url
       };
     } catch (error) {
       console.error(`[simpleFetch] Error fetching ${url}:`, error);
@@ -87,8 +87,8 @@ export const fetchWebPage = tool({
       .describe(
         "Optional CSS selector to extract specific content (defaults to 'body')"
       ),
-    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')"),
-  }),
+    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')")
+  })
 });
 
 /**
@@ -105,14 +105,14 @@ export async function fetchPageContent(
     const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-      },
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+      }
     });
 
     if (!response.ok) {
       return Response.json(
         {
-          error: `Failed to fetch: HTTP status ${response.status}`,
+          error: `Failed to fetch: HTTP status ${response.status}`
         },
         { status: response.status }
       );
@@ -140,13 +140,13 @@ export async function fetchPageContent(
       content: truncatedContent,
       contentType,
       title,
-      url: response.url,
+      url: response.url
     });
   } catch (error) {
     console.error("[simpleFetch] Error in direct fetch:", error);
     return Response.json(
       {
-        error: String(error),
+        error: String(error)
       },
       { status: 500 }
     );

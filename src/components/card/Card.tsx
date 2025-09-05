@@ -1,7 +1,6 @@
-import React from "react";
 import { cn } from "@/lib/utils";
 
-type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+type CardProps = {
   as?: React.ElementType;
   children?: React.ReactNode;
   className?: string;
@@ -10,28 +9,29 @@ type CardProps = React.HTMLAttributes<HTMLDivElement> & {
   variant?: "primary" | "secondary" | "ghost" | "destructive";
 };
 
-export const Card = React.forwardRef<HTMLElement, CardProps>(
-  (
-    { as, children, className, tabIndex, variant = "secondary", ...rest },
-    ref
-  ) => {
-    const Component = as ?? "div";
-    return (
-      <Component
-        className={cn(
-          "w-full rounded-lg p-4",
-          {
-            "btn-primary": variant === "primary",
-            "btn-secondary": variant === "secondary",
-          },
-          className
-        )}
-        ref={ref}
-        tabIndex={tabIndex}
-        {...rest}
-      >
-        {children}
-      </Component>
-    );
-  }
-);
+export const Card = ({
+  as,
+  children,
+  className,
+  ref,
+  tabIndex,
+  variant = "secondary"
+}: CardProps) => {
+  const Component = as ?? "div";
+  return (
+    <Component
+      className={cn(
+        "w-full rounded-lg p-4",
+        {
+          "btn-primary": variant === "primary",
+          "btn-secondary": variant === "secondary"
+        },
+        className
+      )}
+      ref={ref}
+      tabIndex={tabIndex}
+    >
+      {children}
+    </Component>
+  );
+};

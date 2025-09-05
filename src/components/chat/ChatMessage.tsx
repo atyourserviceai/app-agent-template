@@ -1,4 +1,5 @@
 import type { Message } from "@ai-sdk/react";
+import { useState } from "react";
 import { Avatar } from "@/components/avatar/Avatar";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
@@ -24,6 +25,7 @@ type ChatMessageProps = {
   onEditingValueChange: (value: string) => void;
   formatTime: (date: Date) => string;
   showDebug?: boolean;
+  thinkingTokens?: string;
 };
 
 export function ChatMessage({
@@ -37,8 +39,11 @@ export function ChatMessage({
   onEditingValueChange,
   formatTime,
   showDebug = false,
+  thinkingTokens
 }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const [showThinking, setShowThinking] = useState(false);
+  const [touchTimeout, setTouchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Find the first text part for display
   const textPart = message.parts?.find((p) => p.type === "text");
@@ -55,6 +60,30 @@ export function ChatMessage({
   // Remove any HTML comments from the message (these are just instructions for the AI)
   const cleanMessageText = messageText.replace(/<!--.*?-->/gs, "");
 
+  // Touch handlers for mobile long-press edit
+  const handleTouchStart = () => {
+    if (isUser && !isEditing) {
+      const timeout = setTimeout(() => {
+        onStartEditing(message);
+      }, 500); // 500ms long press
+      setTouchTimeout(timeout);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimeout) {
+      clearTimeout(touchTimeout);
+      setTouchTimeout(null);
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (touchTimeout) {
+      clearTimeout(touchTimeout);
+      setTouchTimeout(null);
+    }
+  };
+
   // If it's a mode message, use a special system notification style
   if (isModeMessage) {
     // Different styling based on the type of mode message
@@ -62,12 +91,12 @@ export function ChatMessage({
       transition:
         "from-amber-50/90 to-amber-100/90 dark:from-amber-950/90 dark:to-amber-900/90",
       welcome:
-        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90",
+        "from-blue-50/90 to-blue-100/90 dark:from-blue-950/90 dark:to-blue-900/90"
     };
 
     const borderColors = {
       transition: "border-amber-300 dark:border-amber-700",
-      welcome: "border-blue-300 dark:border-blue-700",
+      welcome: "border-blue-300 dark:border-blue-700"
     };
 
     return (
@@ -133,18 +162,24 @@ export function ChatMessage({
               </div>
             </div>
           ) : (
-            <div className="relative group">
+            <div
+              className="relative group"
+              role={isUser ? "button" : undefined}
+              tabIndex={isUser ? 0 : undefined}
+              // Double-click to edit user messages
+              onDoubleClick={isUser ? () => onStartEditing(message) : undefined}
+              // Touch handlers for mobile long-press edit
+              onTouchStart={isUser ? handleTouchStart : undefined}
+              onTouchEnd={isUser ? handleTouchEnd : undefined}
+              onTouchMove={isUser ? handleTouchMove : undefined}
+              style={{ cursor: isUser ? "pointer" : undefined }}
+            >
               <Card
                 className={`p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 ${
                   isUser
                     ? "rounded-br-none"
                     : "rounded-bl-none border-assistant-border"
                 } ${isScheduledMessage ? "border-accent/50" : ""} relative`}
-                // Double-click to edit user messages
-                onDoubleClick={
-                  isUser ? () => onStartEditing(message) : undefined
-                }
-                style={{ cursor: isUser ? "pointer" : undefined }}
               >
                 {isScheduledMessage && (
                   <span className="absolute -top-3 -left-2 text-base">🕒</span>
@@ -159,6 +194,31 @@ export function ChatMessage({
                   />
                 </div>
               </Card>
+
+              {/* Thinking tokens display for assistant messages */}
+              {!isUser && thinkingTokens && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowThinking(!showThinking)}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 flex items-center gap-1"
+                    title="Toggle AI thinking process"
+                  >
+                    <span>🧠</span>
+                    <span>
+                      {showThinking ? "Hide" : "Show"} thinking process
+                    </span>
+                  </button>
+                  {showThinking && (
+                    <Card className="mt-2 p-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <div className="text-xs text-amber-800 dark:text-amber-200 font-mono whitespace-pre-wrap max-h-60 overflow-y-auto">
+                        {thinkingTokens}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-between items-center mt-1">
                 <p
                   className={`text-sm text-muted-foreground ${

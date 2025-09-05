@@ -15,6 +15,6 @@ export default async function handleRequest(
   responseHeaders.set("Content-Type", "text/html; charset=utf-8");
   return new Response(body, {
     headers: responseHeaders,
-    status: responseStatusCode,
+    status: responseStatusCode
   });
 }

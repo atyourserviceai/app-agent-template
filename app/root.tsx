@@ -5,16 +5,16 @@ export const meta = () => [
   { title: "App Agent Template" },
   {
     name: "viewport",
-    content: "width=device-width, initial-scale=1.0",
+    content: "width=device-width, initial-scale=1.0"
   },
   {
     name: "description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "AI-powered chat agent built with Cloudflare Agents"
   },
   { property: "og:title", content: "App Agent Template" },
   {
     property: "og:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "AI-powered chat agent built with Cloudflare Agents"
   },
   { property: "og:type", content: "website" },
   { property: "og:site_name", content: "App Agent Template" },
@@ -23,12 +23,12 @@ export const meta = () => [
   { name: "twitter:title", content: "App Agent Template" },
   {
     name: "twitter:description",
-    content: "AI-powered chat agent built with Cloudflare Agents",
+    content: "AI-powered chat agent built with Cloudflare Agents"
   },
-  { name: "twitter:image", content: "/api/og-image" },
+  { name: "twitter:image", content: "/api/og-image" }
 ];
 export const links = () => [
-  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -43,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();",
+              "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);var de=document.documentElement;de.classList.toggle('dark',d);de.classList.toggle('light',!d);}catch(e){}})();"
           }}
         />
       </head>

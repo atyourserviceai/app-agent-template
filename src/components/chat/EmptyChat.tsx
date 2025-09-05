@@ -6,7 +6,7 @@ type EmptyChatProps = {
 };
 
 export function EmptyChat({
-  message = "Type a message below to begin chatting with your AI assistant",
+  message = "Type a message below to begin chatting with your AI assistant"
 }: EmptyChatProps) {
   return (
     <div className="h-full flex items-center justify-center">

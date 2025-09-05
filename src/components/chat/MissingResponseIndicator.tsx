@@ -12,7 +12,7 @@ type MissingResponseIndicatorProps = {
 export function MissingResponseIndicator({
   onTryAgain,
   isLoading,
-  formatTime,
+  formatTime
 }: MissingResponseIndicatorProps) {
   return (
     <div className="flex justify-start">

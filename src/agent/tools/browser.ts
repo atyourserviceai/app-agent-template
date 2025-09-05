@@ -58,8 +58,8 @@ export const browseWebPage = tool({
       }
 
       // Get API key and base URL
-      const apiKey = agent.getBrowserApiKey();
-      const baseUrl = agent.getBrowserApiBaseUrl();
+      const apiKey = await agent.getBrowserApiKey();
+      const baseUrl = await agent.getBrowserApiBaseUrl();
 
       if (!apiKey || !baseUrl) {
         return "Browser API configuration is incomplete. Please check your environment variables.";
@@ -69,7 +69,7 @@ export const browseWebPage = tool({
         `[browseWebPage] Processing ${urls.length} URLs with selector "${selector}"`
       );
       console.log(
-        `[browseWebPage] Using API Key (first 5 chars): ${apiKey.substring(0, 5)}... and Base URL: ${baseUrl}`
+        `[browseWebPage] Using API Key: ${apiKey.length <= 4 ? "[REDACTED]" : `${apiKey.substring(0, 2)}...${apiKey.substring(-2)} (${apiKey.length} chars)`} and Base URL: ${baseUrl}`
       );
 
       const results: BrowseResult[] = [];
@@ -98,7 +98,7 @@ export const browseWebPage = tool({
 
       if (results.length === 0) {
         return {
-          message: "Could not retrieve content from any of the provided URLs.",
+          message: "Could not retrieve content from any of the provided URLs."
         };
       }
 
@@ -121,8 +121,8 @@ export const browseWebPage = tool({
       .describe("Whether to take a screenshot of the page (defaults to false)"),
     urls: z
       .array(z.string().url())
-      .describe("List of URLs to browse (e.g. ['https://example.com'])"),
-  }),
+      .describe("List of URLs to browse (e.g. ['https://example.com'])")
+  })
 });
 
 /**
@@ -146,7 +146,7 @@ async function processUrl(
     console.log(`[browseWebPage] Content extraction result for ${url}:`, {
       contentLength: contentResult.content?.length || 0,
       hasError: !!contentResult.error,
-      success: contentResult.success,
+      success: contentResult.success
     });
 
     // Check if we got content from the browser API
@@ -185,7 +185,7 @@ async function processUrl(
       screenshot: screenshotData,
       sessionId: contentResult.sessionId,
       source: "browser-api",
-      url,
+      url
     };
   } catch (error) {
     console.error(`[browseWebPage] Error processing ${url}:`, error);
@@ -209,16 +209,16 @@ async function extractContent(
 
     const requestBody = {
       selector,
-      url,
+      url
     };
 
     const response = await fetch(`${baseUrl}/v1/browser/gettext`, {
       body: JSON.stringify(requestBody),
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      method: "POST",
+      method: "POST"
     });
 
     console.log(`[browser] gettext API response status: ${response.status}`);
@@ -230,7 +230,7 @@ async function extractContent(
       );
       return {
         error: `HTTP error ${response.status}: ${errorText}`,
-        success: false,
+        success: false
       };
     }
 
@@ -266,13 +266,13 @@ async function extractContent(
     return {
       content: content || "No content found on page",
       sessionId,
-      success: true,
+      success: true
     };
   } catch (error) {
     console.error("[browser] Error extracting content:", error);
     return {
       error: String(error),
-      success: false,
+      success: false
     };
   }
 }
@@ -297,7 +297,7 @@ async function getFallbackContent(
       return {
         content: simpleFetchData.content,
         source: "simple-fetch",
-        url,
+        url
       };
     }
   } catch (simpleFetchError) {
@@ -309,7 +309,7 @@ async function getFallbackContent(
     content: `Failed to browse ${url}`,
     error: "Failed to retrieve content with all available methods",
     source: "error",
-    url,
+    url
   };
 }
 
@@ -326,13 +326,13 @@ async function takePageScreenshot(
     const response = await fetch(`${baseUrl}/v1/browser/screenshot`, {
       body: JSON.stringify({
         fullPage: true,
-        sessionId,
+        sessionId
       }),
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      method: "POST",
+      method: "POST"
     });
 
     console.log(`[browser] Screenshot API response status: ${response.status}`);
@@ -344,7 +344,7 @@ async function takePageScreenshot(
       );
       return {
         error: `HTTP error ${response.status}: ${errorText}`,
-        success: false,
+        success: false
       };
     }
 
@@ -353,7 +353,7 @@ async function takePageScreenshot(
     console.error("[browser] Error taking screenshot:", error);
     return {
       error: String(error),
-      success: false,
+      success: false
     };
   }
 }
@@ -382,7 +382,7 @@ async function handleScreenshotResponse(
 
       return {
         screenshot: `data:image/${imgType};base64,${base64Image}`,
-        success: true,
+        success: true
       };
     }
 
@@ -398,7 +398,7 @@ async function handleScreenshotResponse(
 
       return {
         screenshot: `data:image/png;base64,${base64Image}`,
-        success: true,
+        success: true
       };
     }
 
@@ -413,7 +413,7 @@ async function handleScreenshotResponse(
       if (data.screenshot) {
         return {
           screenshot: data.screenshot,
-          success: true,
+          success: true
         };
       }
       console.warn(
@@ -422,7 +422,7 @@ async function handleScreenshotResponse(
       );
       return {
         error: "No screenshot data in JSON response",
-        success: false,
+        success: false
       };
     } catch (jsonError) {
       console.error("[browser] Failed to parse as JSON:", jsonError);
@@ -439,7 +439,7 @@ async function handleScreenshotResponse(
           const base64Image = Buffer.from(text, "binary").toString("base64");
           return {
             screenshot: `data:image/png;base64,${base64Image}`,
-            success: true,
+            success: true
           };
         } catch (b64Error) {
           console.error(
@@ -451,14 +451,14 @@ async function handleScreenshotResponse(
 
       return {
         error: `Failed to parse response as JSON or binary: ${jsonError}`,
-        success: false,
+        success: false
       };
     }
   } catch (error) {
     console.error("[browser] Error processing screenshot response:", error);
     return {
       error: `Error processing response: ${error}`,
-      success: false,
+      success: false
     };
   }
 }
@@ -480,7 +480,7 @@ export async function fetchWebPageContent(
     if (!contentResult.success) {
       return Response.json(
         {
-          error: contentResult.error || "Failed to extract content",
+          error: contentResult.error || "Failed to extract content"
         },
         { status: 500 }
       );
@@ -503,13 +503,13 @@ export async function fetchWebPageContent(
       content: contentResult.content,
       screenshot,
       sessionId: contentResult.sessionId,
-      url,
+      url
     });
   } catch (error) {
     console.error(`[browser] Error fetching content from ${url}:`, error);
     return Response.json(
       {
-        error: String(error),
+        error: String(error)
       },
       { status: 500 }
     );
@@ -541,7 +541,7 @@ export async function testBrowserTool(apiKey: string, baseUrl: string) {
       contentPreview: `${contentResult.content?.substring(0, 100)}...`,
       error: contentResult.error,
       sessionId: contentResult.sessionId,
-      success: contentResult.success,
+      success: contentResult.success
     });
 
     if (!contentResult.success || !contentResult.sessionId) {
@@ -551,7 +551,7 @@ export async function testBrowserTool(apiKey: string, baseUrl: string) {
       );
       return {
         error: contentResult.error || "Failed to extract content",
-        success: false,
+        success: false
       };
     }
 
@@ -565,7 +565,7 @@ export async function testBrowserTool(apiKey: string, baseUrl: string) {
     console.log("[browser-test] Screenshot result:", {
       error: screenshotResult.error,
       screenshotLength: screenshotResult.screenshot?.length || 0,
-      success: screenshotResult.success,
+      success: screenshotResult.success
     });
 
     // Complete test results
@@ -577,13 +577,13 @@ export async function testBrowserTool(apiKey: string, baseUrl: string) {
       screenshotSuccess: screenshotResult.success,
       sessionId: contentResult.sessionId,
       success: true,
-      url: testUrl,
+      url: testUrl
     };
   } catch (error) {
     console.error("[browser-test] Test failed with exception:", error);
     return {
       error: String(error),
-      success: false,
+      success: false
     };
   }
 }

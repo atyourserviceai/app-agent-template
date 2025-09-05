@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   getFriendlyToolName,
   getToolCategory,
-  ToolCategory,
+  ToolCategory
 } from "@/agent/tools/utils";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
@@ -42,7 +42,7 @@ export function ToolInvocationCard({
   toolInvocation,
   toolCallId,
   needsConfirmation,
-  addToolResult,
+  addToolResult
 }: ToolInvocationCardProps) {
   const [isExpanded, setIsExpanded] = useState(needsConfirmation);
   const [showRawData, setShowRawData] = useState(false);
@@ -237,7 +237,7 @@ export function ToolInvocationCard({
                   onClick={() =>
                     addToolResult({
                       result: APPROVAL.NO,
-                      toolCallId,
+                      toolCallId
                     })
                   }
                 >
@@ -250,7 +250,7 @@ export function ToolInvocationCard({
                     onClick={() =>
                       addToolResult({
                         result: APPROVAL.YES,
-                        toolCallId,
+                        toolCallId
                       })
                     }
                   >

@@ -19,7 +19,7 @@ function getServerOAuthConfig(env: Env) {
   return {
     client_id: env.ATYOURSERVICE_OAUTH_CLIENT_ID,
     client_secret: env.ATYOURSERVICE_OAUTH_CLIENT_SECRET,
-    token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`,
+    token_url: `${env.OAUTH_PROVIDER_BASE_URL}/oauth/token`
   };
 }
 
@@ -55,15 +55,15 @@ export async function handleTokenExchange(
         client_id: config.client_id,
         client_secret: config.client_secret,
         redirect_uri: env.ATYOURSERVICE_OAUTH_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }),
+        grant_type: "authorization_code"
+      })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Token exchange failed: ${response.status} - ${errorText}`);
       return new Response(`Token exchange failed: ${response.status}`, {
-        status: response.status,
+        status: response.status
       });
     }
 
@@ -78,7 +78,7 @@ export async function handleTokenExchange(
 
     // Return the token data to the client (without exposing the client secret)
     return new Response(JSON.stringify(tokenData), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error("[OAuth Token Exchange] Error:", error);
