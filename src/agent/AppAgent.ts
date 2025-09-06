@@ -1244,7 +1244,7 @@ export class AppAgent extends AIChatAgent<Env> {
           includeDebug
         });
 
-        return new Response(pngBuffer as any, {
+        return new Response(Buffer.from(pngBuffer), {
           headers: {
             "Content-Type": "image/png",
             "Content-Disposition": `attachment; filename="agent-export-${format}-${theme}.png"`
