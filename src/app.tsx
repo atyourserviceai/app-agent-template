@@ -366,10 +366,6 @@ function ProjectTabContent({
                   }
                 }
               }
-            },
-            {
-              type: "text" as const,
-              text: `I encountered a parameter validation error with the ${toolName} tool. Please check the error details above.`
             }
           ]
         };
