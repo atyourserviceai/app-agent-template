@@ -89,47 +89,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
-  // Function to sync token with agent database
-  const syncTokenWithAgent = useCallback(async (authData: AuthMethod) => {
-    if (!authData.userInfo?.id || !authData.apiKey) return;
-
-    try {
-      console.log(
-        `[Auth] Syncing token with agent for user: ${authData.userInfo.id}`
-      );
-
-      const response = await fetch(
-        `/agents/app-agent/${authData.userInfo.id}/store-user-info`,
-        {
-          body: JSON.stringify({
-            api_key: authData.apiKey,
-            credits: authData.userInfo.credits,
-            email: authData.userInfo.email,
-            payment_method: "credits", // Default value
-            user_id: authData.userInfo.id
-          }),
-          headers: {
-            Authorization: `Bearer ${authData.apiKey}`,
-            "Content-Type": "application/json"
-          },
-          method: "POST"
-        }
-      );
-
-      if (response.ok) {
-        console.log(
-          `[Auth] ✅ Token synced with agent for user: ${authData.userInfo.id}`
-        );
-      } else {
-        console.warn(
-          "[Auth] Failed to sync token with agent:",
-          response.status
-        );
-      }
-    } catch (error) {
-      console.warn("[Auth] Error syncing token with agent:", error);
-    }
-  }, []);
+  // Note: Agent sync moved to project-specific components to avoid 
+  // auth components needing to know about project structure
 
   // Client-side hydration effect - prevents auth flash only on client
   useEffect(() => {
@@ -193,10 +154,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               });
 
               if (response.ok) {
-                // Token is valid, use the stored auth and sync with agent
+                // Token is valid, use the stored auth
                 setAuthMethod(parsedAuth);
-                // Defer syncing with agent until after hydration to avoid SSR/client divergence
-                queueMicrotask(() => void syncTokenWithAgent(parsedAuth));
               } else {
                 // Token is invalid, clear it and show sign-in with message
                 console.log("Stored token is invalid, clearing auth");
@@ -223,7 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     init();
-  }, [hasHydrated, syncTokenWithAgent]);
+  }, [hasHydrated]);
 
   const login = async () => {
     try {

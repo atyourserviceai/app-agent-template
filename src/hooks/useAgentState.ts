@@ -16,7 +16,7 @@ export function useAgentState(
   const agentConfig = externalConfig;
 
   const agent = useAgent({
-    agent: "AppAgent",
+    agent: agentConfig?.agent || "app-agent",
     name: agentConfig?.name || "unauthenticated",
     onStateUpdate: (newState: AppAgentState) => {
       if (!agentConfig) return;

@@ -84,39 +84,31 @@ export default function AuthCallback() {
         // Clean up OAuth state
         localStorage.removeItem("oauth_state");
 
-        // Notify the agent about the new user info
+        // Store JWT token in centralized UserDO via project-agnostic API endpoint
         try {
-          console.log("[OAuth Callback] Notifying agent of new user info...");
-          const agentResponse = await fetch(
-            `/agents/app-agent/${tokenData.user_info.id}/store-user-info`,
-            {
-              body: JSON.stringify({
-                api_key: tokenData.access_token,
-                credits: tokenData.user_info.credits,
-                email: tokenData.user_info.email,
-                payment_method: tokenData.user_info.payment_method || "credits",
-                user_id: tokenData.user_info.id
-              }),
-              headers: {
-                Authorization: `Bearer ${tokenData.access_token}`,
-                "Content-Type": "application/json"
-              },
-              method: "POST"
-            }
-          );
+          console.log("[OAuth Callback] Storing JWT token in UserDO...");
+          const storeResponse = await fetch("/api/store-user-info", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: tokenData.user_info.id,
+              api_key: tokenData.access_token,
+              email: tokenData.user_info.email,
+              credits: tokenData.user_info.credits,
+              payment_method: tokenData.user_info.payment_method || "credits"
+            })
+          });
 
-          if (agentResponse.ok) {
-            console.log(
-              "[OAuth Callback] Successfully notified agent of new user info"
-            );
+          if (storeResponse.ok) {
+            console.log("[OAuth Callback] ✅ JWT token stored in UserDO successfully");
           } else {
             console.warn(
-              "[OAuth Callback] Failed to notify agent of new user info:",
-              agentResponse.status
+              "[OAuth Callback] Failed to store JWT in UserDO:",
+              storeResponse.status
             );
           }
         } catch (error) {
-          console.warn("[OAuth Callback] Error notifying agent:", error);
+          console.warn("[OAuth Callback] Error storing JWT in UserDO:", error);
         }
 
         console.log(
