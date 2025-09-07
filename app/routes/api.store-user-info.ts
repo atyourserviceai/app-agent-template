@@ -2,7 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 
 /**
  * API endpoint to store user info in UserDO after OAuth callback
- * This allows the AuthCallback component to store JWT tokens without 
+ * This allows the AuthCallback component to store JWT tokens without
  * needing to know about project-specific routing
  */
 export async function action({ request, context }: ActionFunctionArgs) {

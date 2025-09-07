@@ -89,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasHydrated, setHasHydrated] = useState<boolean>(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfig | null>(null);
 
-  // Note: Agent sync moved to project-specific components to avoid 
+  // Note: Agent sync moved to project-specific components to avoid
   // auth components needing to know about project structure
 
   // Client-side hydration effect - prevents auth flash only on client

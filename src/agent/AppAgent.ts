@@ -202,10 +202,8 @@ export class AppAgent extends AIChatAgent<Env> {
 
     // Store the ctx ID for reference
     this.agentId = ctx.id.toString();
-    
-    console.log(
-      `[AppAgent] Initialized with internal ID: ${this.agentId}`
-    );
+
+    console.log(`[AppAgent] Initialized with internal ID: ${this.agentId}`);
 
     // Load initial state and ensure schema
     const state = this.state as AppAgentState;

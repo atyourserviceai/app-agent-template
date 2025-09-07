@@ -100,7 +100,9 @@ export default function AuthCallback() {
           });
 
           if (storeResponse.ok) {
-            console.log("[OAuth Callback] ✅ JWT token stored in UserDO successfully");
+            console.log(
+              "[OAuth Callback] ✅ JWT token stored in UserDO successfully"
+            );
           } else {
             console.warn(
               "[OAuth Callback] Failed to store JWT in UserDO:",

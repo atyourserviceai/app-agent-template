@@ -183,9 +183,13 @@ function ProjectTab({
   const agentConfig = useProjectAuth(projectName);
 
   // Only call agent hooks when we have valid authentication
-  const agentState = agentConfig ? 
-    useAgentState(agentConfig, "onboarding") : 
-    { agent: null, agentMode: "onboarding" as const, changeAgentMode: async () => {} };
+  const agentState = agentConfig
+    ? useAgentState(agentConfig, "onboarding")
+    : {
+        agent: null,
+        agentMode: "onboarding" as const,
+        changeAgentMode: async () => {}
+      };
 
   const { agent, agentMode, changeAgentMode } = agentState;
 
