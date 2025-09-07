@@ -125,10 +125,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      // Get projects from the base user agent (not project-specific)
+      // Get projects from user-specific API route (not project-specific agent)
       const userId = authMethod.userInfo.id;
       const response = await fetch(
-        `/agents/app-agent/${userId}/get-projects?token=${authMethod.apiKey}`
+        `/api/get-projects?user_id=${userId}`
       );
 
       if (response.ok) {

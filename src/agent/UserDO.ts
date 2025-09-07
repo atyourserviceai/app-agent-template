@@ -226,7 +226,7 @@ export class UserDO extends DurableObject {
 
       const user = userRows[0] as { user_id: string; api_key: string };
 
-      if (!user.api_key) {
+      if (!user.api_key || user.api_key === '') {
         return new Response(JSON.stringify({ error: "JWT token not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" }
@@ -257,9 +257,9 @@ export class UserDO extends DurableObject {
 
   private async handleClearJWT(_request: Request): Promise<Response> {
     try {
-      // Clear the JWT token (set to null) for security on logout
+      // Clear the JWT token (set to empty string) for security on logout
       await this.sql.exec(`
-        UPDATE user_info SET api_key = NULL, updated_at = ?
+        UPDATE user_info SET api_key = '', updated_at = ?
       `, [new Date().toISOString()]);
 
       console.log("[UserDO] JWT token successfully cleared for user");
@@ -297,7 +297,9 @@ export class UserDO extends DurableObject {
         return null;
       }
 
-      return (tokenRows[0] as { api_key: string }).api_key;
+      const apiKey = (tokenRows[0] as { api_key: string }).api_key;
+      // Return null if the API key is empty (cleared during logout)
+      return apiKey === '' ? null : apiKey;
     } catch (error) {
       console.error("UserDO: Failed to get JWT token:", error);
       return null;
