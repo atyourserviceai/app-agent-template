@@ -215,31 +215,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem("auth_method");
     localStorage.removeItem("oauth_state");
 
-    // Also clear the agent's cached user data if we have valid auth info
-    if (currentAuth?.userInfo?.id && currentAuth?.apiKey) {
+    // Clear JWT token from UserDO for security
+    if (currentAuth?.userInfo?.id) {
       try {
-        console.log("[Auth] Clearing agent cached data on logout...");
-        const clearResponse = await fetch(
-          `/agents/app-agent/${currentAuth.userInfo.id}/clear-user-info`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentAuth.apiKey}`,
-              "Content-Type": "application/json"
-            },
-            method: "POST"
-          }
-        );
+        console.log("[Auth] Clearing JWT token from UserDO on logout...");
+        const clearResponse = await fetch("/api/clear-jwt", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentAuth.userInfo.id
+          })
+        });
 
         if (clearResponse.ok) {
-          console.log("[Auth] Successfully cleared agent cached data");
+          console.log("[Auth] ✅ JWT token cleared from UserDO successfully");
         } else {
           console.warn(
-            "[Auth] Failed to clear agent cached data:",
+            "[Auth] Failed to clear JWT from UserDO:",
             clearResponse.status
           );
         }
       } catch (error) {
-        console.warn("[Auth] Error clearing agent cached data:", error);
+        console.warn("[Auth] Error clearing JWT from UserDO:", error);
       }
     }
   };

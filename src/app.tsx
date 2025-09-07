@@ -181,13 +181,26 @@ function ProjectTab({
   isActive: boolean;
 }) {
   const agentConfig = useProjectAuth(projectName);
-  const { agent, agentMode, changeAgentMode } = useAgentState(
-    agentConfig,
-    "onboarding"
-  );
+
+  // Only call agent hooks when we have valid authentication
+  const agentState = agentConfig ? 
+    useAgentState(agentConfig, "onboarding") : 
+    { agent: null, agentMode: "onboarding" as const, changeAgentMode: async () => {} };
+
+  const { agent, agentMode, changeAgentMode } = agentState;
 
   if (!agentConfig) {
-    return <div>Loading project {projectName}...</div>;
+    return (
+      <div
+        style={{
+          display: isActive ? "block" : "none",
+          height: "100%",
+          width: "100%"
+        }}
+      >
+        <div>Loading project {projectName}...</div>
+      </div>
+    );
   }
 
   return (
@@ -1204,10 +1217,10 @@ function AppContent() {
       </div>
       {/* Always-available theme toggle when unauthenticated */}
       <RootThemeToggle />
-      {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-      <AuthenticatedTopPanel />
       {/* Auth overlay and authenticated content */}
       <AuthGuard>
+        {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+        <AuthenticatedTopPanel />
         <Chat />
       </AuthGuard>
     </div>

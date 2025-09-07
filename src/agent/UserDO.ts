@@ -79,6 +79,10 @@ export class UserDO extends DurableObject {
         return await this.handleGetJWT(request);
       }
 
+      if (request.method === "DELETE" && path === "/clear-jwt") {
+        return await this.handleClearJWT(request);
+      }
+
       if (request.method === "POST" && path === "/create-project") {
         return await this.handleCreateProject(request);
       }
@@ -241,6 +245,33 @@ export class UserDO extends DurableObject {
       return new Response(
         JSON.stringify({
           error: "Failed to get JWT token",
+          details: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+  }
+
+  private async handleClearJWT(_request: Request): Promise<Response> {
+    try {
+      // Clear the JWT token (set to null) for security on logout
+      await this.sql.exec(`
+        UPDATE user_info SET api_key = NULL, updated_at = ?
+      `, [new Date().toISOString()]);
+
+      console.log("[UserDO] JWT token successfully cleared for user");
+      return new Response(JSON.stringify({ success: true, message: "JWT token cleared" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      console.error("UserDO: Failed to clear JWT token:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to clear JWT token",
           details: error instanceof Error ? error.message : String(error)
         }),
         {
