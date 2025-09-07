@@ -16,6 +16,20 @@ Based on Cloudflare's [agents-starter](https://github.com/cloudflare/agents-star
 - Better TypeScript types and organization
 - **AI@YourService integration** for user authentication and cost-effective LLM access
 
+## 🚀 Getting Started
+
+To create a new app agent from this template:
+
+1. **Clone template**: `git clone git@github.com:atyourserviceai/app-agent-template.git your-project-name`
+2. **Set up git remotes**: Rename `origin` to `template`, create new repo, add as `origin`
+3. **Update metadata**: Edit `package.json`, `wrangler.jsonc`, and `vite.config.ts` with your project details and unique ports
+4. **Create OAuth apps**: Set up development, staging, and production OAuth applications in AI@YourService
+5. **Configure secrets**: Set up `.dev.vars` for development and use `wrangler secret` for staging/production
+6. **Test basic setup**: Run `pnpm run dev` and verify OAuth login works
+7. **Customize agent**: Update system prompts, tools, and UI for your specific use case
+
+📖 **For detailed step-by-step instructions, see [CUSTOMIZE.md](./CUSTOMIZE.md)**
+
 ## App Agent Architecture
 
 This template shows how to build a React app that communicates with an AI agent:
