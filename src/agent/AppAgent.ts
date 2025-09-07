@@ -141,6 +141,9 @@ export interface AppAgentState {
  * Can operate as a planning assistant, action executor, or general purpose agent
  */
 export class AppAgent extends AIChatAgent<Env> {
+  // Store the internal agent ID
+  agentId: string;
+
   // Define initial agent state including the current mode
   initialState: AppAgentState = {
     isIntegrationComplete: false,
@@ -197,17 +200,11 @@ export class AppAgent extends AIChatAgent<Env> {
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
 
-    // Validate that this is a project-specific agent instance
-    const agentName = ctx.id.toString();
-    if (!agentName.includes("-") || agentName.split("-").length < 2) {
-      const errorMessage = `Invalid agent instance: Agent name '${agentName}' must follow project-specific format '{userId}-{projectName}'. Non-project-specific agents are not supported.`;
-      console.error("[AppAgent]", errorMessage);
-      throw new Error(errorMessage);
-    }
-
-    const [userId, projectName] = agentName.split("-", 2);
+    // Store the ctx ID for reference
+    this.agentId = ctx.id.toString();
+    
     console.log(
-      `[AppAgent] Initialized for project-specific instance - User: ${userId}, Project: ${projectName}`
+      `[AppAgent] Initialized with internal ID: ${this.agentId}`
     );
 
     // Load initial state and ensure schema
