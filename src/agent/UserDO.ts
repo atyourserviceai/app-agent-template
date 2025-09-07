@@ -118,8 +118,8 @@ export class UserDO extends DurableObject {
     try {
       // Store user info with JWT token in SQLite only
       await this.sql.exec(`
-        INSERT INTO user_info (user_id, api_key, email, credits, payment_method)
-        VALUES ('${userInfo.user_id}', '${userInfo.api_key}', '${userInfo.email}', ${userInfo.credits}, '${userInfo.payment_method}')
+        INSERT INTO user_info (user_id, api_key, email, credits, payment_method, updated_at)
+        VALUES ('${userInfo.user_id}', '${userInfo.api_key}', '${userInfo.email}', ${userInfo.credits}, '${userInfo.payment_method}', CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
           api_key = '${userInfo.api_key}',
           email = '${userInfo.email}',
