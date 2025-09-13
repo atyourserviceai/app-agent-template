@@ -1,4 +1,5 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import { validateAuthHeader } from "../lib/jwt-auth";
 
 /**
  * API endpoint to store user info in UserDO after OAuth callback
@@ -16,6 +17,33 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
     if (!user_id || !api_key || !email) {
       return new Response("Missing required fields", { status: 400 });
+    }
+
+    // For store-user-info, we allow calls without JWT since this endpoint
+    // is used during OAuth callback to initially store the JWT token
+    // However, if an Authorization header is present, we validate it
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader) {
+      const authValidation = validateAuthHeader(request);
+      if (!authValidation.isValid) {
+        return new Response(JSON.stringify({ error: authValidation.error }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // Verify that the JWT userId matches the requested user_id
+      if (authValidation.payload!.userId !== user_id) {
+        return new Response(
+          JSON.stringify({
+            error: "Unauthorized: Cannot store info for different user"
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" }
+          }
+        );
+      }
     }
 
     // Get UserDO instance and store the user info + JWT token

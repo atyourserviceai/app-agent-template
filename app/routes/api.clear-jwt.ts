@@ -1,4 +1,5 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import { validateAuthHeader } from "../lib/jwt-auth";
 
 /**
  * API endpoint to clear JWT token from UserDO on logout
@@ -10,11 +11,33 @@ export async function action({ request, context }: ActionFunctionArgs) {
   }
 
   try {
+    // Validate JWT token from Authorization header
+    const authValidation = validateAuthHeader(request);
+    if (!authValidation.isValid) {
+      return new Response(JSON.stringify({ error: authValidation.error }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     const body = await request.json();
     const { user_id } = body;
 
     if (!user_id) {
       return new Response("Missing user_id", { status: 400 });
+    }
+
+    // Verify that the JWT userId matches the requested user_id
+    if (authValidation.payload!.userId !== user_id) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized: Cannot clear JWT for different user"
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
     }
 
     // Get UserDO instance and clear the JWT token

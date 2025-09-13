@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { validateAuthHeader } from "../lib/jwt-auth";
 
 /**
  * API endpoint to get project list from UserDO
@@ -6,6 +7,15 @@ import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
  */
 export async function loader({ request, context }: LoaderFunctionArgs) {
   try {
+    // Validate JWT token from Authorization header
+    const authValidation = validateAuthHeader(request);
+    if (!authValidation.isValid) {
+      return new Response(JSON.stringify({ error: authValidation.error }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     const url = new URL(request.url);
     const userId = url.searchParams.get("user_id");
 
@@ -13,6 +23,19 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       return new Response(
         JSON.stringify({ error: "user_id parameter required" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify that the JWT userId matches the requested user_id
+    if (authValidation.payload!.userId !== userId) {
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized: Cannot access projects for different user"
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        }
       );
     }
 

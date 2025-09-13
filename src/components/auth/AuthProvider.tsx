@@ -221,7 +221,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log("[Auth] Clearing JWT token from UserDO on logout...");
         const clearResponse = await fetch("/api/clear-jwt", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentAuth.apiKey}`
+          },
           body: JSON.stringify({
             user_id: currentAuth.userInfo.id
           })
