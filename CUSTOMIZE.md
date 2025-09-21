@@ -50,11 +50,13 @@ git remote -v
 ```
 
 This setup allows you to:
+
 - **Pull template updates**: `git pull template main` to get latest template improvements
 - **Push your changes**: `git push origin main` to your project repository
 - **Maintain clean history**: Your project starts with the full template history
 
 > **Note**: After making your initial customizations, commit and push to your new repository:
+>
 > ```bash
 > git add .
 > git commit -m "Initial customization: update metadata, ports, and OAuth config"
