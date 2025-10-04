@@ -29,7 +29,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
     "@cloudflare/puppeteer": "^1.0.3",
-    "@cloudflare/vite-plugin": "1.11.4",
+    "@cloudflare/vite-plugin": "1.13.10",
     "@cloudflare/vitest-pool-workers": "^0.8.63",
     "@cloudflare/workers-types": "^4.20250813.0",
     "@react-router/dev": "^7.8.0",
