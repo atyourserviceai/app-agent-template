@@ -129,7 +129,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       const userId = authMethod.userInfo.id;
       const response = await fetch(`/api/get-projects?user_id=${userId}`, {
         headers: {
-          "Authorization": `Bearer ${authMethod.apiKey}`
+          Authorization: `Bearer ${authMethod.apiKey}`
         }
       });
 

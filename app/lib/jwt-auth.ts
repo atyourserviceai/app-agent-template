@@ -63,7 +63,12 @@ export function decodeJWTPayload(token: string): JWTPayload | null {
     const payload = JSON.parse(atob(paddedPayload));
 
     // Validate required fields
-    if (!payload.userId || !payload.sub || !payload.exp || payload.type !== "oauth-session") {
+    if (
+      !payload.userId ||
+      !payload.sub ||
+      !payload.exp ||
+      payload.type !== "oauth-session"
+    ) {
       return null;
     }
 

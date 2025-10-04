@@ -223,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${currentAuth.apiKey}`
+            Authorization: `Bearer ${currentAuth.apiKey}`
           },
           body: JSON.stringify({
             user_id: currentAuth.userInfo.id
