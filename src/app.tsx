@@ -181,14 +181,38 @@ function ProjectTab({
   isActive: boolean;
 }) {
   const agentConfig = useProjectAuth(projectName);
+
+  // Early return for unauthenticated state - render without agent hooks
+  if (!agentConfig) {
+    return (
+      <div
+        style={{
+          display: isActive ? "block" : "none",
+          height: "100%",
+          width: "100%"
+        }}
+      >
+        <div>Loading project {projectName}...</div>
+      </div>
+    );
+  }
+
+  // Only render ProjectTabWithAgent when we have valid auth
+  return <ProjectTabWithAgent agentConfig={agentConfig} isActive={isActive} />;
+}
+
+// Separate component that can safely call hooks unconditionally
+function ProjectTabWithAgent({
+  agentConfig,
+  isActive
+}: {
+  agentConfig: NonNullable<ReturnType<typeof useProjectAuth>>;
+  isActive: boolean;
+}) {
   const { agent, agentMode, changeAgentMode } = useAgentState(
     agentConfig,
     "onboarding"
   );
-
-  if (!agentConfig) {
-    return <div>Loading project {projectName}...</div>;
-  }
 
   return (
     <div
@@ -366,10 +390,6 @@ function ProjectTabContent({
                   }
                 }
               }
-            },
-            {
-              type: "text" as const,
-              text: `I encountered a parameter validation error with the ${toolName} tool. Please check the error details above.`
             }
           ]
         };
@@ -1208,10 +1228,10 @@ function AppContent() {
       </div>
       {/* Always-available theme toggle when unauthenticated */}
       <RootThemeToggle />
-      {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-      <AuthenticatedTopPanel />
       {/* Auth overlay and authenticated content */}
       <AuthGuard>
+        {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
+        <AuthenticatedTopPanel />
         <Chat />
       </AuthGuard>
     </div>

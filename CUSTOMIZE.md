@@ -13,38 +13,201 @@ The template includes:
 - **Tool System**: Extensible tools including Composio integrations
 - **UI Components**: Responsive React components with Tailwind CSS
 
+## Quick Start
+
+Before customizing the agent behavior, you need to set up the basic project infrastructure:
+
+1. **Copy template** → **Update metadata** → **Configure OAuth** → **Set ports** → **Test basic setup**
+2. Then customize agent behavior, UI, and tools for your specific use case
+
+See the detailed steps below, or follow the [Getting Started](#getting-started) section in the README.
+
 ## Customization Steps
 
-### 1. Project Setup
+### 1. Project Setup and Basic Configuration
+
+#### 1.1 Clone Template and Set Up New Repository
 
 ```bash
-# Copy the template to your new project
-cp -r packages/demos/app-agent-template packages/demos/your-project-name
-cd packages/demos/your-project-name
+# Clone the app-agent-template repository
+git clone git@github.com:atyourserviceai/app-agent-template.git your-project-name
+cd your-project-name
+
+# Rename the template origin to keep it as reference
+git remote rename origin template
+
+# Create a new repository on GitHub/GitLab for your project
+# Then add it as the new origin
+git remote add origin git@github.com:yourusername/your-project-name.git
+
+# Verify remotes are set correctly
+git remote -v
+# Should show:
+# origin    git@github.com:yourusername/your-project-name.git (fetch)
+# origin    git@github.com:yourusername/your-project-name.git (push)
+# template  git@github.com:atyourserviceai/app-agent-template.git (fetch)
+# template  git@github.com:atyourserviceai/app-agent-template.git (push)
 ```
 
-### 2. Update Package Configuration
+This setup allows you to:
+
+- **Pull template updates**: `git pull template main` to get latest template improvements
+- **Push your changes**: `git push origin main` to your project repository
+- **Maintain clean history**: Your project starts with the full template history
+
+> **Note**: After making your initial customizations, commit and push to your new repository:
+>
+> ```bash
+> git add .
+> git commit -m "Initial customization: update metadata, ports, and OAuth config"
+> git push -u origin main
+> ```
+
+#### 1.2 Update Package Metadata
 
 **File: `package.json`**
 
 ```json
 {
   "name": "your-project-name",
-  "description": "Your project description",
-  "keywords": ["your", "keywords", "here"],
-  "author": "Your Name"
+  "description": "Your project description with clear value proposition",
+  "keywords": ["relevant", "keywords", "for", "your", "use-case"],
+  "author": "Your Name",
+  "scripts": {
+    "dev": "react-router dev --port XXXX",
+    "preview": "vite preview --port XXXX"
+  }
 }
 ```
 
-**File: `README.md`**
+**File: `wrangler.jsonc`**
 
-- Update project title and description
-- Add your specific setup instructions
-- Document your use case and features
+```jsonc
+{
+  "name": "your-project-agent",
+  "vars": {
+    "ATYOURSERVICE_OAUTH_REDIRECT_URI": "http://localhost:XXXX/auth/callback"
+  },
+  "dev": {
+    "port": 8XXX,
+    "inspector_port": 9XXX
+  },
+  "env": {
+    "staging": {
+      "vars": {
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://staging.yourproject.com/auth/callback"
+      },
+      "routes": [
+        {
+          "pattern": "staging.yourproject.com",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "vars": {
+        "ATYOURSERVICE_OAUTH_REDIRECT_URI": "https://yourproject.com/auth/callback"
+      },
+      "routes": [
+        {
+          "pattern": "yourproject.com",
+          "custom_domain": true
+        }
+      ]
+    }
+  }
+}
+```
 
-### 3. Customize Agent Behavior
+**File: `vite.config.ts`**
 
-#### 3.1 Update System Prompt
+```typescript
+export default defineConfig({
+  plugins: [
+    cf({
+      inspectorPort: 9XXX // Match wrangler.jsonc inspector_port
+    }),
+    // ... other plugins
+  ],
+  server: {
+    port: XXXX, // Match package.json dev port
+    strictPort: true
+  }
+});
+```
+
+> **Port Selection**: Choose unique ports that don't conflict with other demos. See the [demos README](../README.md) for current port assignments.
+
+#### 1.3 Create OAuth Applications
+
+You need to create OAuth applications in AI@YourService for each environment:
+
+1. **Go to AI@YourService Dashboard**: Navigate to OAuth Apps section
+2. **Create Development App**:
+   - Name: `your-project-name-dev`
+   - Callback URL: `http://localhost:XXXX/auth/callback`
+   - Note the Client ID and Secret
+3. **Create Staging App**:
+   - Name: `your-project-name-staging`
+   - Callback URL: `https://staging.yourproject.com/auth/callback`
+4. **Create Production App**:
+   - Name: `your-project-name-production`
+   - Callback URL: `https://yourproject.com/auth/callback`
+
+#### 1.4 Configure OAuth Secrets
+
+**Development Environment** (`.dev.vars` file):
+
+```bash
+# Copy the example and update with your credentials
+cp .dev.vars.example .dev.vars
+```
+
+Edit `.dev.vars`:
+
+```
+ATYOURSERVICE_OAUTH_CLIENT_ID=your-dev-client-id
+ATYOURSERVICE_OAUTH_CLIENT_SECRET=your-dev-client-secret
+BROWSERBASE_API_KEY=your-browserbase-api-key  # Optional
+COMPOSIO_API_KEY=your-composio-api-key        # Optional
+```
+
+**Staging Environment**:
+
+```bash
+wrangler secret put ATYOURSERVICE_OAUTH_CLIENT_ID --env staging
+wrangler secret put ATYOURSERVICE_OAUTH_CLIENT_SECRET --env staging
+```
+
+**Production Environment**:
+
+```bash
+wrangler secret put ATYOURSERVICE_OAUTH_CLIENT_ID --env production
+wrangler secret put ATYOURSERVICE_OAUTH_CLIENT_SECRET --env production
+```
+
+#### 1.5 Test Basic Setup
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm run dev
+
+# Visit http://localhost:XXXX and test OAuth login
+```
+
+You should be able to:
+
+- ✅ Access the app at your configured port
+- ✅ Click "Sign in with AI@YourService"
+- ✅ Complete OAuth flow and return to the app
+- ✅ See the default agent interface
+
+### 2. Customize Agent Behavior
+
+#### 2.1 Update System Prompt
 
 **File: `src/agent/prompts/unified.ts`**
 

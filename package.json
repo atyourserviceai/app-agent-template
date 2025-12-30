@@ -11,6 +11,7 @@
     "deploy": "react-router build && wrangler deploy",
     "deploy:staging": "CLOUDFLARE_ENV=staging pnpm run deploy",
     "deploy:production": "CLOUDFLARE_ENV=production pnpm run deploy",
+    "kill-ports": "lsof -ti:5273 | xargs -r kill -9 && lsof -ti:9329 | xargs -r kill -9 && echo 'Killed processes on ports 5273 and 9329' || echo 'No processes found on ports 5273 and 9329'",
     "logs:deployed": "wrangler tail",
     "logs:staging": "wrangler tail --env staging",
     "test": "vitest",
@@ -28,7 +29,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
     "@cloudflare/puppeteer": "^1.0.3",
-    "@cloudflare/vite-plugin": "1.11.4",
+    "@cloudflare/vite-plugin": "1.13.10",
     "@cloudflare/vitest-pool-workers": "^0.8.63",
     "@cloudflare/workers-types": "^4.20250813.0",
     "@react-router/dev": "^7.8.0",

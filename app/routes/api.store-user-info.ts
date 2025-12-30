@@ -1,0 +1,85 @@
+import type { ActionFunctionArgs } from "react-router";
+import { validateAuthHeader } from "../lib/jwt-auth";
+
+/**
+ * API endpoint to store user info in UserDO after OAuth callback
+ * This allows the AuthCallback component to store JWT tokens without
+ * needing to know about project-specific routing
+ */
+export async function action({ request, context }: ActionFunctionArgs) {
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as {
+      user_id?: string;
+      api_key?: string;
+      email?: string;
+      credits?: number;
+      payment_method?: string;
+    };
+    const { user_id, api_key, email, credits, payment_method } = body;
+
+    if (!user_id || !api_key || !email) {
+      return new Response("Missing required fields", { status: 400 });
+    }
+
+    // For store-user-info, we allow calls without JWT since this endpoint
+    // is used during OAuth callback to initially store the JWT token
+    // However, if an Authorization header is present, we validate it
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader) {
+      const authValidation = validateAuthHeader(request);
+      if (!authValidation.isValid) {
+        return new Response(JSON.stringify({ error: authValidation.error }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // Verify that the JWT userId matches the requested user_id
+      if (authValidation.payload!.userId !== user_id) {
+        return new Response(
+          JSON.stringify({
+            error: "Unauthorized: Cannot store info for different user"
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" }
+          }
+        );
+      }
+    }
+
+    // Get UserDO instance and store the user info + JWT token
+    const env = context.cloudflare.env as Env;
+    const userDOId = env.UserDO.idFromName(user_id);
+    const userDO = env.UserDO.get(userDOId);
+
+    const response = await userDO.fetch(
+      new Request("https://user-do/store-user-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id,
+          api_key,
+          email,
+          credits: credits || 0,
+          payment_method: payment_method || "credits"
+        })
+      })
+    );
+
+    if (response.ok) {
+      return new Response("OK");
+    } else {
+      const errorText = await response.text();
+      console.error("UserDO store-user-info failed:", errorText);
+      return new Response("Failed to store user info", { status: 500 });
+    }
+  } catch (error) {
+    console.error("Error storing user info:", error);
+    return new Response("Internal server error", { status: 500 });
+  }
+}

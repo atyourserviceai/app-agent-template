@@ -121,15 +121,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   );
 
   const loadProjects = useCallback(async () => {
-    if (!authMethod?.userInfo) return;
+    if (!authMethod?.userInfo || !authMethod?.apiKey) return;
 
     setIsLoading(true);
     try {
-      // Get projects from the base user agent (not project-specific)
+      // Get projects from user-specific API route (not project-specific agent)
       const userId = authMethod.userInfo.id;
-      const response = await fetch(
-        `/agents/app-agent/${userId}/get-projects?token=${authMethod.apiKey}`
-      );
+      const response = await fetch(`/api/get-projects?user_id=${userId}`, {
+        headers: {
+          Authorization: `Bearer ${authMethod.apiKey}`
+        }
+      });
 
       if (response.ok) {
         const userProjects = (await response.json()) as {
