@@ -182,17 +182,7 @@ function ProjectTab({
 }) {
   const agentConfig = useProjectAuth(projectName);
 
-  // Only call agent hooks when we have valid authentication
-  const agentState = agentConfig
-    ? useAgentState(agentConfig, "onboarding")
-    : {
-        agent: null,
-        agentMode: "onboarding" as const,
-        changeAgentMode: async () => {}
-      };
-
-  const { agent, agentMode, changeAgentMode } = agentState;
-
+  // Early return for unauthenticated state - render without agent hooks
   if (!agentConfig) {
     return (
       <div
@@ -206,6 +196,23 @@ function ProjectTab({
       </div>
     );
   }
+
+  // Only render ProjectTabWithAgent when we have valid auth
+  return <ProjectTabWithAgent agentConfig={agentConfig} isActive={isActive} />;
+}
+
+// Separate component that can safely call hooks unconditionally
+function ProjectTabWithAgent({
+  agentConfig,
+  isActive
+}: {
+  agentConfig: NonNullable<ReturnType<typeof useProjectAuth>>;
+  isActive: boolean;
+}) {
+  const { agent, agentMode, changeAgentMode } = useAgentState(
+    agentConfig,
+    "onboarding"
+  );
 
   return (
     <div
