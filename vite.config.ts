@@ -9,8 +9,7 @@ export default defineConfig({
   plugins: [
     cf({
       viteEnvironment: { name: "ssr" },
-      inspectorPort: 9329, // Set inspector port to avoid conflicts
-      local: true // Run in local mode instead of remote
+      inspectorPort: 9329 // Set inspector port to avoid conflicts
     }),
     tailwindcss(),
     reactRouter(),

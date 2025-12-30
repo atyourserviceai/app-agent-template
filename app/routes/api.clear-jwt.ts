@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import type { ActionFunctionArgs } from "react-router";
 import { validateAuthHeader } from "../lib/jwt-auth";
 
 /**
@@ -20,7 +20,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as { user_id?: string };
     const { user_id } = body;
 
     if (!user_id) {

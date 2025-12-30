@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import type { ActionFunctionArgs } from "react-router";
 import { validateAuthHeader } from "../lib/jwt-auth";
 
 /**
@@ -12,7 +12,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
   }
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as {
+      user_id?: string;
+      api_key?: string;
+      email?: string;
+      credits?: number;
+      payment_method?: string;
+    };
     const { user_id, api_key, email, credits, payment_method } = body;
 
     if (!user_id || !api_key || !email) {
