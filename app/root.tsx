@@ -1,5 +1,5 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import "../src/styles.css";
+import stylesUrl from "../src/styles.css?url";
 
 export const meta = () => [
   { title: "App Agent Template" },
@@ -28,7 +28,8 @@ export const meta = () => [
   { name: "twitter:image", content: "/api/og-image" }
 ];
 export const links = () => [
-  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "stylesheet", href: stylesUrl }
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
