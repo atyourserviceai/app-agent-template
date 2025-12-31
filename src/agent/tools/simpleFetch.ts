@@ -83,7 +83,6 @@ export const fetchWebPage = tool({
   parameters: z.object({
     selector: z
       .string()
-      .default("body")
       .describe(
         "CSS selector to extract specific content (defaults to 'body')"
       ),

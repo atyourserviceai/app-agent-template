@@ -22,8 +22,10 @@ export const runResearch = tool({
     return `Placeholder: Research results for "${query}".`;
   },
   parameters: z.object({
-    query: z.string(),
-    sources: z.array(z.string()).optional().default(["web"]) // e.g., web, linkedin, clearbit
+    query: z.string().describe("The search query"),
+    sources: z
+      .array(z.string())
+      .describe("Sources to search (e.g., 'web', 'linkedin', 'clearbit')")
   })
 });
 
