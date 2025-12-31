@@ -120,7 +120,7 @@ export const browseWebPage = tool({
       .optional()
       .describe("Whether to take a screenshot of the page (defaults to false)"),
     urls: z
-      .array(z.string().url())
+      .array(z.string())
       .describe("List of URLs to browse (e.g. ['https://example.com'])")
   })
 });

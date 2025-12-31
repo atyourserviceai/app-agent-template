@@ -49,7 +49,7 @@ export const browseWithBrowserbase = tool({
       .describe(
         "Optional CSS selector to extract specific content from (defaults to 'body')"
       ),
-    url: z.string().url().describe("URL to browse (e.g. 'https://example.com')")
+    url: z.string().describe("URL to browse (e.g. 'https://example.com')")
   })
 });
 

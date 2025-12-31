@@ -87,7 +87,7 @@ export const fetchWebPage = tool({
       .describe(
         "Optional CSS selector to extract specific content (defaults to 'body')"
       ),
-    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')")
+    url: z.string().describe("URL to fetch (e.g. 'https://example.com')")
   })
 });
 
