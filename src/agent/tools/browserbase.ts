@@ -45,9 +45,9 @@ export const browseWithBrowserbase = tool({
   parameters: z.object({
     selector: z
       .string()
-      .optional()
+      .default("body")
       .describe(
-        "Optional CSS selector to extract specific content from (defaults to 'body')"
+        "CSS selector to extract specific content from (defaults to 'body')"
       ),
     url: z.string().describe("URL to browse (e.g. 'https://example.com')")
   })

@@ -111,13 +111,13 @@ export const browseWebPage = tool({
   parameters: z.object({
     selector: z
       .string()
-      .optional()
+      .default("body")
       .describe(
-        "Optional CSS selector to extract specific content from (defaults to 'body')"
+        "CSS selector to extract specific content from (defaults to 'body')"
       ),
     takeScreenshot: z
       .boolean()
-      .optional()
+      .default(false)
       .describe("Whether to take a screenshot of the page (defaults to false)"),
     urls: z
       .array(z.string())
