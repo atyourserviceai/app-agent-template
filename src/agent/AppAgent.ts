@@ -148,7 +148,7 @@ export class AppAgent extends AIChatAgent<Env> {
   initialState: AppAgentState = {
     isIntegrationComplete: false,
     isOnboardingComplete: false,
-    mode: "onboarding" as AgentMode,
+    mode: "act" as AgentMode, // Default to act mode for MVP
     onboardingStep: "start",
     settings: {
       adminContact: {
