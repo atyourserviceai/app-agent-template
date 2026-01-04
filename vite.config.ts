@@ -30,6 +30,15 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["workers-og"]
   },
+  environments: {
+    ssr: {
+      optimizeDeps: {
+        // Disable SSR dependency optimization to prevent pre-bundle version conflicts
+        noDiscovery: true,
+        include: []
+      }
+    }
+  },
   assetsInclude: ["**/*.woff2", "**/*.wasm"],
   build: {
     outDir: "build"
