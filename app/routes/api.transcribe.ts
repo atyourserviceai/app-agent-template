@@ -2,7 +2,24 @@ import type { ActionFunctionArgs } from "react-router";
 import { experimental_transcribe as transcribe } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { validateAuthHeader } from "../lib/jwt-auth";
-import type { TranscribeRequest, TranscribeResponse } from "@/types/voice";
+
+// Inline types to avoid path alias issues in server-side routes
+interface TranscribeRequest {
+  audio: string;
+  mimeType: string;
+}
+
+interface TranscriptionResult {
+  text: string;
+  language?: string;
+  durationInSeconds?: number;
+}
+
+interface TranscribeResponse {
+  success: boolean;
+  result?: TranscriptionResult;
+  error?: string;
+}
 
 /**
  * API endpoint for audio transcription using OpenAI Whisper
