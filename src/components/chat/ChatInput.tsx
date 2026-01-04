@@ -42,7 +42,8 @@ export function ChatInput({
   const handleVoiceTranscription = useCallback(
     (text: string) => {
       if (setInput) {
-        const newValue = value.trim() ? `${value} ${text}` : text;
+        const currentValue = value ?? "";
+        const newValue = currentValue.trim() ? `${currentValue} ${text}` : text;
         setInput(newValue);
       }
     },
@@ -151,7 +152,7 @@ export function ChatInput({
             shape="square"
             className="rounded-full h-10 w-10 flex-shrink-0"
             disabled={
-              pendingConfirmation || !value.trim() || isLoading || isThinking
+              pendingConfirmation || !(value ?? "").trim() || isLoading || isThinking
             }
           >
             <PaperPlaneRight size={16} />
