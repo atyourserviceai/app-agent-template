@@ -206,6 +206,13 @@ export function useVoiceStreaming(
         minSpeechMs,
         preSpeechPadMs,
         redemptionMs,
+        // Use CDN URLs for model and ONNX runtime files
+        modelURL:
+          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist/silero_vad_legacy.onnx",
+        ortConfig: (ort: typeof import("onnxruntime-web")) => {
+          ort.env.wasm.wasmPaths =
+            "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/";
+        },
         onSpeechStart: () => {
           setState("speaking");
           if (onSpeechStart) {

@@ -31,7 +31,7 @@ export default defineConfig({
     exclude: ["workers-og"]
   },
   environments: {
-    ssr: {
+    server: {
       optimizeDeps: {
         // Disable SSR dependency optimization to prevent pre-bundle version conflicts
         noDiscovery: true,
