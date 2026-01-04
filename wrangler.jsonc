@@ -3,6 +3,9 @@
   "name": "foo-agent",
   "main": "src/worker.ts",
   "compatibility_date": "2025-08-03",
+  "alias": {
+    "virtual:react-router/server-build": "./build/server/index.js"
+  },
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
@@ -13,7 +16,7 @@
     "remote": true
   },
   "assets": {
-    "directory": "public",
+    "directory": "build/client",
     "binding": "ASSETS",
     "not_found_handling": "none"
   },
