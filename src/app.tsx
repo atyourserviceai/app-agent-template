@@ -614,12 +614,15 @@ function ProjectTabContent({
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
   // Update last known messages whenever we have valid messages
-  // Only update when not loading (to avoid capturing mid-stream states)
+  // Only update if we have more messages than before (prevents losing messages during error states)
   useEffect(() => {
-    if (agentMessages.length > 0 && !isLoading) {
+    if (
+      agentMessages.length > 0 &&
+      agentMessages.length >= lastKnownMessagesRef.current.length
+    ) {
       lastKnownMessagesRef.current = [...agentMessages];
     }
-  }, [agentMessages, isLoading]);
+  }, [agentMessages]);
 
   // Use the message editing hook to manage message editing and retry logic
   const {
@@ -1202,6 +1205,9 @@ function ProjectTabContent({
   const handleClearHistory = () => {
     // Clear the history first
     clearHistory();
+
+    // Reset the last known messages ref so new messages can be tracked
+    lastKnownMessagesRef.current = [];
 
     // Reset retrying state
     setIsRetrying(false);
