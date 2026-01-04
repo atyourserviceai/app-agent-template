@@ -23,7 +23,7 @@ interface UseVoiceInputReturn {
   /** Start recording audio */
   startRecording: () => Promise<void>;
   /** Stop recording and transcribe */
-  stopRecording: () => Promise<void>;
+  stopRecording: () => void;
   /** Cancel recording without transcribing */
   cancelRecording: () => void;
   /** Error message if any */
@@ -72,7 +72,9 @@ function blobToBase64(blob: Blob): Promise<string> {
 /**
  * Hook for click-to-record voice input with transcription
  */
-export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInputReturn {
+export function useVoiceInput(
+  options: UseVoiceInputOptions = {}
+): UseVoiceInputReturn {
   const {
     maxDuration = 60000,
     sampleRate = 16000,
@@ -92,6 +94,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mimeTypeRef = useRef<string>("");
   const shouldTranscribeRef = useRef<boolean>(false);
+  const stopRecordingRef = useRef<() => void>(() => {});
 
   // Check browser support
   const isSupported =
@@ -110,7 +113,10 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     shouldTranscribeRef.current = false;
 
     // Stop media recorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
       mediaRecorderRef.current.stop();
     }
     mediaRecorderRef.current = null;
@@ -167,7 +173,8 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
         setError(null);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Transcription failed";
+        const errorMessage =
+          err instanceof Error ? err.message : "Transcription failed";
         setError(errorMessage);
         if (onError) {
           onError(errorMessage);
@@ -257,8 +264,11 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
       // Set max duration timeout
       timeoutRef.current = setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-          stopRecording();
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === "recording"
+        ) {
+          stopRecordingRef.current();
         }
       }, maxDuration);
     } catch (err) {
@@ -293,7 +303,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     transcribeAudio
   ]);
 
-  const stopRecording = useCallback(async () => {
+  const stopRecording = useCallback(() => {
     if (state !== "recording" || !mediaRecorderRef.current) {
       return;
     }
@@ -307,6 +317,9 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     // Stop recording - the onstop handler will handle transcription
     mediaRecorderRef.current.stop();
   }, [state]);
+
+  // Keep ref in sync for use in timeout
+  stopRecordingRef.current = stopRecording;
 
   const cancelRecording = useCallback(() => {
     cleanup();

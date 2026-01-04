@@ -26,6 +26,8 @@ interface UseVoiceStreamingReturn {
   isSupported: boolean;
   /** Whether VAD is currently active */
   isActive: boolean;
+  /** Whether currently processing a transcription (can be true while still listening) */
+  isProcessing: boolean;
   /** Start listening for speech */
   startListening: () => Promise<void>;
   /** Stop listening */
@@ -115,6 +117,7 @@ export function useVoiceStreaming(
 
   const [state, setState] = useState<VoiceStreamingState>("idle");
   const [isActive, setIsActive] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,7 +133,8 @@ export function useVoiceStreaming(
   // Transcribe audio segment
   const transcribeAudio = useCallback(
     async (audioData: Float32Array) => {
-      setState("processing");
+      // Set processing flag without changing main state (stays "listening")
+      setIsProcessing(true);
 
       try {
         // Convert Float32Array to WAV format
@@ -177,15 +181,10 @@ export function useVoiceStreaming(
           onError(errorMessage);
         }
       } finally {
-        // Go back to listening state if still active
-        if (isActive) {
-          setState("listening");
-        } else {
-          setState("idle");
-        }
+        setIsProcessing(false);
       }
     },
-    [jwtToken, onTranscription, onError, isActive]
+    [jwtToken, onTranscription, onError]
   );
 
   // Initialize VAD
@@ -206,9 +205,10 @@ export function useVoiceStreaming(
         minSpeechMs,
         preSpeechPadMs,
         redemptionMs,
-        // Use CDN URLs for model and ONNX runtime files
-        modelURL:
-          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist/silero_vad_legacy.onnx",
+        // Use legacy model with CDN paths
+        model: "legacy",
+        baseAssetPath:
+          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist",
         ortConfig: (ort: typeof import("onnxruntime-web")) => {
           ort.env.wasm.wasmPaths =
             "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/";
@@ -296,6 +296,7 @@ export function useVoiceStreaming(
       vadRef.current.pause();
     }
     setIsActive(false);
+    setIsProcessing(false);
     setState("idle");
   }, []);
 
@@ -313,6 +314,7 @@ export function useVoiceStreaming(
     state,
     isSupported,
     isActive,
+    isProcessing,
     startListening,
     stopListening,
     error

@@ -1,11 +1,17 @@
-import { Microphone, Stop, CircleNotch, Warning, Waveform } from "@phosphor-icons/react";
-import { useCallback, useState, useRef } from "react";
+import {
+  Microphone,
+  Stop,
+  CircleNotch,
+  Warning,
+  Waveform
+} from "@phosphor-icons/react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/button/Button";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { useVoiceStreaming } from "@/hooks/useVoiceStreaming";
 import type { VoiceInputState, VoiceStreamingState } from "@/types/voice";
 
-type VoiceMode = "push-to-talk" | "vad";
+type VoiceMode = "idle" | "dictation" | "vad";
 
 interface VoiceInputButtonProps {
   /** Callback when transcription is successful */
@@ -18,10 +24,12 @@ interface VoiceInputButtonProps {
   className?: string;
 }
 
+const DOUBLE_CLICK_THRESHOLD = 300; // ms
+
 /**
  * Button component for voice input with two modes:
- * - Click: Push-to-talk (click to start, click to stop)
- * - Long-press (500ms): Toggle VAD streaming mode
+ * - Single click: Dictation (click to start, click to stop, then transcribe)
+ * - Double click: VAD streaming (auto-detect speech, keeps listening until stopped)
  */
 export function VoiceInputButton({
   onTranscription,
@@ -29,21 +37,27 @@ export function VoiceInputButton({
   disabled = false,
   className = ""
 }: VoiceInputButtonProps) {
-  const [mode, setMode] = useState<VoiceMode>("push-to-talk");
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isLongPressRef = useRef(false);
+  const [mode, setMode] = useState<VoiceMode>("idle");
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Push-to-talk hook
+  // Dictation (click-to-record) hook
   const {
-    state: pttState,
-    isSupported: pttSupported,
+    state: dictationState,
+    isSupported: dictationSupported,
     startRecording,
     stopRecording,
     cancelRecording,
-    error: pttError
+    error: dictationError
   } = useVoiceInput({
-    onTranscription,
-    onError: (err) => console.error("Voice input error:", err),
+    onTranscription: (text) => {
+      onTranscription(text);
+      setMode("idle");
+    },
+    onError: (err) => {
+      console.error("Dictation error:", err);
+      setMode("idle");
+    },
     jwtToken
   });
 
@@ -52,6 +66,7 @@ export function VoiceInputButton({
     state: vadState,
     isSupported: vadSupported,
     isActive: vadActive,
+    isProcessing: vadProcessing,
     startListening,
     stopListening,
     error: vadError
@@ -61,80 +76,81 @@ export function VoiceInputButton({
     jwtToken
   });
 
-  const isSupported = pttSupported || vadSupported;
-  const currentState = mode === "push-to-talk" ? pttState : vadState;
-  const currentError = mode === "push-to-talk" ? pttError : vadError;
+  const isSupported = dictationSupported || vadSupported;
 
-  const handleMouseDown = useCallback(() => {
-    isLongPressRef.current = false;
-
-    // Start long-press timer for mode toggle
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressRef.current = true;
-
-      // Toggle mode
-      if (mode === "push-to-talk") {
-        // Switch to VAD mode and start listening
-        if (vadSupported) {
-          setMode("vad");
-          startListening();
-        }
-      } else {
-        // Switch back to push-to-talk and stop VAD
-        stopListening();
-        setMode("push-to-talk");
+  // Clear click timer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
       }
-    }, 500);
-  }, [mode, vadSupported, startListening, stopListening]);
+    };
+  }, []);
 
-  const handleMouseUp = useCallback(() => {
-    // Clear long-press timer
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-
-    // If it was a long press, don't handle as click
-    if (isLongPressRef.current) {
+  const handleClick = useCallback(() => {
+    // If we're in an active mode, handle stopping
+    if (mode === "dictation") {
+      if (dictationState === "recording") {
+        stopRecording();
+      }
       return;
     }
 
-    // Handle as regular click based on mode
-    if (mode === "push-to-talk") {
-      if (pttState === "idle") {
-        startRecording();
-      } else if (pttState === "recording") {
-        stopRecording();
+    if (mode === "vad") {
+      stopListening();
+      setMode("idle");
+      return;
+    }
+
+    // We're idle - track clicks for single/double click detection
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current === 1) {
+      // First click - wait to see if there's a second
+      clickTimerRef.current = setTimeout(() => {
+        // Single click - start dictation mode
+        clickCountRef.current = 0;
+        if (dictationSupported) {
+          setMode("dictation");
+          startRecording();
+        }
+      }, DOUBLE_CLICK_THRESHOLD);
+    } else if (clickCountRef.current === 2) {
+      // Double click - start VAD mode
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
       }
-    } else {
-      // In VAD mode, toggle listening
-      if (vadActive) {
-        stopListening();
-      } else {
+      clickCountRef.current = 0;
+
+      if (vadSupported) {
+        setMode("vad");
         startListening();
       }
     }
-  }, [mode, pttState, vadActive, startRecording, stopRecording, startListening, stopListening]);
-
-  const handleMouseLeave = useCallback(() => {
-    // Clear long-press timer if mouse leaves
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
+  }, [
+    mode,
+    dictationState,
+    dictationSupported,
+    vadSupported,
+    startRecording,
+    stopRecording,
+    startListening,
+    stopListening
+  ]);
 
   const handleRightClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      if (mode === "push-to-talk" && pttState === "recording") {
+      if (mode === "dictation" && dictationState === "recording") {
         cancelRecording();
-      } else if (mode === "vad" && vadActive) {
+        setMode("idle");
+      } else if (mode === "vad") {
         stopListening();
-        setMode("push-to-talk");
+        setMode("idle");
       }
     },
-    [mode, pttState, vadActive, cancelRecording, stopListening]
+    [mode, dictationState, cancelRecording, stopListening]
   );
 
   // Don't render if not supported
@@ -142,11 +158,12 @@ export function VoiceInputButton({
     return null;
   }
 
-  const isProcessing = currentState === "processing";
-  const isDisabled = disabled || isProcessing;
+  const isDictationProcessing = dictationState === "processing";
+  const isDisabled = disabled || isDictationProcessing;
 
   const getButtonStyles = (): string => {
-    const baseStyles = "rounded-full h-10 w-10 flex-shrink-0 transition-all";
+    const baseStyles =
+      "relative rounded-full h-10 w-10 flex-shrink-0 transition-all";
 
     // VAD mode styles
     if (mode === "vad") {
@@ -158,15 +175,18 @@ export function VoiceInputButton({
       }
     }
 
-    // Push-to-talk styles
-    if (pttState === "recording") {
-      return `${baseStyles} bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 animate-pulse`;
+    // Dictation mode styles
+    if (mode === "dictation") {
+      if (dictationState === "recording") {
+        return `${baseStyles} bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 animate-pulse`;
+      }
+      if (isDictationProcessing) {
+        return `${baseStyles} bg-neutral-400 dark:bg-neutral-600 cursor-wait`;
+      }
     }
 
-    if (isProcessing) {
-      return `${baseStyles} bg-neutral-400 dark:bg-neutral-600 cursor-wait`;
-    }
-
+    // Error styles
+    const currentError = mode === "dictation" ? dictationError : vadError;
     if (currentError) {
       return `${baseStyles} bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700`;
     }
@@ -175,10 +195,12 @@ export function VoiceInputButton({
   };
 
   const getIcon = () => {
-    if (isProcessing) {
+    // Dictation processing - show spinner as main icon
+    if (isDictationProcessing) {
       return <CircleNotch size={16} className="animate-spin" />;
     }
 
+    // VAD mode icons
     if (mode === "vad") {
       if (vadState === "speaking") {
         return <Waveform size={16} weight="fill" />;
@@ -188,42 +210,49 @@ export function VoiceInputButton({
       }
     }
 
-    if (pttState === "recording") {
+    // Dictation recording - show stop icon
+    if (mode === "dictation" && dictationState === "recording") {
       return <Stop size={16} weight="fill" />;
     }
 
+    // Error state
+    const currentError = mode === "dictation" ? dictationError : vadError;
     if (currentError) {
       return <Warning size={16} />;
     }
 
+    // Default - microphone
     return <Microphone size={16} />;
   };
 
   const getAriaLabel = (): string => {
-    if (isProcessing) {
-      return "Processing audio...";
+    if (isDictationProcessing) {
+      return "Transcribing audio...";
     }
 
     if (mode === "vad") {
       if (vadActive) {
-        return "VAD listening - click to pause, right-click to exit VAD mode";
+        return "VAD listening - click to stop";
       }
-      return "VAD paused - click to resume";
+      return "VAD mode";
     }
 
-    if (pttState === "recording") {
-      return "Stop recording (right-click to cancel)";
+    if (mode === "dictation") {
+      if (dictationState === "recording") {
+        return "Recording - click to stop, right-click to cancel";
+      }
     }
 
+    const currentError = mode === "dictation" ? dictationError : vadError;
     if (currentError) {
       return `Voice input error: ${currentError}. Click to try again.`;
     }
 
-    return "Click to record, hold for VAD mode";
+    return "Click to dictate, double-click for hands-free mode";
   };
 
   const getTitle = (): string => {
-    if (isProcessing) {
+    if (isDictationProcessing) {
       return "Transcribing...";
     }
 
@@ -232,31 +261,31 @@ export function VoiceInputButton({
         return "Speaking detected...";
       }
       if (vadActive) {
-        return "VAD listening (right-click to exit)";
+        return vadProcessing
+          ? "Listening (transcribing...)"
+          : "Listening - click to stop";
       }
-      return "VAD paused (click to resume)";
     }
 
-    if (pttState === "recording") {
-      return "Click to stop, right-click to cancel";
+    if (mode === "dictation") {
+      if (dictationState === "recording") {
+        return "Click to stop, right-click to cancel";
+      }
     }
 
+    const currentError = mode === "dictation" ? dictationError : vadError;
     if (currentError) {
       return currentError;
     }
 
-    return "Click to record, hold 0.5s for VAD mode";
+    return "Click: dictate | Double-click: hands-free";
   };
 
   return (
     <Button
       type="button"
       shape="square"
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleMouseDown}
-      onTouchEnd={handleMouseUp}
+      onClick={handleClick}
       onContextMenu={handleRightClick}
       disabled={isDisabled}
       className={`${getButtonStyles()} ${className}`}
@@ -264,6 +293,12 @@ export function VoiceInputButton({
       tooltip={getTitle()}
     >
       {getIcon()}
+      {/* Processing badge for VAD mode - shows while still listening */}
+      {mode === "vad" && vadProcessing && vadActive && (
+        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white dark:bg-neutral-800 shadow-sm">
+          <CircleNotch size={10} className="animate-spin text-blue-500" />
+        </span>
+      )}
     </Button>
   );
 }
@@ -271,7 +306,9 @@ export function VoiceInputButton({
 /**
  * Get a readable label for the voice input state
  */
-export function getVoiceStateLabel(state: VoiceInputState | VoiceStreamingState): string {
+export function getVoiceStateLabel(
+  state: VoiceInputState | VoiceStreamingState
+): string {
   switch (state) {
     case "idle":
       return "Ready";
