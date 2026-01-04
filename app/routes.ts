@@ -6,7 +6,8 @@ const routes: RouteConfig = [
   { path: "/auth/callback", file: "routes/auth.callback.tsx" },
   { path: "/api/store-user-info", file: "routes/api.store-user-info.ts" },
   { path: "/api/clear-jwt", file: "routes/api.clear-jwt.ts" },
-  { path: "/api/get-projects", file: "routes/api.get-projects.ts" }
+  { path: "/api/get-projects", file: "routes/api.get-projects.ts" },
+  { path: "/api/transcribe", file: "routes/api.transcribe.ts" }
 ];
 
 export default routes;
