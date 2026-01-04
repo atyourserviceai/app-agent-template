@@ -261,7 +261,7 @@ export function VoiceInputButton({
       disabled={isDisabled}
       className={`${getButtonStyles()} ${className}`}
       aria-label={getAriaLabel()}
-      title={getTitle()}
+      tooltip={getTitle()}
     >
       {getIcon()}
     </Button>

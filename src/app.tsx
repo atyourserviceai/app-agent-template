@@ -316,6 +316,11 @@ function ProjectTabContent({
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
 
+  // Keep track of last known good messages for error recovery
+  // This is used as a fallback when the error handler runs and agentMessages might be empty
+  // Defined before useAgentChat so the error handler has access to it
+  const lastKnownMessagesRef = useRef<UIMessage[]>([]);
+
   // Type assertion for useAgentChat return - the hook returns these properties at runtime
   // but there's a type mismatch between agents v0.3.3 (built on AI SDK v4) and our AI SDK v6
   const chatResult = useAgentChat({
@@ -388,8 +393,11 @@ function ProjectTabContent({
       // Create a new assistant message with the error (normal error flow)
       const formattedErrorMessage = formatErrorForMessage(error);
 
-      // Initialize with current messages
-      let currentMessages = [...agentMessages];
+      // Initialize with current messages, falling back to last known good messages
+      // This prevents losing all messages when an error occurs and agentMessages is empty
+      let currentMessages = agentMessages.length > 0
+        ? [...agentMessages]
+        : [...lastKnownMessagesRef.current];
 
       // If we have an original edit index from a recent edit
       if (
@@ -582,6 +590,14 @@ function ProjectTabContent({
 
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
+
+  // Update last known messages whenever we have valid messages
+  // Only update when not loading (to avoid capturing mid-stream states)
+  useEffect(() => {
+    if (agentMessages.length > 0 && !isLoading) {
+      lastKnownMessagesRef.current = [...agentMessages];
+    }
+  }, [agentMessages, isLoading]);
 
   // Use the message editing hook to manage message editing and retry logic
   const {
@@ -1040,7 +1056,11 @@ function ProjectTabContent({
 
                 {/* Timestamp for the entire message */}
                 <p className="text-xs text-muted-foreground mt-1 text-left">
-                  {formatTime(new Date(message.createdAt as unknown as string))}
+                  {(() => {
+                    if (!message.createdAt) return "";
+                    const date = new Date(message.createdAt as unknown as string);
+                    return !isNaN(date.getTime()) ? formatTime(date) : "";
+                  })()}
                 </p>
               </div>
             </div>

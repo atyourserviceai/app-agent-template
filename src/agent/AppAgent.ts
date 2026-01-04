@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { UIMessage } from 'ai';
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -36,13 +36,17 @@ import { processToolCalls } from "./utils/tool-utils";
 import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
+// Using openai-compatible provider to disable stream_options.include_usage
+// which the gateway doesn't support
 const getOpenAI = (env: Env, apiKey?: string) => {
   if (!apiKey) {
     throw new Error("API key is required for AI requests");
   }
-  return createOpenAI({
+  return createOpenAICompatible({
+    name: "openai-gateway",
     apiKey: apiKey,
-    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`
+    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
+    includeUsage: false // Disable stream_options.include_usage
   });
 };
 

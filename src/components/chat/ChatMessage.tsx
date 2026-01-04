@@ -228,7 +228,12 @@ export function ChatMessage({
                     isUser ? "text-right" : "text-left"
                   }`}
                 >
-                  {formatTime(new Date(message.createdAt as unknown as string))}
+                  {(() => {
+                    if (!message.createdAt) return "";
+                    const date = new Date(message.createdAt as unknown as string);
+                    // Check if date is valid (Invalid Date returns NaN for getTime())
+                    return !isNaN(date.getTime()) ? formatTime(date) : "";
+                  })()}
                 </p>
                 <CopyButton messageText={cleanMessageText} />
               </div>
