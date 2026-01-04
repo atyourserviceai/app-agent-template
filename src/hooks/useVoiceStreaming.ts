@@ -211,7 +211,7 @@ export function useVoiceStreaming(
           "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist/",
         ortConfig: (ort: typeof import("onnxruntime-web")) => {
           ort.env.wasm.wasmPaths =
-            "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/";
+            "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/";
         },
         onSpeechStart: () => {
           setState("speaking");
