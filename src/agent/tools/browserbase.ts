@@ -1,7 +1,7 @@
 import puppeteer from "@cloudflare/puppeteer";
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent } from "../AppAgent";
 
 /**
@@ -42,7 +42,7 @@ export const browseWithBrowserbase = tool({
       return `Failed to browse web page: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     selector: z
       .string()
       .describe(

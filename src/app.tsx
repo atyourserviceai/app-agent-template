@@ -1,4 +1,6 @@
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+import { isToolUIPart, getToolName } from "ai";
+import type { ExtendedUIMessage } from "@/shared";
 import { useAgentChat } from "agents/ai-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
@@ -53,7 +55,7 @@ function SuggestedActions({
   addToolResult,
   reload: _reload
 }: {
-  messages: Message[];
+  messages: UIMessage[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
   reload: () => void;
 }) {
@@ -67,20 +69,18 @@ function SuggestedActions({
 
   if (!lastAssistantMessage) return null;
 
-  // Find the suggestActions tool invocation in the message parts
+  // Find the suggestActions tool part (v6: type is tool-suggestActions)
   const suggestActionsPart = lastAssistantMessage.parts?.find(
-    (part) =>
-      part.type === "tool-invocation" &&
-      "toolInvocation" in part &&
-      part.toolInvocation.toolName === "suggestActions"
+    (part) => isToolUIPart(part) && getToolName(part) === "suggestActions"
   );
 
-  if (!suggestActionsPart || !("toolInvocation" in suggestActionsPart))
+  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart))
     return null;
 
-  const toolInvocation = suggestActionsPart.toolInvocation;
+  // In v6, properties are directly on the part (not in toolInvocation)
+  const toolPart = suggestActionsPart;
 
-  // Get the actions based on the state - they could be in args or result
+  // Get the actions based on the state - they could be in input or output
   let actions: Array<{
     label: string;
     value: string;
@@ -88,34 +88,24 @@ function SuggestedActions({
     isOther?: boolean;
   }> = [];
 
-  if (toolInvocation.state === "call") {
-    // Handle call state - get actions from args
-    actions =
-      (toolInvocation.args.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>) || [];
-  } else if (toolInvocation.state === "result" && toolInvocation.result) {
-    // Handle result state - get actions from result
-    // This ensures we can handle both cases where the tool execution may have modified the actions
-    if (typeof toolInvocation.result === "string") {
+  if (toolPart.state === "input-available") {
+    // Handle input-available state (v6 equivalent of "call") - get actions from input
+    const input = toolPart.input as { actions?: Array<{ label: string; value: string; primary?: boolean; isOther?: boolean }> } | undefined;
+    actions = input?.actions || [];
+  } else if (toolPart.state === "output-available" && toolPart.output) {
+    // Handle output-available state (v6 equivalent of "result") - get actions from output
+    const output = toolPart.output;
+    if (typeof output === "string") {
       try {
-        const parsedResult = JSON.parse(toolInvocation.result);
+        const parsedResult = JSON.parse(output);
         if (parsedResult.actions) {
           actions = parsedResult.actions;
         }
       } catch (e) {
         console.error("Failed to parse suggestActions result", e);
       }
-    } else if (toolInvocation.result && "actions" in toolInvocation.result) {
-      actions = toolInvocation.result.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>;
+    } else if (output && typeof output === "object" && "actions" in output) {
+      actions = (output as { actions: Array<{ label: string; value: string; primary?: boolean; isOther?: boolean }> }).actions;
     }
   }
 
@@ -127,8 +117,8 @@ function SuggestedActions({
       <ActionButtons
         actions={actions}
         onActionClick={(value, isOther) => {
-          // Complete the tool call only if it's still in call state
-          if (toolInvocation.state === "call") {
+          // Complete the tool call only if it's still in input-available state
+          if (toolPart.state === "input-available") {
             addToolResult({
               result: JSON.stringify({
                 actions,
@@ -136,7 +126,7 @@ function SuggestedActions({
                 selectedAction: value,
                 success: true
               }),
-              toolCallId: toolInvocation.toolCallId
+              toolCallId: toolPart.toolCallId
             });
           }
 
@@ -326,22 +316,10 @@ function ProjectTabContent({
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
 
-  const {
-    messages: agentMessagesRaw,
-    input: agentInput,
-    handleInputChange: handleAgentInputChange,
-    handleSubmit: handleAgentSubmit,
-    addToolResult,
-    clearHistory,
-    data: agentData,
-    setInput,
-    setMessages,
-    reload,
-    isLoading,
-    stop
-  } = useAgentChat({
+  // Type assertion for useAgentChat return - the hook returns these properties at runtime
+  // but there's a type mismatch between agents v0.3.3 (built on AI SDK v4) and our AI SDK v6
+  const chatResult = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
-    maxSteps: 5,
     onError: (error) => {
       console.error("Error while streaming:", error);
       console.log(
@@ -367,35 +345,35 @@ function ProjectTabContent({
         );
         const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
 
-        // Create a synthetic assistant message with failed tool call
+        // Create a synthetic assistant message with failed tool call (v6 format)
+        const toolCallId = `error-${Date.now()}`;
         const syntheticMessage = {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: `I encountered a parameter validation error with the ${toolName} tool.`,
-          createdAt: new Date(),
           parts: [
             {
-              type: "tool-invocation" as const,
-              toolInvocation: {
-                toolCallId: `error-${Date.now()}`,
-                toolName,
-                state: "result" as const,
-                args: {},
-                result: {
-                  success: false,
-                  error: {
-                    message: "Tool parameter validation failed",
-                    details: errorMessage,
-                    timestamp: new Date().toISOString()
-                  }
+              type: "text" as const,
+              text: `I encountered a parameter validation error with the ${toolName} tool.`
+            },
+            {
+              type: `tool-${toolName}` as const,
+              toolCallId,
+              input: {},
+              output: {
+                success: false,
+                error: {
+                  message: "Tool parameter validation failed",
+                  details: errorMessage,
+                  timestamp: new Date().toISOString()
                 }
-              }
+              },
+              state: "output-available" as const
             }
           ]
         };
 
-        // Set this synthetic message instead of the error message
-        setMessages([...agentMessages, syntheticMessage]);
+        // Set this synthetic message instead of the error message (cast for type compatibility)
+        setMessages([...agentMessages, syntheticMessage] as UIMessage[]);
         return; // Exit early to avoid the normal error handling
       }
 
@@ -442,17 +420,15 @@ function ProjectTabContent({
           `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
         );
         currentMessages.push({
-          content: editedMessageText,
-          createdAt: new Date(),
           id: crypto.randomUUID(),
+          role: "user" as const,
           parts: [
             {
-              text: editedMessageText,
-              type: "text" as const
+              type: "text" as const,
+              text: editedMessageText
             }
-          ],
-          role: "user" as const
-        });
+          ]
+        } as UIMessage);
 
         // Reset original refs
         originalEditIndexRef.current = null;
@@ -480,17 +456,15 @@ function ProjectTabContent({
             `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
           );
           currentMessages.push({
-            content: editedMessageText,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: editedMessageText,
-                type: "text" as const
+                type: "text" as const,
+                text: editedMessageText
               }
-            ],
-            role: "user" as const
-          });
+            ]
+          } as UIMessage);
         }
 
         // Reset editing state
@@ -508,33 +482,29 @@ function ProjectTabContent({
           );
           // Add the user message that caused the error
           currentMessages.push({
-            content: lastUserInput,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: lastUserInput,
-                type: "text" as const
+                type: "text" as const,
+                text: lastUserInput
               }
-            ],
-            role: "user" as const
-          });
+            ]
+          } as UIMessage);
         }
       }
 
-      // Create a new error message with required format
+      // Create a new error message with required format (v6 uses parts only)
       const newErrorMessage = {
-        content: formattedErrorMessage,
-        createdAt: new Date(),
         id: crypto.randomUUID(),
+        role: "assistant" as const,
         parts: [
           {
-            text: formattedErrorMessage,
-            type: "text" as const
+            type: "text" as const,
+            text: formattedErrorMessage
           }
-        ],
-        role: "assistant" as const
-      };
+        ]
+      } as UIMessage;
 
       console.log(
         `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
@@ -551,7 +521,38 @@ function ProjectTabContent({
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
     }
-  });
+  // Type assertion to access properties that exist at runtime but have type mismatches
+  }) as unknown as {
+    messages: UIMessage[];
+    input: string;
+    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    handleSubmit: (e?: { preventDefault?: () => void }) => void;
+    addToolResult: (args: { toolCallId: string; result: string }) => void;
+    clearHistory: () => void;
+    data?: unknown[];
+    setInput: (value: string) => void;
+    setMessages: (messages: UIMessage[]) => void;
+    reload: () => void;
+    isLoading: boolean;
+    stop: () => void;
+    status: string;
+  };
+
+  // Destructure with renamed properties
+  const {
+    messages: agentMessagesRaw,
+    input: agentInput,
+    handleInputChange: handleAgentInputChange,
+    handleSubmit: handleAgentSubmit,
+    addToolResult,
+    clearHistory,
+    data: agentData,
+    setInput,
+    setMessages,
+    reload,
+    isLoading,
+    stop
+  } = chatResult;
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
   // Also detect API errors and throw proper auth errors for the Error Boundary to catch
@@ -856,7 +857,7 @@ function ProjectTabContent({
       !isLoading &&
       !temporaryLoading
     ) {
-      const lastMessage = agentMessages[agentMessages.length - 1];
+      const lastMessage = agentMessages[agentMessages.length - 1] as ExtendedUIMessage;
 
       // Check if last message is a system message with isModeMessage data
       if (lastMessage.role === "system") {
@@ -886,13 +887,14 @@ function ProjectTabContent({
     );
   }
 
-  const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
+  // Check if there are pending tool calls requiring confirmation (v6 pattern)
+  const pendingToolCallConfirmation = agentMessages.some((m: UIMessage) =>
     m.parts?.some(
       (part) =>
-        part.type === "tool-invocation" &&
-        part.toolInvocation.state === "call" &&
+        isToolUIPart(part) &&
+        part.state === "input-available" &&
         toolsRequiringConfirmation.includes(
-          part.toolInvocation.toolName as keyof ToolTypes
+          getToolName(part) as keyof ToolTypes
         )
     )
   );
@@ -908,8 +910,8 @@ function ProjectTabContent({
       return <EmptyChat />;
     }
 
-    // Render all regular messages
-    const messageElements = agentMessages.map((message: Message, index) => {
+    // Render all regular messages (cast to ExtendedUIMessage for data/createdAt access)
+    const messageElements = agentMessages.map((message: ExtendedUIMessage, index) => {
       // Common variable setup
       const isUser = message.role === "user";
       const isMessageError = isErrorMessage(message);
@@ -986,19 +988,32 @@ function ProjectTabContent({
                     );
                   }
 
-                  // For tool invocation parts
-                  if (part.type === "tool-invocation") {
-                    const toolInvocation = part.toolInvocation;
-                    const toolCallId = toolInvocation.toolCallId;
+                  // For tool UI parts (v6 pattern: type is tool-${toolName})
+                  if (isToolUIPart(part)) {
+                    const toolName = getToolName(part);
+                    const toolCallId = part.toolCallId;
                     const needsConfirmation =
                       toolsRequiringConfirmation.includes(
-                        toolInvocation.toolName as keyof ToolTypes
-                      ) && toolInvocation.state === "call";
+                        toolName as keyof ToolTypes
+                      ) && part.state === "input-available";
 
-                    // Skip suggestActions invocations since they are handled separately
-                    if (toolInvocation.toolName === "suggestActions") {
+                    // Skip suggestActions since they are handled separately
+                    if (toolName === "suggestActions") {
                       return null;
                     }
+
+                    // Create a v4-compatible toolInvocation object for ToolInvocationCard
+                    // Map v6 states to v4 states and cast to expected types
+                    const v4State = part.state === "input-available" ? "call" as const :
+                                   part.state === "output-available" ? "result" as const :
+                                   "call" as const; // Default to "call" for other states
+                    const toolInvocation = {
+                      toolCallId: part.toolCallId,
+                      toolName,
+                      state: v4State,
+                      args: (part.input || {}) as Record<string, unknown>,
+                      result: part.output as Record<string, unknown> | undefined
+                    };
 
                     return (
                       <ToolInvocationCard

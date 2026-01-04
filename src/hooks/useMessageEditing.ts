@@ -1,11 +1,14 @@
-import type { Message } from "@ai-sdk/react";
+import type { ExtendedUIMessage } from "@/shared";
+
+// Use ExtendedUIMessage which includes data and createdAt
+type Message = ExtendedUIMessage;
 import { useRef, useState } from "react";
 
 export function useMessageEditing(
   messages: Message[],
   setMessages: (messages: Message[]) => void,
   _input: string,
-  reload: () => Promise<string | null | undefined>
+  reload: () => void | Promise<string | null | undefined>
 ) {
   // Editing state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);

@@ -6,7 +6,7 @@
  */
 
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 // Import raw, unwrapped tools from their source modules
 import * as rawBrowserTools from "./browser";
 import * as rawBrowserbaseTools from "./browserbase";
@@ -35,11 +35,11 @@ type ToolCollection<T = unknown, R = unknown> = Record<string, Tool<T, R>>;
  */
 const rawTestErrorTool = tool({
   description: "Debug tool that always fails to show error formatting",
-  execute: async ({ message }: { message: string }) => {
+  execute: async ({ message }: { message: string }): Promise<string> => {
     console.log("[testErrorTool] About to throw error with message:", message);
     throw new Error(`Test error: ${message}`);
   },
-  parameters: z.object({
+  inputSchema: z.object({
     message: z.string().describe("Any message to echo back")
   })
 });
@@ -191,7 +191,7 @@ export const getGmailTools = async () => {
 // Define a generic Tool type that matches the actual tool implementations
 export type Tool<TParams = unknown, TResult = unknown> = {
   description: string;
-  parameters: z.ZodType<TParams>;
+  inputSchema: z.ZodType<TParams>;
   execute: (
     args: TParams,
     options?: { signal?: AbortSignal }

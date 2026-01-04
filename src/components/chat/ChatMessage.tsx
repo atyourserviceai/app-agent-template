@@ -1,4 +1,7 @@
-import type { Message } from "@ai-sdk/react";
+import type { ExtendedUIMessage } from "@/shared";
+
+// Use ExtendedUIMessage which includes data and createdAt
+type Message = ExtendedUIMessage;
 import { useState } from "react";
 import { Avatar } from "@/components/avatar/Avatar";
 import { Button } from "@/components/button/Button";

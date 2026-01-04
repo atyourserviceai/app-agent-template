@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 
 /**
  * Placeholder for search-related tools (e.g., web search, database search).
@@ -21,7 +21,7 @@ export const runResearch = tool({
     // Implement web scraping or API integration (e.g., Google Search API)
     return `Placeholder: Research results for "${query}".`;
   },
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("The search query"),
     sources: z
       .array(z.string())

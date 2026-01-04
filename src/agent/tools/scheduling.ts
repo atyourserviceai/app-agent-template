@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent } from "../AppAgent";
 
 // Define a schedule input type
@@ -28,13 +28,8 @@ const scheduleSchema = z.object({
  */
 export const scheduleTask = tool({
   description: "Schedule a task to be executed at a later time",
-  execute: async ({
-    when,
-    description
-  }: {
-    when: ScheduleInput;
-    description: string;
-  }) => {
+  inputSchema: scheduleSchema,
+  execute: async ({ when, description }) => {
     const { agent } = getCurrentAgent<AppAgent>();
     if (!agent) {
       throw new Error("No agent found");
@@ -44,16 +39,19 @@ export const scheduleTask = tool({
       throw new Error(msg);
     }
 
-    if (when.type === "no-schedule") {
+    // Parse the when object - it comes from the schema as strings
+    const scheduleType = when.type;
+
+    if (scheduleType === "no-schedule") {
       return "Not a valid schedule input";
     }
 
     const input =
-      when.type === "scheduled"
-        ? when.date // scheduled
-        : when.type === "delayed"
+      scheduleType === "scheduled"
+        ? when.date // scheduled - ISO date string
+        : scheduleType === "delayed"
           ? when.delayInSeconds // delayed
-          : when.type === "cron"
+          : scheduleType === "cron"
             ? when.cron // cron
             : throwError("not a valid schedule input");
 
@@ -63,13 +61,12 @@ export const scheduleTask = tool({
         "executeTask",
         description
       );
-      return `Task scheduled for type "${when.type}": ${input} with ID: ${scheduleResult.id}`;
+      return `Task scheduled for type "${scheduleType}": ${input} with ID: ${scheduleResult.id}`;
     } catch (error) {
       console.error("error scheduling task", error);
       return `Error scheduling task: ${error}`;
     }
-  },
-  parameters: scheduleSchema
+  }
 });
 
 /**
@@ -77,6 +74,7 @@ export const scheduleTask = tool({
  */
 export const getScheduledTasks = tool({
   description: "Get all scheduled tasks for the agent",
+  inputSchema: z.object({}),
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
     if (!agent) {
@@ -93,8 +91,7 @@ export const getScheduledTasks = tool({
       console.error("Error retrieving scheduled tasks", error);
       return `Error retrieving tasks: ${error}`;
     }
-  },
-  parameters: z.object({})
+  }
 });
 
 /**
@@ -102,7 +99,10 @@ export const getScheduledTasks = tool({
  */
 export const cancelScheduledTask = tool({
   description: "Cancel a previously scheduled task",
-  execute: async ({ taskId }: { taskId: string }) => {
+  inputSchema: z.object({
+    taskId: z.string()
+  }),
+  execute: async ({ taskId }) => {
     const { agent } = getCurrentAgent<AppAgent>();
     if (!agent) {
       throw new Error("No agent found");
@@ -116,8 +116,5 @@ export const cancelScheduledTask = tool({
       console.error("Error canceling scheduled task", error);
       return `Error canceling task: ${error}`;
     }
-  },
-  parameters: z.object({
-    taskId: z.string()
-  })
+  }
 });

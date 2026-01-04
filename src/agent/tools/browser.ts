@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod/v3';
 import type { AppAgent } from "../AppAgent";
 import { fetchPageContent } from "./simpleFetch"; // Import simple fetch for fallback
 
@@ -108,7 +108,7 @@ export const browseWebPage = tool({
       return `Failed to browse web pages: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     selector: z
       .string()
       .describe(

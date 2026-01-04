@@ -1,11 +1,33 @@
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+import { isToolUIPart, getToolName } from "ai";
 
-type ToolInvocation = {
-  toolCallId: string;
+// Alias for backward compatibility
+type Message = UIMessage;
+
+/**
+ * Get text content from a UIMessage (v6 uses parts array)
+ */
+function getMessageText(message: Message): string {
+  const textPart = message.parts?.find((p) => p.type === "text");
+  return textPart?.text || "";
+}
+
+/**
+ * Get tool parts from a UIMessage (v6 uses tool-${toolName} parts)
+ */
+function getToolParts(message: Message): Array<{
   toolName: string;
-  args: Record<string, unknown>;
-  result?: unknown;
-};
+  input: unknown;
+  output: unknown;
+}> {
+  return (message.parts || [])
+    .filter(isToolUIPart)
+    .map((part) => ({
+      toolName: getToolName(part),
+      input: part.input,
+      output: part.output
+    }));
+}
 
 /**
  * Export conversation messages to markdown format
@@ -28,32 +50,35 @@ export function exportConversationToMarkdown(messages: Message[]): string {
     if (message.role === "user") {
       lines.push("## User");
       lines.push("");
-      lines.push(message.content);
+      lines.push(getMessageText(message));
     } else if (message.role === "assistant") {
       lines.push("## Assistant");
       lines.push("");
 
+      // Get tool parts from the message (v6 format)
+      const toolParts = getToolParts(message);
+
       // Add tool invocations if present
-      if (message.toolInvocations && message.toolInvocations.length > 0) {
+      if (toolParts.length > 0) {
         lines.push("### Tool Calls");
         lines.push("");
 
-        message.toolInvocations.forEach((tool: ToolInvocation) => {
+        toolParts.forEach((tool) => {
           lines.push(`**${tool.toolName}**`);
-          if (tool.args && Object.keys(tool.args).length > 0) {
+          if (tool.input && typeof tool.input === "object" && Object.keys(tool.input as object).length > 0) {
             lines.push("```json");
-            lines.push(JSON.stringify(tool.args, null, 2));
+            lines.push(JSON.stringify(tool.input, null, 2));
             lines.push("```");
           }
 
-          if (tool.result) {
+          if (tool.output) {
             lines.push("");
             lines.push("*Result:*");
-            if (typeof tool.result === "string") {
-              lines.push(tool.result);
+            if (typeof tool.output === "string") {
+              lines.push(tool.output);
             } else {
               lines.push("```json");
-              lines.push(JSON.stringify(tool.result, null, 2));
+              lines.push(JSON.stringify(tool.output, null, 2));
               lines.push("```");
             }
           }
@@ -61,13 +86,14 @@ export function exportConversationToMarkdown(messages: Message[]): string {
         });
       }
 
-      // Add assistant response if present
-      if (message.content) {
-        if (message.toolInvocations && message.toolInvocations.length > 0) {
+      // Add assistant text response if present
+      const textContent = getMessageText(message);
+      if (textContent) {
+        if (toolParts.length > 0) {
           lines.push("### Response");
           lines.push("");
         }
-        lines.push(message.content);
+        lines.push(textContent);
       }
     }
 
