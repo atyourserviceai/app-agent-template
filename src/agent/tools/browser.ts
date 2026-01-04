@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { AppAgent } from "../AppAgent";
 import { fetchPageContent } from "./simpleFetch"; // Import simple fetch for fallback
 
@@ -108,19 +108,17 @@ export const browseWebPage = tool({
       return `Failed to browse web pages: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     selector: z
       .string()
-      .optional()
       .describe(
-        "Optional CSS selector to extract specific content from (defaults to 'body')"
+        "CSS selector to extract specific content from (defaults to 'body')"
       ),
     takeScreenshot: z
       .boolean()
-      .optional()
       .describe("Whether to take a screenshot of the page (defaults to false)"),
     urls: z
-      .array(z.string().url())
+      .array(z.string())
       .describe("List of URLs to browse (e.g. ['https://example.com'])")
   })
 });

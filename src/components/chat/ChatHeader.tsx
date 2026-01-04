@@ -100,8 +100,8 @@ export function ChatHeader({
         </Button>
       </div>
 
-      {/* Center: Mode selector */}
-      <div className="flex items-center gap-2">
+      {/* Center: Mode selector - Hidden for MVP */}
+      <div className="hidden">
         <select
           className="bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md px-2 py-1 text-sm"
           value={agentMode}

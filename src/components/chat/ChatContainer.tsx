@@ -24,6 +24,12 @@ type ChatContainerProps = {
   onInputSubmit: (e: FormEvent) => void;
   onStop?: () => void;
   onCloseChat?: () => void; // optional close handler when used as floating panel
+  /** Optional setter for voice transcription injection */
+  setInput?: (value: string) => void;
+  /** JWT token for voice API authentication */
+  jwtToken?: string;
+  /** Whether to show the voice input button */
+  enableVoiceInput?: boolean;
 };
 
 export function ChatContainer({
@@ -45,7 +51,10 @@ export function ChatContainer({
   onInputChange,
   onInputSubmit,
   onStop,
-  onCloseChat
+  onCloseChat,
+  setInput,
+  jwtToken,
+  enableVoiceInput = true
 }: ChatContainerProps) {
   return (
     <div
@@ -83,6 +92,9 @@ export function ChatContainer({
         isLoading={isLoading}
         isThinking={isThinking}
         pendingConfirmation={pendingConfirmation}
+        setInput={setInput}
+        jwtToken={jwtToken}
+        enableVoiceInput={enableVoiceInput}
       />
     </div>
   );

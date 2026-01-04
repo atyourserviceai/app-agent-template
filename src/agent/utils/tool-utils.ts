@@ -1,11 +1,13 @@
-import { formatDataStreamPart, type Message } from "@ai-sdk/ui-utils";
+import type { UIMessage } from "ai";
 import {
-  convertToCoreMessages,
-  type DataStreamWriter,
+  convertToModelMessages,
+  type UIMessageStreamWriter,
   type ToolExecutionOptions,
-  type ToolSet
+  type ToolSet,
+  isToolUIPart,
+  getToolName
 } from "ai";
-import type { z } from "zod";
+// z was used for type inference but is no longer needed after simplifying types
 import { APPROVAL } from "../../shared";
 import type { AgentMode } from "../AppAgent";
 
@@ -125,73 +127,73 @@ export async function processToolCalls<
   executions
 }: {
   tools: Tools; // used for type inference
-  dataStream: DataStreamWriter;
-  messages: Message[];
+  dataStream: UIMessageStreamWriter;
+  messages: UIMessage[];
   executions: {
     [K in keyof Tools & keyof ExecutableTools]?: (
-      args: z.infer<ExecutableTools[K]["parameters"]>,
+      args: unknown,
       context: ToolExecutionOptions
     ) => Promise<unknown>;
   };
-}): Promise<Message[]> {
+}): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
   if (!parts) return messages;
 
   const processedParts = await Promise.all(
     parts.map(async (part) => {
-      // Only process tool invocations parts
-      if (part.type !== "tool-invocation") return part;
+      // Only process tool UI parts (v6: type is tool-${toolName})
+      if (!isToolUIPart(part)) return part;
 
-      const { toolInvocation } = part;
-      const toolName = toolInvocation.toolName;
+      const toolName = getToolName(part);
+      const toolCallId = part.toolCallId;
 
-      // Only continue if we have an execute function for the tool (meaning it requires confirmation) and it's in a 'result' state
-      if (!(toolName in executions) || toolInvocation.state !== "result")
+      // Only continue if we have an execute function for the tool (meaning it requires confirmation)
+      // and it's in 'output-available' state (v6 equivalent of 'result')
+      if (!(toolName in executions) || part.state !== "output-available")
         return part;
 
       let result: unknown;
 
-      if (toolInvocation.result === APPROVAL.YES) {
+      if (part.output === APPROVAL.YES) {
         // Get the tool and check if the tool has an execute function.
         if (
           !isValidToolName(toolName, executions) ||
-          toolInvocation.state !== "result"
+          part.state !== "output-available"
         ) {
           return part;
         }
 
         const toolInstance = executions[toolName];
         if (toolInstance) {
-          result = await toolInstance(toolInvocation.args, {
-            messages: convertToCoreMessages(messages),
-            toolCallId: toolInvocation.toolCallId
+          result = await toolInstance(part.input, {
+            messages: await convertToModelMessages(messages),
+            toolCallId
           });
         } else {
           result = "Error: No execute function found on tool";
         }
-      } else if (toolInvocation.result === APPROVAL.NO) {
+      } else if (part.output === APPROVAL.NO) {
         result = "Error: User denied access to tool execution";
       } else {
         // For any unhandled responses, return the original part.
         return part;
       }
 
-      // Forward updated tool result to the client.
-      dataStream.write(
-        formatDataStreamPart("tool_result", {
+      // Forward updated tool result to the client using data stream
+      dataStream.write({
+        type: `data-tool-result`,
+        data: {
           result,
-          toolCallId: toolInvocation.toolCallId
-        })
-      );
+          toolCallId
+        }
+      });
 
-      // Return updated toolInvocation with the actual result.
+      // Return updated part with the actual result (v6 format)
       return {
         ...part,
-        toolInvocation: {
-          ...toolInvocation,
-          result
-        }
+        output: result,
+        state: "output-available" as const
       };
     })
   );
@@ -214,70 +216,67 @@ export async function processToolCallsWithModeValidation<
   executions,
   mode
 }: {
-  messages: Message[];
-  dataStream: DataStreamWriter;
+  messages: UIMessage[];
+  dataStream: UIMessageStreamWriter;
   tools: Tools; // unused but needed for type inference
   executions: Record<
     string,
     (args: unknown, context: ToolExecutionOptions) => Promise<unknown>
   >;
   mode: AgentMode;
-}): Promise<Message[]> {
+}): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
   if (!parts) return messages;
 
   const processedParts = await Promise.all(
     parts.map(async (part) => {
-      // Only process tool invocation parts
-      if (part.type !== "tool-invocation") return part;
+      // Only process tool UI parts (v6: type is tool-${toolName})
+      if (!isToolUIPart(part)) return part;
 
-      const { toolInvocation } = part;
-      const toolName = toolInvocation.toolName;
+      const toolName = getToolName(part);
+      const toolCallId = part.toolCallId;
 
       // First verify if the tool is allowed in the current mode
       if (!validateToolAccessForMode(toolName, mode)) {
-        // Tool is not allowed in this mode - use formatDataStreamPart to send error
+        // Tool is not allowed in this mode
         const errorResult = `Tool '${toolName}' is not available in ${mode} mode. Please use tools that are appropriate for the current mode.`;
 
         // Forward error to the client
-        dataStream.write(
-          formatDataStreamPart("tool_result", {
+        dataStream.write({
+          type: `data-tool-result`,
+          data: {
             result: errorResult,
-            toolCallId: toolInvocation.toolCallId
-          })
-        );
+            toolCallId
+          }
+        });
 
-        // Return updated toolInvocation with the error result
-        // Using proper state values that match the ToolInvocation type
+        // Return updated part with the error result (v6 format)
         return {
           ...part,
-          toolInvocation: {
-            ...toolInvocation,
-            result: errorResult,
-            state: "result"
-          }
+          output: errorResult,
+          state: "output-available" as const
         };
       }
 
       // If tool is allowed and requires confirmation, process it normally
-      if (toolName in executions && toolInvocation.state === "result") {
+      if (toolName in executions && part.state === "output-available") {
         let result: unknown;
 
-        if (toolInvocation.result === APPROVAL.YES) {
+        if (part.output === APPROVAL.YES) {
           // Get the tool and execute it
           if (isValidToolName(toolName, executions)) {
             const toolInstance = executions[toolName];
             if (toolInstance) {
-              result = await toolInstance(toolInvocation.args, {
-                messages: convertToCoreMessages(messages),
-                toolCallId: toolInvocation.toolCallId
+              result = await toolInstance(part.input, {
+                messages: await convertToModelMessages(messages),
+                toolCallId
               });
             } else {
               result = "Error: No execute function found on tool";
             }
           }
-        } else if (toolInvocation.result === APPROVAL.NO) {
+        } else if (part.output === APPROVAL.NO) {
           result = "Error: User denied access to tool execution";
         } else {
           // For any unhandled responses, return the original part
@@ -285,20 +284,19 @@ export async function processToolCallsWithModeValidation<
         }
 
         // Forward updated tool result to the client
-        dataStream.write(
-          formatDataStreamPart("tool_result", {
+        dataStream.write({
+          type: `data-tool-result`,
+          data: {
             result,
-            toolCallId: toolInvocation.toolCallId
-          })
-        );
+            toolCallId
+          }
+        });
 
-        // Return updated toolInvocation with the actual result
+        // Return updated part with the actual result (v6 format)
         return {
           ...part,
-          toolInvocation: {
-            ...toolInvocation,
-            result
-          }
+          output: result,
+          state: "output-available" as const
         };
       }
 
@@ -310,7 +308,7 @@ export async function processToolCallsWithModeValidation<
   // Return the processed messages with type assertion to avoid type error
   return [
     ...messages.slice(0, -1),
-    { ...lastMessage, parts: processedParts } as Message
+    { ...lastMessage, parts: processedParts } as UIMessage
   ];
 }
 
@@ -322,27 +320,29 @@ interface BasicToolCall {
   output?: string;
 }
 
-// Define a simplified part type
-type ToolInvocationPart = {
-  type: "tool-invocation";
-  toolInvocation: {
-    toolCallId: string;
-    [key: string]: unknown;
-  };
+// Define a simplified part type for v6 tool UI parts
+type ToolUIPart = {
+  type: `tool-${string}`;
+  toolCallId: string;
+  input?: unknown;
+  output?: unknown;
+  state:
+    | "input-streaming"
+    | "input-available"
+    | "output-available"
+    | "output-error";
   [key: string]: unknown;
 };
 
-// Function to check if a part is a tool invocation part
-function isToolInvocationPart(part: {
+// Function to check if a part is a tool UI part (v6 pattern)
+function isToolUIPartLocal(part: {
   type: string;
   [key: string]: unknown;
-}): part is ToolInvocationPart {
+}): part is ToolUIPart {
   return (
-    part.type === "tool-invocation" &&
-    "toolInvocation" in part &&
-    typeof part.toolInvocation === "object" &&
-    part.toolInvocation !== null &&
-    "toolCallId" in part.toolInvocation
+    part.type.startsWith("tool-") &&
+    "toolCallId" in part &&
+    typeof part.toolCallId === "string"
   );
 }
 
@@ -376,29 +376,26 @@ export function processToolCallsFromContent(
   // Create processed tool invocations
   const processedParts = [...lastMessage.parts];
 
-  // For each tool call, create a tool invocation part
+  // For each tool call, create a tool UI part (v6 format)
   for (const toolCall of toolCalls) {
     // Only process new tool calls
     if (
       !processedParts.some((part) => {
-        if (isToolInvocationPart(part)) {
-          return part.toolInvocation.toolCallId === toolCall.id;
+        if (isToolUIPartLocal(part)) {
+          return part.toolCallId === toolCall.id;
         }
         return false;
       })
     ) {
-      const toolInvocationPart = {
-        toolInvocation: {
-          args: toolCall.args,
-          result: toolCall.output || "",
-          state: "result" as const,
-          step: undefined,
-          toolCallId: toolCall.id,
-          toolName: toolCall.name
-        },
-        type: "tool-invocation" as const
+      // Create v6 format tool part
+      const toolUIPart = {
+        type: `tool-${toolCall.name}` as const,
+        toolCallId: toolCall.id,
+        input: toolCall.args,
+        output: toolCall.output || "",
+        state: "output-available" as const
       };
-      processedParts.push(toolInvocationPart);
+      processedParts.push(toolUIPart);
     }
   }
 

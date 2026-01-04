@@ -8,7 +8,7 @@ import path from "node:path";
 export default defineConfig({
   plugins: [
     cf({
-      viteEnvironment: { name: "ssr" },
+      viteEnvironment: { name: "server" },
       inspectorPort: 9329 // Set inspector port to avoid conflicts
     }),
     tailwindcss(),
@@ -30,5 +30,17 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["workers-og"]
   },
-  assetsInclude: ["**/*.woff2", "**/*.wasm"]
+  environments: {
+    server: {
+      optimizeDeps: {
+        // Disable SSR dependency optimization to prevent pre-bundle version conflicts
+        noDiscovery: true,
+        include: []
+      }
+    }
+  },
+  assetsInclude: ["**/*.woff2", "**/*.wasm"],
+  build: {
+    outDir: "build"
+  }
 });

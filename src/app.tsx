@@ -1,4 +1,6 @@
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+import { isToolUIPart, getToolName } from "ai";
+import type { ExtendedUIMessage } from "@/shared";
 import { useAgentChat } from "agents/ai-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
@@ -53,7 +55,7 @@ function SuggestedActions({
   addToolResult,
   reload: _reload
 }: {
-  messages: Message[];
+  messages: UIMessage[];
   addToolResult: (args: { toolCallId: string; result: string }) => void;
   reload: () => void;
 }) {
@@ -67,20 +69,17 @@ function SuggestedActions({
 
   if (!lastAssistantMessage) return null;
 
-  // Find the suggestActions tool invocation in the message parts
+  // Find the suggestActions tool part (v6: type is tool-suggestActions)
   const suggestActionsPart = lastAssistantMessage.parts?.find(
-    (part) =>
-      part.type === "tool-invocation" &&
-      "toolInvocation" in part &&
-      part.toolInvocation.toolName === "suggestActions"
+    (part) => isToolUIPart(part) && getToolName(part) === "suggestActions"
   );
 
-  if (!suggestActionsPart || !("toolInvocation" in suggestActionsPart))
-    return null;
+  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart)) return null;
 
-  const toolInvocation = suggestActionsPart.toolInvocation;
+  // In v6, properties are directly on the part (not in toolInvocation)
+  const toolPart = suggestActionsPart;
 
-  // Get the actions based on the state - they could be in args or result
+  // Get the actions based on the state - they could be in input or output
   let actions: Array<{
     label: string;
     value: string;
@@ -88,34 +87,42 @@ function SuggestedActions({
     isOther?: boolean;
   }> = [];
 
-  if (toolInvocation.state === "call") {
-    // Handle call state - get actions from args
-    actions =
-      (toolInvocation.args.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>) || [];
-  } else if (toolInvocation.state === "result" && toolInvocation.result) {
-    // Handle result state - get actions from result
-    // This ensures we can handle both cases where the tool execution may have modified the actions
-    if (typeof toolInvocation.result === "string") {
+  if (toolPart.state === "input-available") {
+    // Handle input-available state (v6 equivalent of "call") - get actions from input
+    const input = toolPart.input as
+      | {
+          actions?: Array<{
+            label: string;
+            value: string;
+            primary?: boolean;
+            isOther?: boolean;
+          }>;
+        }
+      | undefined;
+    actions = input?.actions || [];
+  } else if (toolPart.state === "output-available" && toolPart.output) {
+    // Handle output-available state (v6 equivalent of "result") - get actions from output
+    const output = toolPart.output;
+    if (typeof output === "string") {
       try {
-        const parsedResult = JSON.parse(toolInvocation.result);
+        const parsedResult = JSON.parse(output);
         if (parsedResult.actions) {
           actions = parsedResult.actions;
         }
       } catch (e) {
         console.error("Failed to parse suggestActions result", e);
       }
-    } else if (toolInvocation.result && "actions" in toolInvocation.result) {
-      actions = toolInvocation.result.actions as Array<{
-        label: string;
-        value: string;
-        primary?: boolean;
-        isOther?: boolean;
-      }>;
+    } else if (output && typeof output === "object" && "actions" in output) {
+      actions = (
+        output as {
+          actions: Array<{
+            label: string;
+            value: string;
+            primary?: boolean;
+            isOther?: boolean;
+          }>;
+        }
+      ).actions;
     }
   }
 
@@ -127,8 +134,8 @@ function SuggestedActions({
       <ActionButtons
         actions={actions}
         onActionClick={(value, isOther) => {
-          // Complete the tool call only if it's still in call state
-          if (toolInvocation.state === "call") {
+          // Complete the tool call only if it's still in input-available state
+          if (toolPart.state === "input-available") {
             addToolResult({
               result: JSON.stringify({
                 actions,
@@ -136,7 +143,7 @@ function SuggestedActions({
                 selectedAction: value,
                 success: true
               }),
-              toolCallId: toolInvocation.toolCallId
+              toolCallId: toolPart.toolCallId
             });
           }
 
@@ -326,22 +333,15 @@ function ProjectTabContent({
   const { isErrorMessage, parseErrorData, formatErrorForMessage } =
     useErrorHandling();
 
-  const {
-    messages: agentMessagesRaw,
-    input: agentInput,
-    handleInputChange: handleAgentInputChange,
-    handleSubmit: handleAgentSubmit,
-    addToolResult,
-    clearHistory,
-    data: agentData,
-    setInput,
-    setMessages,
-    reload,
-    isLoading,
-    stop
-  } = useAgentChat({
+  // Keep track of last known good messages for error recovery
+  // This is used as a fallback when the error handler runs and agentMessages might be empty
+  // Defined before useAgentChat so the error handler has access to it
+  const lastKnownMessagesRef = useRef<UIMessage[]>([]);
+
+  // Type assertion for useAgentChat return - the hook returns these properties at runtime
+  // but there's a type mismatch between agents v0.3.3 (built on AI SDK v4) and our AI SDK v6
+  const chatResult = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
-    maxSteps: 5,
     onError: (error) => {
       console.error("Error while streaming:", error);
       console.log(
@@ -367,35 +367,35 @@ function ProjectTabContent({
         );
         const toolName = toolNameMatch ? toolNameMatch[1] : "unknown_tool";
 
-        // Create a synthetic assistant message with failed tool call
+        // Create a synthetic assistant message with failed tool call (v6 format)
+        const toolCallId = `error-${Date.now()}`;
         const syntheticMessage = {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: `I encountered a parameter validation error with the ${toolName} tool.`,
-          createdAt: new Date(),
           parts: [
             {
-              type: "tool-invocation" as const,
-              toolInvocation: {
-                toolCallId: `error-${Date.now()}`,
-                toolName,
-                state: "result" as const,
-                args: {},
-                result: {
-                  success: false,
-                  error: {
-                    message: "Tool parameter validation failed",
-                    details: errorMessage,
-                    timestamp: new Date().toISOString()
-                  }
+              type: "text" as const,
+              text: `I encountered a parameter validation error with the ${toolName} tool.`
+            },
+            {
+              type: `tool-${toolName}` as const,
+              toolCallId,
+              input: {},
+              output: {
+                success: false,
+                error: {
+                  message: "Tool parameter validation failed",
+                  details: errorMessage,
+                  timestamp: new Date().toISOString()
                 }
-              }
+              },
+              state: "output-available" as const
             }
           ]
         };
 
-        // Set this synthetic message instead of the error message
-        setMessages([...agentMessages, syntheticMessage]);
+        // Set this synthetic message instead of the error message (cast for type compatibility)
+        setMessages([...agentMessages, syntheticMessage] as UIMessage[]);
         return; // Exit early to avoid the normal error handling
       }
 
@@ -410,8 +410,12 @@ function ProjectTabContent({
       // Create a new assistant message with the error (normal error flow)
       const formattedErrorMessage = formatErrorForMessage(error);
 
-      // Initialize with current messages
-      let currentMessages = [...agentMessages];
+      // Initialize with current messages, falling back to last known good messages
+      // This prevents losing all messages when an error occurs and agentMessages is empty
+      let currentMessages =
+        agentMessages.length > 0
+          ? [...agentMessages]
+          : [...lastKnownMessagesRef.current];
 
       // If we have an original edit index from a recent edit
       if (
@@ -442,17 +446,15 @@ function ProjectTabContent({
           `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
         );
         currentMessages.push({
-          content: editedMessageText,
-          createdAt: new Date(),
           id: crypto.randomUUID(),
+          role: "user" as const,
           parts: [
             {
-              text: editedMessageText,
-              type: "text" as const
+              type: "text" as const,
+              text: editedMessageText
             }
-          ],
-          role: "user" as const
-        });
+          ]
+        } as UIMessage);
 
         // Reset original refs
         originalEditIndexRef.current = null;
@@ -480,17 +482,15 @@ function ProjectTabContent({
             `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
           );
           currentMessages.push({
-            content: editedMessageText,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: editedMessageText,
-                type: "text" as const
+                type: "text" as const,
+                text: editedMessageText
               }
-            ],
-            role: "user" as const
-          });
+            ]
+          } as UIMessage);
         }
 
         // Reset editing state
@@ -508,33 +508,29 @@ function ProjectTabContent({
           );
           // Add the user message that caused the error
           currentMessages.push({
-            content: lastUserInput,
-            createdAt: new Date(),
             id: crypto.randomUUID(),
+            role: "user" as const,
             parts: [
               {
-                text: lastUserInput,
-                type: "text" as const
+                type: "text" as const,
+                text: lastUserInput
               }
-            ],
-            role: "user" as const
-          });
+            ]
+          } as UIMessage);
         }
       }
 
-      // Create a new error message with required format
+      // Create a new error message with required format (v6 uses parts only)
       const newErrorMessage = {
-        content: formattedErrorMessage,
-        createdAt: new Date(),
         id: crypto.randomUUID(),
+        role: "assistant" as const,
         parts: [
           {
-            text: formattedErrorMessage,
-            type: "text" as const
+            type: "text" as const,
+            text: formattedErrorMessage
           }
-        ],
-        role: "assistant" as const
-      };
+        ]
+      } as UIMessage;
 
       console.log(
         `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
@@ -551,7 +547,46 @@ function ProjectTabContent({
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
     }
-  });
+    // Type assertion to access properties that exist at runtime but have type mismatches
+  }) as unknown as {
+    messages: UIMessage[];
+    sendMessage: (message?: { text: string } | string) => void;
+    addToolResult: (args: { toolCallId: string; result: string }) => void;
+    clearHistory: () => void;
+    data?: unknown[];
+    setMessages: (messages: UIMessage[]) => void;
+    regenerate: () => void;
+    status: string;
+    stop: () => void;
+  };
+
+  // Destructure with renamed properties
+  const {
+    messages: agentMessagesRaw,
+    sendMessage,
+    addToolResult,
+    clearHistory,
+    data: agentData,
+    setMessages,
+    regenerate: reload,
+    stop
+  } = chatResult;
+
+  // Local state for input since AI SDK v6 doesn't manage it
+  const [agentInput, setAgentInput] = useState("");
+  const handleAgentInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setAgentInput(e.target.value);
+    },
+    []
+  );
+
+  // Derive isLoading from status
+  const isLoading =
+    chatResult.status === "streaming" || chatResult.status === "submitted";
+
+  // Alias setInput for voice transcription
+  const setInput = setAgentInput;
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
   // Also detect API errors and throw proper auth errors for the Error Boundary to catch
@@ -577,6 +612,14 @@ function ProjectTabContent({
 
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
+
+  // Update last known messages whenever we have valid messages
+  // Only update when not loading (to avoid capturing mid-stream states)
+  useEffect(() => {
+    if (agentMessages.length > 0 && !isLoading) {
+      lastKnownMessagesRef.current = [...agentMessages];
+    }
+  }, [agentMessages, isLoading]);
 
   // Use the message editing hook to manage message editing and retry logic
   const {
@@ -642,11 +685,16 @@ function ProjectTabContent({
 
   // Update handleSubmitWithRetry to check token expiration
   const handleSubmitWithRetry = (e: React.FormEvent) => {
+    e.preventDefault();
     if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
+    if (!agentInput.trim()) {
+      return; // Don't send empty messages
+    }
     setIsRetrying(false); // Clear retrying state when sending a new message
-    handleAgentSubmit(e);
+    sendMessage({ text: agentInput });
+    setAgentInput(""); // Clear input after sending
   };
 
   // Add token expiration check to reload function wrapper
@@ -856,7 +904,9 @@ function ProjectTabContent({
       !isLoading &&
       !temporaryLoading
     ) {
-      const lastMessage = agentMessages[agentMessages.length - 1];
+      const lastMessage = agentMessages[
+        agentMessages.length - 1
+      ] as ExtendedUIMessage;
 
       // Check if last message is a system message with isModeMessage data
       if (lastMessage.role === "system") {
@@ -886,13 +936,14 @@ function ProjectTabContent({
     );
   }
 
-  const pendingToolCallConfirmation = agentMessages.some((m: Message) =>
+  // Check if there are pending tool calls requiring confirmation (v6 pattern)
+  const pendingToolCallConfirmation = agentMessages.some((m: UIMessage) =>
     m.parts?.some(
       (part) =>
-        part.type === "tool-invocation" &&
-        part.toolInvocation.state === "call" &&
+        isToolUIPart(part) &&
+        part.state === "input-available" &&
         toolsRequiringConfirmation.includes(
-          part.toolInvocation.toolName as keyof ToolTypes
+          getToolName(part) as keyof ToolTypes
         )
     )
   );
@@ -908,122 +959,150 @@ function ProjectTabContent({
       return <EmptyChat />;
     }
 
-    // Render all regular messages
-    const messageElements = agentMessages.map((message: Message, index) => {
-      // Common variable setup
-      const isUser = message.role === "user";
-      const isMessageError = isErrorMessage(message);
-      const isEditing = editingMessageId === message.id;
-      const isSystemMessage = message.role === "system";
+    // Render all regular messages (cast to ExtendedUIMessage for data/createdAt access)
+    const messageElements = agentMessages.map(
+      (message: ExtendedUIMessage, index) => {
+        // Common variable setup
+        const isUser = message.role === "user";
+        const isMessageError = isErrorMessage(message);
+        const isEditing = editingMessageId === message.id;
+        const isSystemMessage = message.role === "system";
 
-      // Special handling for error messages
-      if (isMessageError && !isUser) {
-        const errorData = parseErrorData(message);
+        // Special handling for error messages
+        if (isMessageError && !isUser) {
+          const errorData = parseErrorData(message);
 
-        return (
-          <div key={message.id}>
-            <ErrorMessage
-              errorData={errorData}
-              onRetry={() => handleRetryWithTokenCheck(index)}
-              isLoading={isLoading}
+          return (
+            <div key={message.id}>
+              <ErrorMessage
+                errorData={errorData}
+                onRetry={() => handleRetryWithTokenCheck(index)}
+                isLoading={isLoading}
+                formatTime={formatTime}
+                createdAt={message.createdAt}
+              />
+            </div>
+          );
+        }
+
+        // For user messages or system messages, use our ChatMessage component
+        if (isUser || isSystemMessage) {
+          return (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              index={index}
+              isEditing={isEditing}
+              editingValue={editingValue}
+              onStartEditing={startEditing}
+              onCancelEditing={cancelEditing}
+              onSaveEdit={handleEditMessage}
+              onEditingValueChange={setEditingValue}
               formatTime={formatTime}
-              createdAt={message.createdAt}
+              showDebug={showDebug}
             />
-          </div>
-        );
-      }
+          );
+        }
 
-      // For user messages or system messages, use our ChatMessage component
-      if (isUser || isSystemMessage) {
+        // For assistant messages with multiple parts
         return (
-          <ChatMessage
-            key={message.id}
-            message={message}
-            index={index}
-            isEditing={isEditing}
-            editingValue={editingValue}
-            onStartEditing={startEditing}
-            onCancelEditing={cancelEditing}
-            onSaveEdit={handleEditMessage}
-            onEditingValueChange={setEditingValue}
-            formatTime={formatTime}
-            showDebug={showDebug}
-          />
-        );
-      }
+          <div key={message.id} className="mb-4">
+            {showDebug && (
+              <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
+                {JSON.stringify(message, null, 2)}
+              </pre>
+            )}
 
-      // For assistant messages with multiple parts
-      return (
-        <div key={message.id} className="mb-4">
-          {showDebug && (
-            <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
-              {JSON.stringify(message, null, 2)}
-            </pre>
-          )}
+            <div className="flex justify-start">
+              <div className="flex gap-2 max-w-[85%] flex-row">
+                <Avatar username={"AI"} />
 
-          <div className="flex justify-start">
-            <div className="flex gap-2 max-w-[85%] flex-row">
-              <Avatar username={"AI"} />
-
-              <div className="space-y-3">
-                {/* Render each part in sequence */}
-                {message.parts?.map((part, i) => {
-                  // For text parts
-                  if (part.type === "text") {
-                    return (
-                      <div
-                        key={`${message.id}-text-${part.text?.substring(0, 10) || i}`}
-                      >
-                        <Card className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 rounded-bl-none border-assistant-border">
-                          <div className="text-base markdown-content">
-                            <MemoizedMarkdown
-                              id={`${message.id}-${i}`}
-                              content={part.text || ""}
-                            />
-                          </div>
-                        </Card>
-                      </div>
-                    );
-                  }
-
-                  // For tool invocation parts
-                  if (part.type === "tool-invocation") {
-                    const toolInvocation = part.toolInvocation;
-                    const toolCallId = toolInvocation.toolCallId;
-                    const needsConfirmation =
-                      toolsRequiringConfirmation.includes(
-                        toolInvocation.toolName as keyof ToolTypes
-                      ) && toolInvocation.state === "call";
-
-                    // Skip suggestActions invocations since they are handled separately
-                    if (toolInvocation.toolName === "suggestActions") {
-                      return null;
+                <div className="space-y-3">
+                  {/* Render each part in sequence */}
+                  {message.parts?.map((part, i) => {
+                    // For text parts
+                    if (part.type === "text") {
+                      return (
+                        <div
+                          key={`${message.id}-text-${part.text?.substring(0, 10) || i}`}
+                        >
+                          <Card className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 rounded-bl-none border-assistant-border">
+                            <div className="text-base markdown-content">
+                              <MemoizedMarkdown
+                                id={`${message.id}-${i}`}
+                                content={part.text || ""}
+                              />
+                            </div>
+                          </Card>
+                        </div>
+                      );
                     }
 
-                    return (
-                      <ToolInvocationCard
-                        key={`${message.id}-tool-${toolCallId}`}
-                        toolInvocation={toolInvocation}
-                        toolCallId={toolCallId}
-                        needsConfirmation={needsConfirmation}
-                        addToolResult={addToolResult}
-                      />
-                    );
-                  }
+                    // For tool UI parts (v6 pattern: type is tool-${toolName})
+                    if (isToolUIPart(part)) {
+                      const toolName = getToolName(part);
+                      const toolCallId = part.toolCallId;
+                      const needsConfirmation =
+                        toolsRequiringConfirmation.includes(
+                          toolName as keyof ToolTypes
+                        ) && part.state === "input-available";
 
-                  return null;
-                })}
+                      // Skip suggestActions since they are handled separately
+                      if (toolName === "suggestActions") {
+                        return null;
+                      }
 
-                {/* Timestamp for the entire message */}
-                <p className="text-xs text-muted-foreground mt-1 text-left">
-                  {formatTime(new Date(message.createdAt as unknown as string))}
-                </p>
+                      // Create a v4-compatible toolInvocation object for ToolInvocationCard
+                      // Map v6 states to v4 states and cast to expected types
+                      const v4State =
+                        part.state === "input-available"
+                          ? ("call" as const)
+                          : part.state === "output-available"
+                            ? ("result" as const)
+                            : ("call" as const); // Default to "call" for other states
+                      const toolInvocation = {
+                        toolCallId: part.toolCallId,
+                        toolName,
+                        state: v4State,
+                        args: (part.input || {}) as Record<string, unknown>,
+                        result: part.output as
+                          | Record<string, unknown>
+                          | undefined
+                      };
+
+                      return (
+                        <ToolInvocationCard
+                          key={`${message.id}-tool-${toolCallId}`}
+                          toolInvocation={toolInvocation}
+                          toolCallId={toolCallId}
+                          needsConfirmation={needsConfirmation}
+                          addToolResult={addToolResult}
+                        />
+                      );
+                    }
+
+                    return null;
+                  })}
+
+                  {/* Timestamp for the entire message */}
+                  <p className="text-xs text-muted-foreground mt-1 text-left">
+                    {(() => {
+                      if (!message.createdAt) return "";
+                      const date = new Date(
+                        message.createdAt as unknown as string
+                      );
+                      return !Number.isNaN(date.getTime())
+                        ? formatTime(date)
+                        : "";
+                    })()}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      );
-    });
+        );
+      }
+    );
 
     // Check if the last message is from the user with no assistant response
     if (!isLoading && !isRetrying && agentMessages.length > 0) {
@@ -1187,6 +1266,8 @@ function ProjectTabContent({
             }}
             onStop={stop}
             onCloseChat={() => setActiveTab("presentation")}
+            setInput={setInput}
+            jwtToken={auth?.authMethod?.apiKey}
           >
             {renderMessages()}
           </ChatContainer>

@@ -1,15 +1,18 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import type { Message } from "@ai-sdk/ui-utils";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { UIMessage } from "ai";
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
-  createDataStreamResponse,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  convertToModelMessages,
   generateId,
   type StreamTextOnFinishCallback,
   streamText,
-  type ToolSet
+  type ToolSet,
+  stepCountIs
 } from "ai";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
@@ -33,13 +36,17 @@ import { processToolCalls } from "./utils/tool-utils";
 import { ShareAssetGenerator } from "../services/share-asset-generator";
 
 // AI @ Your Service Gateway configuration
+// Using openai-compatible provider to disable stream_options.include_usage
+// which the gateway doesn't support
 const getOpenAI = (env: Env, apiKey?: string) => {
   if (!apiKey) {
     throw new Error("API key is required for AI requests");
   }
-  return createOpenAI({
+  return createOpenAICompatible({
+    name: "openai-gateway",
     apiKey: apiKey,
-    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`
+    baseURL: `${env.GATEWAY_BASE_URL}/v1/openai`,
+    includeUsage: false // Disable stream_options.include_usage
   });
 };
 
@@ -70,18 +77,16 @@ const getGemini = (env: Env, apiKey?: string) => {
 */
 
 // Helper function to filter out empty messages for AI provider compatibility
-const filterEmptyMessages = (messages: Message[]) => {
+const filterEmptyMessages = (messages: UIMessage[]) => {
   return messages.filter((message, index) => {
-    // Allow empty content only for the final assistant message
+    // Allow empty parts only for the final assistant message
     const isLastMessage = index === messages.length - 1;
     const isAssistant = message.role === "assistant";
-    const hasEmptyContent =
-      !message.content ||
-      (typeof message.content === "string" && message.content.trim() === "") ||
-      (Array.isArray(message.content) && message.content.length === 0);
+    // In AI SDK v6, messages have 'parts' instead of 'content'
+    const hasEmptyParts = !message.parts || message.parts.length === 0;
 
-    // Keep the message if it has content, or if it's the final assistant message
-    return !hasEmptyContent || (isLastMessage && isAssistant);
+    // Keep the message if it has parts, or if it's the final assistant message
+    return !hasEmptyParts || (isLastMessage && isAssistant);
   });
 };
 
@@ -148,7 +153,7 @@ export class AppAgent extends AIChatAgent<Env> {
   initialState: AppAgentState = {
     isIntegrationComplete: false,
     isOnboardingComplete: false,
-    mode: "onboarding" as AgentMode,
+    mode: "act" as AgentMode, // Default to act mode for MVP
     onboardingStep: "start",
     settings: {
       adminContact: {
@@ -447,157 +452,153 @@ export class AppAgent extends AIChatAgent<Env> {
     //   "https://path-to-mcp-server/sse"
     // );
 
-    const dataStreamResponse = createDataStreamResponse({
-      execute: async (dataStream) => {
-        // Get the current mode's tools
-        const modeTools = await this.getToolsForMode();
-        const state = this.state as AppAgentState;
-        const currentMode = state.mode;
+    // Get the current mode's tools (need to do this before stream creation)
+    const modeTools = await this.getToolsForMode();
+    const state = this.state as AppAgentState;
+    const currentMode = state.mode;
+    const systemPrompt = this.getSystemPrompt();
 
-        console.log(
-          `[AppAgent] Processing chat message in ${currentMode} mode`
-        );
+    console.log(`[AppAgent] Processing chat message in ${currentMode} mode`);
 
-        // We don't have MCP implementation yet, so just use mode tools
-        // In the future, we can add MCP tools:
-        // const allTools = {
-        //   ...modeTools,
-        //   ...this.mcp.unstable_getAITools(),
-        // };
-        const allTools = modeTools;
+    // We don't have MCP implementation yet, so just use mode tools
+    const allTools = modeTools;
 
-        // Process any pending tool calls from previous messages
-        // This handles human-in-the-loop confirmations for tools
-        const processedMessages = await processToolCalls({
-          dataStream,
-          executions,
-          messages: this.messages,
-          tools: allTools
-        });
+    // Create the response using the new AI SDK v6 pattern
+    const response = createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        execute: async ({ writer }) => {
+          // Process any pending tool calls from previous messages
+          // This handles human-in-the-loop confirmations for tools
+          const processedMessages = await processToolCalls({
+            dataStream: writer,
+            executions,
+            messages: this.messages,
+            tools: allTools
+          });
 
-        // Filter out empty messages for AI provider compatibility
-        const filteredMessages = filterEmptyMessages(processedMessages);
+          // Filter out empty messages for AI provider compatibility
+          const filteredMessages = filterEmptyMessages(processedMessages);
 
-        // Get system prompt based on current mode
-        const systemPrompt = this.getSystemPrompt();
+          // Convert UI messages to model messages for streamText
+          const modelMessages = await convertToModelMessages(filteredMessages);
 
-        // Retry logic for handling token refresh on 403 errors
-        let retryCount = 0;
-        const maxRetries = 1;
-        let result: ReturnType<typeof streamText> | undefined;
+          // Retry logic for handling token refresh on 403 errors
+          let retryCount = 0;
+          const maxRetries = 1;
 
-        while (retryCount <= maxRetries) {
-          try {
-            const openai = await this.getAIProvider();
-            let model = openai("gpt-5-mini-2025-08-07");
+          while (retryCount <= maxRetries) {
+            try {
+              const openai = await this.getAIProvider();
+              let model = openai("gpt-5-mini-2025-08-07");
 
-            // Enable simulation for testing if environment variable is set
-            if ((this.env as any).SIMULATE_THINKING_TOKENS === "true") {
-              model = simulateThinkingLLM();
-              console.log(
-                "[AppAgent] Using simulated thinking tokens for testing"
-              );
-            }
-
-            // Note: Reasoning middleware would be configured here if needed
-
-            // Stream the AI response
-            result = streamText({
-              maxSteps: 10,
-              messages: filteredMessages,
-              model,
-              temperature: 1,
-              onError: async (error: unknown) => {
-                console.error("Error while streaming:", error);
-                if (
-                  error &&
-                  typeof error === "object" &&
-                  "status" in error &&
-                  error.status === 403 &&
-                  retryCount < maxRetries
-                ) {
-                  console.log(
-                    "[AppAgent] Got 403 error, attempting token refresh"
-                  );
-                  const refreshed = await this.refreshTokenOnError();
-                  if (refreshed) {
-                    console.log(
-                      "[AppAgent] Token refreshed, will retry request"
-                    );
-                    return; // This will cause the outer loop to retry
-                  }
-                }
-                throw error;
-              },
-              onFinish: async (args) => {
-                // Log a message indicating the completion of the request
+              // Enable simulation for testing if environment variable is set
+              if ((this.env as any).SIMULATE_THINKING_TOKENS === "true") {
+                // Type assertion needed due to LanguageModelV1 vs V3 differences
+                model = simulateThinkingLLM() as typeof model;
                 console.log(
-                  `[AppAgent] Completed processing message in ${currentMode} mode`
+                  "[AppAgent] Using simulated thinking tokens for testing"
                 );
-
-                // Handle reasoning tokens if they exist
-                if ("reasoning" in args && args.reasoning) {
-                  console.log(
-                    `[AppAgent] Reasoning tokens captured: ${args.reasoning.length} characters`
-                  );
-                  console.log(
-                    `[AppAgent] Reasoning preview: ${args.reasoning.substring(0, 200)}...`
-                  );
-
-                  // Stream thinking tokens to the client for optional display
-                  dataStream.writeData({
-                    type: "thinking-tokens",
-                    content: args.reasoning
-                  });
-                }
-
-                // Pass args directly to onFinish callback
-                onFinish(
-                  args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
-                );
-              },
-              system: systemPrompt,
-              tools: allTools
-            });
-            break; // Success, exit retry loop
-          } catch (error: unknown) {
-            console.error("[AppAgent] Error in onChatMessage:", error);
-
-            // Handle 403 errors with token refresh retry
-            if (
-              error &&
-              typeof error === "object" &&
-              "status" in error &&
-              error.status === 403 &&
-              retryCount < maxRetries
-            ) {
-              console.log(
-                "[AppAgent] Got 403 error in catch block, attempting token refresh"
-              );
-              const refreshed = await this.refreshTokenOnError();
-              if (refreshed) {
-                retryCount++;
-                console.log(
-                  `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
-                );
-                continue; // Retry the request
               }
-            }
 
-            // If not a 403 error or retry failed, throw error
-            throw error;
+              // Stream the AI response
+              const result = streamText({
+                stopWhen: stepCountIs(10),
+                messages: modelMessages,
+                model,
+                temperature: 1,
+
+                onError: async (error: unknown) => {
+                  console.error("Error while streaming:", error);
+                  if (
+                    error &&
+                    typeof error === "object" &&
+                    "status" in error &&
+                    error.status === 403 &&
+                    retryCount < maxRetries
+                  ) {
+                    console.log(
+                      "[AppAgent] Got 403 error, attempting token refresh"
+                    );
+                    const refreshed = await this.refreshTokenOnError();
+                    if (refreshed) {
+                      console.log(
+                        "[AppAgent] Token refreshed, will retry request"
+                      );
+                      return;
+                    }
+                  }
+                  throw error;
+                },
+
+                onFinish: async (args) => {
+                  console.log(
+                    `[AppAgent] Completed processing message in ${currentMode} mode`
+                  );
+
+                  // Handle reasoning tokens if they exist
+                  if ("reasoningText" in args && args.reasoningText) {
+                    console.log(
+                      `[AppAgent] Reasoning tokens captured: ${args.reasoningText.length} characters`
+                    );
+                    console.log(
+                      `[AppAgent] Reasoning preview: ${args.reasoningText.substring(0, 200)}...`
+                    );
+
+                    // Stream thinking tokens to the client for optional display
+                    writer.write({
+                      type: "data-thinking",
+                      data: {
+                        content: args.reasoningText
+                      }
+                    });
+                  }
+
+                  // Pass args directly to onFinish callback
+                  onFinish(
+                    args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+                  );
+                },
+
+                system: systemPrompt,
+                tools: allTools
+              });
+
+              // Merge the AI response stream
+              writer.merge(result.toUIMessageStream());
+              break; // Success, exit retry loop
+            } catch (error: unknown) {
+              console.error("[AppAgent] Error in onChatMessage:", error);
+
+              // Handle 403 errors with token refresh retry
+              if (
+                error &&
+                typeof error === "object" &&
+                "status" in error &&
+                error.status === 403 &&
+                retryCount < maxRetries
+              ) {
+                console.log(
+                  "[AppAgent] Got 403 error in catch block, attempting token refresh"
+                );
+                const refreshed = await this.refreshTokenOnError();
+                if (refreshed) {
+                  retryCount++;
+                  console.log(
+                    `[AppAgent] Token refreshed, retrying (attempt ${retryCount}/${maxRetries})`
+                  );
+                  continue;
+                }
+              }
+
+              // If not a 403 error or retry failed, throw error
+              throw error;
+            }
           }
         }
-
-        // Merge the AI response stream with tool execution outputs
-        if (result) {
-          result.mergeIntoDataStream(dataStream);
-        }
-      },
-      onError: getErrorMessage
+      })
     });
 
-    return dataStreamResponse;
+    return response;
   }
 
   /**
@@ -607,12 +608,14 @@ export class AppAgent extends AIChatAgent<Env> {
     await this.saveMessages([
       ...this.messages,
       {
-        content: `Running scheduled task: ${description}`,
+        parts: [
+          { type: "text", text: `Running scheduled task: ${description}` }
+        ],
         createdAt: new Date(),
         id: generateId(),
         role: "user"
       }
-    ]);
+    ] as UIMessage[]);
   }
 
   /**

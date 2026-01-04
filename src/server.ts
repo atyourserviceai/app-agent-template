@@ -4,11 +4,15 @@ import { unstable_getSchedulePrompt } from "agents/schedule";
 
 import { AIChatAgent } from "agents/ai-chat-agent";
 import {
-  createDataStreamResponse,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   generateId,
   streamText,
   type StreamTextOnFinishCallback,
-  type ToolSet
+  type ToolSet,
+  stepCountIs,
+  convertToModelMessages,
+  type UIMessage
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { processToolCalls } from "./utils";
@@ -45,58 +49,79 @@ export class Chat extends AIChatAgent<Env> {
       ...this.mcp.unstable_getAITools()
     };
 
-    // Create a streaming response that handles both text and tool outputs
-    const dataStreamResponse = createDataStreamResponse({
-      execute: async (dataStream) => {
+    // Create the UI message stream (v6 pattern)
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
         // Process any pending tool calls from previous messages
         // This handles human-in-the-loop confirmations for tools
         const processedMessages = await processToolCalls({
-          messages: this.messages,
-          dataStream,
+          messages: this.messages as UIMessage[],
+          dataStream: writer,
           tools: allTools,
-          executions
+          executions: executions as Record<
+            string,
+            (
+              args: unknown,
+              context: { messages: unknown[]; toolCallId: string }
+            ) => Promise<unknown>
+          >
         });
+
+        // Convert UI messages to model messages for streamText
+        const modelMessages = await convertToModelMessages(processedMessages);
 
         // Stream the AI response using GPT-4
         const result = streamText({
           model,
-          system: `You are a helpful assistant that can do various tasks... 
+
+          system: `You are a helpful assistant that can do various tasks...
 
 ${unstable_getSchedulePrompt({ date: new Date() })}
 
 If the user asks to schedule a task, use the schedule tool to schedule the task.
 `,
-          messages: processedMessages,
+
+          messages: modelMessages,
           tools: allTools,
+
           onFinish: async (args) => {
             onFinish(
-              args as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+              args as unknown as Parameters<
+                StreamTextOnFinishCallback<ToolSet>
+              >[0]
             );
             // await this.mcp.closeConnection(mcpConnection.id);
           },
+
           onError: (error) => {
             console.error("Error while streaming:", error);
           },
-          maxSteps: 10
+
+          stopWhen: stepCountIs(10)
         });
 
-        // Merge the AI response stream with tool execution outputs
-        result.mergeIntoDataStream(dataStream);
+        // Merge the AI response stream with the UI message stream (v6 method)
+        writer.merge(result.toUIMessageStream());
       }
     });
 
-    return dataStreamResponse;
+    // Return the streaming response
+    return createUIMessageStreamResponse({ stream });
   }
+
   async executeTask(description: string, _task: Schedule<string>) {
-    await this.saveMessages([
-      ...this.messages,
-      {
-        id: generateId(),
-        role: "user",
-        content: `Running scheduled task: ${description}`,
-        createdAt: new Date()
-      }
-    ]);
+    // Create a v6-compatible UIMessage with parts instead of content
+    const taskMessage: UIMessage = {
+      id: generateId(),
+      role: "user",
+      parts: [
+        {
+          type: "text",
+          text: `Running scheduled task: ${description}`
+        }
+      ]
+    };
+    await this.saveMessages([...this.messages, taskMessage] as UIMessage[]);
   }
 }
 

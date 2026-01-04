@@ -1,4 +1,7 @@
-import type { Message } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+
+// Alias for backward compatibility
+type Message = UIMessage;
 import type { ErrorData, ErrorResponse } from "./types";
 
 export function useErrorHandling() {

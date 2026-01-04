@@ -75,9 +75,9 @@ export function wrapToolWithErrorHandling<TParams, TResult>(
   ) => {
     try {
       // First validate parameters using the tool's schema to catch validation errors
-      if (tool.parameters && params) {
+      if (tool.inputSchema && params) {
         try {
-          tool.parameters.parse(params);
+          tool.inputSchema.parse(params);
         } catch (validationError) {
           console.error(
             `[Tool Validation Error] ${tool.description || "unnamed tool"} parameter validation failed:`,

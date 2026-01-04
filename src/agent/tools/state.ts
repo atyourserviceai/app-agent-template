@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { AgentMode, AppAgent, AppAgentState } from "../AppAgent";
 
 /**
@@ -33,7 +33,7 @@ export const getAgentState = tool({
       return `Error getting agent state: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -64,7 +64,7 @@ export const getAgentConfig = tool({
       return `Error getting agent configuration: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -126,7 +126,7 @@ export const getIntegrationState = tool({
       return `Error getting integration state: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -190,7 +190,7 @@ export const getModeInfo = tool({
       return `Error getting mode info: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -225,11 +225,10 @@ export const setMode = tool({
       return `Error setting mode: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     force: z
       .boolean()
-      .optional()
-      .describe("Force the mode change even if conditions aren't met"),
+      .describe("Force the mode change even if conditions are not met"),
     mode: z
       .enum(["onboarding", "integration", "plan", "act"])
       .describe("The mode to switch to")

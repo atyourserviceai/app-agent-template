@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /**
  * Tool for fetching and extracting content from a web page using native fetch
@@ -80,14 +80,13 @@ export const fetchWebPage = tool({
       return `Failed to fetch web page: ${error}`;
     }
   },
-  parameters: z.object({
+  inputSchema: z.object({
     selector: z
       .string()
-      .optional()
       .describe(
-        "Optional CSS selector to extract specific content (defaults to 'body')"
+        "CSS selector to extract specific content (defaults to 'body')"
       ),
-    url: z.string().url().describe("URL to fetch (e.g. 'https://example.com')")
+    url: z.string().describe("URL to fetch (e.g. 'https://example.com')")
   })
 });
 

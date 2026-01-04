@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /**
  * Placeholder for messaging-related tools (e.g., sending emails, LinkedIn messages).
@@ -19,9 +19,9 @@ export const messagingTools = {
       // Integrate with email service (SendGrid, Resend, etc.) using API key from env/config
       return "Email sent successfully";
     },
-    parameters: z.object({
+    inputSchema: z.object({
       body: z.string().describe("Body of the email"),
-      from: z.string().optional().describe("Email address of the sender"),
+      from: z.string().describe("Email address of the sender"),
       subject: z.string().describe("Subject of the email"),
       to: z.string().describe("Email address of the recipient")
     })
@@ -37,7 +37,7 @@ export const messagingTools = {
       // Integrate with LinkedIn API (requires app approval and careful handling)
       return "LinkedIn message sent successfully";
     },
-    parameters: z.object({
+    inputSchema: z.object({
       message: z.string().describe("Message to send"),
       profileUrl: z.string().describe("URL of the LinkedIn profile")
     })
@@ -69,20 +69,18 @@ export const suggestActions = tool({
       success: true
     };
   },
-  parameters: z.object({
+  inputSchema: z.object({
     actions: z
       .array(
         z.object({
           isOther: z
             .boolean()
-            .optional()
             .describe(
-              "Whether this is an 'Other' option that should focus the input field"
+              "Whether this is an Other option that should focus the input field"
             ),
           label: z.string().describe("Button text to display"),
           primary: z
             .boolean()
-            .optional()
             .describe(
               "Whether this is a primary action (true) or secondary action (false)"
             ),
@@ -96,9 +94,8 @@ export const suggestActions = tool({
       .describe("Array of action buttons to display to the user"),
     includeOtherOption: z
       .boolean()
-      .optional()
       .describe(
-        "Whether to include an 'Other...' option that allows the user to type a custom response"
+        "Whether to include an Other option that allows the user to type a custom response"
       )
   })
 });

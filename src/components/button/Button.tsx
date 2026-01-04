@@ -92,8 +92,8 @@ const ButtonComponent = ({
 
 export const Button = ({ ...props }: ButtonProps) => {
   return props.tooltip ? (
-    <Tooltip content={props.tooltip} className={props.className} id={props.id}>
-      <ButtonComponent {...props} className={undefined} />
+    <Tooltip content={props.tooltip} id={props.id}>
+      <ButtonComponent {...props} />
     </Tooltip>
   ) : (
     <ButtonComponent {...props} />

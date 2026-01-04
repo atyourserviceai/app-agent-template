@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { AppAgent, AppAgentState } from "../AppAgent";
 
 /**
@@ -64,21 +64,12 @@ export const saveSettings = tool({
       return `Error saving settings: ${error}`;
     }
   },
-  parameters: z.object({
-    adminContactEmail: z
-      .string()
-      .optional()
-      .describe("Email of the admin contact"),
-    adminContactName: z
-      .string()
-      .optional()
-      .describe("Name of the admin contact"),
-    language: z.string().optional().describe("Agent language preference"),
-    operatorEmail: z
-      .string()
-      .optional()
-      .describe("Email of the primary operator"),
-    operatorName: z.string().optional().describe("Name of the primary operator")
+  inputSchema: z.object({
+    adminContactEmail: z.string().describe("Email of the admin contact"),
+    adminContactName: z.string().describe("Name of the admin contact"),
+    language: z.string().describe("Agent language preference"),
+    operatorEmail: z.string().describe("Email of the primary operator"),
+    operatorName: z.string().describe("Name of the primary operator")
   })
 });
 
@@ -108,7 +99,7 @@ export const completeOnboarding = tool({
       return `Error completing onboarding: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -143,7 +134,7 @@ export const getOnboardingStatus = tool({
       return `Error getting onboarding status: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
 
 /**
@@ -175,5 +166,5 @@ export const checkExistingConfig = tool({
       return `Error checking existing config: ${error}`;
     }
   },
-  parameters: z.object({})
+  inputSchema: z.object({})
 });
