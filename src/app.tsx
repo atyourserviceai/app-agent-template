@@ -343,13 +343,15 @@ function ProjectTabContent({
   const chatResult = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     onError: (error) => {
+      // AI SDK v6 pattern: onError is for logging/side effects only
+      // Error message addition to chat is handled via useEffect watching the error state
       console.error("Error while streaming:", error);
       console.log(
-        "[ERROR HANDLER] Error details:",
+        "[onError] Error details (message will be added via useEffect):",
         JSON.stringify(error, null, 2)
       );
 
-      // Check if this is a tool validation error
+      // Special case: Tool validation errors get synthetic tool call messages
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const isToolValidationError =
@@ -358,7 +360,7 @@ function ProjectTabContent({
 
       if (isToolValidationError) {
         console.log(
-          "[ERROR HANDLER] Tool validation error detected, creating synthetic tool call"
+          "[onError] Tool validation error detected, creating synthetic tool call"
         );
 
         // Extract tool name from error message
@@ -369,6 +371,10 @@ function ProjectTabContent({
 
         // Create a synthetic assistant message with failed tool call (v6 format)
         const toolCallId = `error-${Date.now()}`;
+        const stableMessages =
+          agentMessages.length > 0
+            ? [...agentMessages]
+            : [...lastKnownMessagesRef.current];
         const syntheticMessage = {
           id: crypto.randomUUID(),
           role: "assistant" as const,
@@ -394,155 +400,13 @@ function ProjectTabContent({
           ]
         };
 
-        // Set this synthetic message instead of the error message (cast for type compatibility)
-        setMessages([...agentMessages, syntheticMessage] as UIMessage[]);
-        return; // Exit early to avoid the normal error handling
+        // Set this synthetic message instead of the error message
+        setMessages([...stableMessages, syntheticMessage] as UIMessage[]);
+        return; // Skip normal error handling - this is a special case
       }
 
-      // Use values from the editing hook for error handling (normal error flow)
-      console.log(
-        `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
-      );
-      console.log(
-        `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
-      );
-
-      // Create a new assistant message with the error (normal error flow)
-      const formattedErrorMessage = formatErrorForMessage(error);
-
-      // Initialize with current messages, falling back to last known good messages
-      // This prevents losing all messages when an error occurs and agentMessages is empty
-      let currentMessages =
-        agentMessages.length > 0
-          ? [...agentMessages]
-          : [...lastKnownMessagesRef.current];
-
-      // If we have an original edit index from a recent edit
-      if (
-        originalEditIndexRef.current !== null &&
-        editedMessageContentRef.current
-      ) {
-        console.log(
-          `[Error] Using original edit context, index: ${originalEditIndexRef.current}`
-        );
-        console.log(
-          `[Error] Using stored edited content: "${editedMessageContentRef.current.substring(0, 30)}..."`
-        );
-
-        // We had an edit in progress - truncate to before the edit using ORIGINAL values
-        const originalLength = currentMessages.length;
-        const editIndex = originalEditIndexRef.current;
-
-        currentMessages =
-          editIndex > 0 ? agentMessages.slice(0, editIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Add the stored edited message (rather than whatever might be in the input)
-        const editedMessageText = editedMessageContentRef.current;
-        console.log(
-          `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
-        );
-        currentMessages.push({
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          parts: [
-            {
-              type: "text" as const,
-              text: editedMessageText
-            }
-          ]
-        } as UIMessage);
-
-        // Reset original refs
-        originalEditIndexRef.current = null;
-        originalMessagesLengthRef.current = 0;
-        editedMessageContentRef.current = "";
-      } else if (currentEditIndex !== null) {
-        // Fallback to current edit index (for retry operations)
-        console.log(
-          `[Error] Using current edit context, index: ${currentEditIndex}`
-        );
-
-        // We're in the middle of editing - truncate to before the edit
-        const originalLength = currentMessages.length;
-        currentMessages =
-          currentEditIndex > 0 ? agentMessages.slice(0, currentEditIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Also add the message being edited (from input)
-        const editedMessageText = agentInput.trim();
-        if (editedMessageText) {
-          console.log(
-            `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
-          );
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: editedMessageText
-              }
-            ]
-          } as UIMessage);
-        }
-
-        // Reset editing state
-        setCurrentEditIndex(null);
-      } else {
-        // For regular messages, make sure the user message is included
-        const lastUserInput = agentInput.trim();
-        const lastMessageIsUser =
-          currentMessages.length > 0 &&
-          currentMessages[currentMessages.length - 1].role === "user";
-
-        if (lastUserInput && !lastMessageIsUser) {
-          console.log(
-            `[Error] Adding user message: "${lastUserInput.substring(0, 30)}..."`
-          );
-          // Add the user message that caused the error
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: lastUserInput
-              }
-            ]
-          } as UIMessage);
-        }
-      }
-
-      // Create a new error message with required format (v6 uses parts only)
-      const newErrorMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        parts: [
-          {
-            type: "text" as const,
-            text: formattedErrorMessage
-          }
-        ]
-      } as UIMessage;
-
-      console.log(
-        `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
-      );
-
-      // Add the error message to the messages
-      setMessages([...currentMessages, newErrorMessage]);
-
-      // Reset retry state
-      setIsRetrying(false);
-
-      // Clear any refs
+      // Normal errors are handled by the useEffect watching chatError state
+      // Clear editing refs so the useEffect can handle cleanly
       originalEditIndexRef.current = null;
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
@@ -558,6 +422,7 @@ function ProjectTabContent({
     regenerate: () => void;
     status: string;
     stop: () => void;
+    error: Error | undefined;
   };
 
   // Destructure with renamed properties
@@ -569,7 +434,8 @@ function ProjectTabContent({
     data: agentData,
     setMessages,
     regenerate: reload,
-    stop
+    stop,
+    error: chatError
   } = chatResult;
 
   // Local state for input since AI SDK v6 doesn't manage it
@@ -624,17 +490,90 @@ function ProjectTabContent({
     }
   }, [agentMessages]);
 
+  // Ref to track the last processed error to avoid duplicate error messages
+  const lastProcessedErrorRef = useRef<string | null>(null);
+
+  // AI SDK v6 pattern: React to error state changes via useEffect
+  // This is more stable than modifying messages in onError callback
+  useEffect(() => {
+    if (!chatError) {
+      // Reset processed error when error is cleared
+      lastProcessedErrorRef.current = null;
+      return;
+    }
+
+    // Skip if we've already processed this error (comparing message only since timestamp changes)
+    if (
+      lastProcessedErrorRef.current &&
+      chatError.message === lastProcessedErrorRef.current
+    ) {
+      return;
+    }
+
+    // Mark this error as processed
+    lastProcessedErrorRef.current = chatError.message;
+
+    console.log(
+      "[Error Effect] Processing error via useEffect:",
+      chatError.message
+    );
+
+    // Get stable messages from ref (onError may have caused agentMessages to be empty/stale)
+    const rawMessages =
+      agentMessages.length > 0
+        ? [...agentMessages]
+        : [...lastKnownMessagesRef.current];
+
+    // Filter out empty assistant messages that the SDK creates during errors
+    // These are messages with empty parts arrays that serve no purpose
+    const stableMessages = rawMessages.filter((msg) => {
+      if (msg.role !== "assistant") return true;
+      // Keep assistant messages that have content
+      return msg.parts && msg.parts.length > 0;
+    });
+
+    // Check if there's already an error message (uses __ERROR__ format)
+    const hasExistingError = stableMessages.some((msg) => isErrorMessage(msg));
+    if (hasExistingError) {
+      console.log("[Error Effect] Error message already exists, skipping");
+      return;
+    }
+
+    // Format the error message
+    const formattedErrorMessage = formatErrorForMessage(chatError);
+
+    // Create a new error message with required format (v6 uses parts only)
+    const newErrorMessage = {
+      id: crypto.randomUUID(),
+      role: "assistant" as const,
+      parts: [
+        {
+          type: "text" as const,
+          text: formattedErrorMessage
+        }
+      ]
+    } as UIMessage;
+
+    console.log(
+      `[Error Effect] Adding error message to ${stableMessages.length} messages`
+    );
+    setMessages([...stableMessages, newErrorMessage]);
+
+    // Reset retry state
+    setIsRetrying(false);
+  }, [chatError, formatErrorForMessage, setMessages, agentMessages, isErrorMessage]);
+
   // Use the message editing hook to manage message editing and retry logic
   const {
     editingMessageId,
     editingValue,
-    currentEditIndex,
+    currentEditIndex: _currentEditIndex,
     isRetrying,
     originalMessagesLengthRef,
     originalEditIndexRef,
     editedMessageContentRef,
     setEditingValue,
-    setCurrentEditIndex,
+    setCurrentEditIndex: _setCurrentEditIndex,
     setIsRetrying,
     startEditing,
     cancelEditing,
@@ -962,8 +901,19 @@ function ProjectTabContent({
       return <EmptyChat />;
     }
 
+    // Filter out empty assistant messages (SDK creates these during errors)
+    const filteredMessages = agentMessages.filter((msg) => {
+      if (msg.role !== "assistant") return true;
+      // Keep assistant messages that have content in parts
+      return msg.parts && msg.parts.length > 0;
+    });
+
+    if (filteredMessages.length === 0) {
+      return <EmptyChat />;
+    }
+
     // Render all regular messages (cast to ExtendedUIMessage for data/createdAt access)
-    const messageElements = agentMessages.map(
+    const messageElements = filteredMessages.map(
       (message: ExtendedUIMessage, index) => {
         // Common variable setup
         const isUser = message.role === "user";
@@ -977,6 +927,11 @@ function ProjectTabContent({
 
           return (
             <div key={message.id}>
+              {showDebug && (
+                <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
+                  {JSON.stringify(message, null, 2)}
+                </pre>
+              )}
               <ErrorMessage
                 errorData={errorData}
                 onRetry={() => handleRetryWithTokenCheck(index)}
@@ -1208,6 +1163,9 @@ function ProjectTabContent({
 
     // Reset the last known messages ref so new messages can be tracked
     lastKnownMessagesRef.current = [];
+
+    // Reset the processed error ref so new errors can be tracked
+    lastProcessedErrorRef.current = null;
 
     // Reset retrying state
     setIsRetrying(false);
