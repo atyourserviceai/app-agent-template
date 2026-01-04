@@ -30,11 +30,13 @@ The voice input feature allows users to dictate messages instead of typing. It u
 A microphone button that appears next to the send button in the chat input. Provides visual feedback during recording and processing states.
 
 **States:**
+
 - Idle: Gray microphone icon
 - Recording: Red pulsing microphone, click to stop
 - Processing: Spinning indicator while transcribing
 
 **Usage:**
+
 ```tsx
 <VoiceInputButton
   onTranscription={(text) => setInput(text)}
@@ -50,12 +52,14 @@ A microphone button that appears next to the send button in the chat input. Prov
 Manages the recording lifecycle using the MediaRecorder API.
 
 **Features:**
+
 - Automatic MIME type detection (webm/opus, webm, mp4, ogg)
 - Configurable max duration (default: 60s)
 - Noise suppression and echo cancellation
 - Base64 encoding for API transmission
 
 **Interface:**
+
 ```typescript
 interface UseVoiceInputReturn {
   state: "idle" | "recording" | "processing";
@@ -74,6 +78,7 @@ interface UseVoiceInputReturn {
 Server-side endpoint that receives audio and calls OpenAI's Whisper model.
 
 **Request:**
+
 ```json
 {
   "audio": "<base64-encoded-audio>",
@@ -82,6 +87,7 @@ Server-side endpoint that receives audio and calls OpenAI's Whisper model.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -97,6 +103,7 @@ Server-side endpoint that receives audio and calls OpenAI's Whisper model.
 **File:** `src/types/voice.ts`
 
 Contains TypeScript interfaces for voice-related types:
+
 - `VoiceInputState`
 - `VoiceStreamingState`
 - `VoiceInputConfig`
@@ -107,6 +114,7 @@ Contains TypeScript interfaces for voice-related types:
 ## Browser Support
 
 The feature requires:
+
 - `navigator.mediaDevices.getUserMedia()` - for microphone access
 - `MediaRecorder` API - for audio recording
 - `AudioContext` - for audio processing
@@ -159,6 +167,7 @@ To re-enable VAD streaming, the following needs to be resolved:
    - Or server-side VAD with WebSocket streaming
 
 Once fixed, uncomment the VAD code in `VoiceInputButton.tsx`:
+
 ```typescript
 // In handleClick, change this:
 if (dictationSupported) {
@@ -176,6 +185,7 @@ if (vadSupported) {
 ### VAD Feature Design
 
 When working, VAD mode would:
+
 - Automatically detect when user starts/stops speaking
 - Transcribe each speech segment independently
 - Allow continuous hands-free dictation
@@ -186,7 +196,7 @@ When working, VAD mode would:
 
 ```json
 {
-  "@ricky0123/vad-web": "^0.0.29"  // For VAD (currently not used)
+  "@ricky0123/vad-web": "^0.0.29" // For VAD (currently not used)
 }
 ```
 

@@ -1091,7 +1091,9 @@ function ProjectTabContent({
                       const date = new Date(
                         message.createdAt as unknown as string
                       );
-                      return !isNaN(date.getTime()) ? formatTime(date) : "";
+                      return !Number.isNaN(date.getTime())
+                        ? formatTime(date)
+                        : "";
                     })()}
                   </p>
                 </div>

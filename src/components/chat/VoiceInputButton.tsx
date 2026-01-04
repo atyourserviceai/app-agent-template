@@ -67,7 +67,6 @@ export function VoiceInputButton({
     isSupported: vadSupported,
     isActive: vadActive,
     isProcessing: vadProcessing,
-    startListening,
     stopListening,
     error: vadError
   } = useVoiceStreaming({
@@ -140,10 +139,8 @@ export function VoiceInputButton({
     mode,
     dictationState,
     dictationSupported,
-    vadSupported,
     startRecording,
     stopRecording,
-    startListening,
     stopListening
   ]);
 

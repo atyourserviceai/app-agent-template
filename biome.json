@@ -16,6 +16,7 @@
       "!dist",
       "!build",
       "!.react-router",
+      "!.wrangler",
       "!worker-configuration.d.ts"
     ]
   },

@@ -49,16 +49,13 @@ export class Chat extends AIChatAgent<Env> {
       ...this.mcp.unstable_getAITools()
     };
 
-    // Store reference to this for use in execute callback
-    const agent = this;
-
     // Create the UI message stream (v6 pattern)
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         // Process any pending tool calls from previous messages
         // This handles human-in-the-loop confirmations for tools
         const processedMessages = await processToolCalls({
-          messages: agent.messages as UIMessage[],
+          messages: this.messages as UIMessage[],
           dataStream: writer,
           tools: allTools,
           executions: executions as Record<

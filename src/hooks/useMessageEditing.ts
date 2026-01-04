@@ -8,6 +8,7 @@ export function useMessageEditing(
   messages: Message[],
   setMessages: (messages: Message[]) => void,
   _input: string,
+  // biome-ignore lint/suspicious/noConfusingVoidType: void is needed here as reload can return void or Promise
   reload: () => void | Promise<string | null | undefined>
 ) {
   // Editing state
