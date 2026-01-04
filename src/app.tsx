@@ -524,35 +524,39 @@ function ProjectTabContent({
   // Type assertion to access properties that exist at runtime but have type mismatches
   }) as unknown as {
     messages: UIMessage[];
-    input: string;
-    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    handleSubmit: (e?: { preventDefault?: () => void }) => void;
+    sendMessage: (message?: { text: string } | string) => void;
     addToolResult: (args: { toolCallId: string; result: string }) => void;
     clearHistory: () => void;
     data?: unknown[];
-    setInput: (value: string) => void;
     setMessages: (messages: UIMessage[]) => void;
-    reload: () => void;
-    isLoading: boolean;
-    stop: () => void;
+    regenerate: () => void;
     status: string;
+    stop: () => void;
   };
 
   // Destructure with renamed properties
   const {
     messages: agentMessagesRaw,
-    input: agentInput,
-    handleInputChange: handleAgentInputChange,
-    handleSubmit: handleAgentSubmit,
+    sendMessage,
     addToolResult,
     clearHistory,
     data: agentData,
-    setInput,
     setMessages,
-    reload,
-    isLoading,
+    regenerate: reload,
     stop
   } = chatResult;
+
+  // Local state for input since AI SDK v6 doesn't manage it
+  const [agentInput, setAgentInput] = useState("");
+  const handleAgentInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setAgentInput(e.target.value);
+  }, []);
+
+  // Derive isLoading from status
+  const isLoading = chatResult.status === "streaming" || chatResult.status === "submitted";
+
+  // Alias setInput for voice transcription
+  const setInput = setAgentInput;
 
   // SAFETY: Ensure agentMessages is always an array to prevent "messages.map is not a function" errors
   // Also detect API errors and throw proper auth errors for the Error Boundary to catch
@@ -643,11 +647,16 @@ function ProjectTabContent({
 
   // Update handleSubmitWithRetry to check token expiration
   const handleSubmitWithRetry = (e: React.FormEvent) => {
+    e.preventDefault();
     if (auth?.checkTokenExpiration()) {
       return; // Token expired, user will be redirected to login
     }
+    if (!agentInput.trim()) {
+      return; // Don't send empty messages
+    }
     setIsRetrying(false); // Clear retrying state when sending a new message
-    handleAgentSubmit(e);
+    sendMessage({ text: agentInput });
+    setAgentInput(""); // Clear input after sending
   };
 
   // Add token expiration check to reload function wrapper
