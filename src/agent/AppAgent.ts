@@ -3,7 +3,7 @@ import type { UIMessage } from "ai";
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
-import { AIChatAgent } from "agents/ai-chat-agent";
+import { AIChatAgent } from "@cloudflare/ai-chat";
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,

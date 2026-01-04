@@ -1,7 +1,7 @@
 import type { UIMessage } from "ai";
 import { isToolUIPart, getToolName } from "ai";
 import type { ExtendedUIMessage } from "@/shared";
-import { useAgentChat } from "agents/ai-react";
+import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
