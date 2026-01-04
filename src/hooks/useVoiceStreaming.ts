@@ -205,14 +205,8 @@ export function useVoiceStreaming(
         minSpeechMs,
         preSpeechPadMs,
         redemptionMs,
-        // Use legacy model with CDN paths
+        // Use legacy model - let the library use its bundled ONNX runtime
         model: "legacy",
-        baseAssetPath:
-          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist/",
-        ortConfig: (ort: typeof import("onnxruntime-web")) => {
-          ort.env.wasm.wasmPaths =
-            "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/";
-        },
         onSpeechStart: () => {
           setState("speaking");
           if (onSpeechStart) {

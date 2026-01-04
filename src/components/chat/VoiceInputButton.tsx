@@ -116,17 +116,25 @@ export function VoiceInputButton({
         }
       }, DOUBLE_CLICK_THRESHOLD);
     } else if (clickCountRef.current === 2) {
-      // Double click - start VAD mode
+      // Double click - VAD mode (temporarily disabled due to ONNX runtime issues)
+      // TODO: Re-enable when vad-web ONNX loading is fixed
+      // See docs/VOICE.md for details
       if (clickTimerRef.current) {
         clearTimeout(clickTimerRef.current);
         clickTimerRef.current = null;
       }
       clickCountRef.current = 0;
 
-      if (vadSupported) {
-        setMode("vad");
-        startListening();
+      // VAD temporarily disabled - just start dictation instead
+      if (dictationSupported) {
+        setMode("dictation");
+        startRecording();
       }
+      // Original VAD code:
+      // if (vadSupported) {
+      //   setMode("vad");
+      //   startListening();
+      // }
     }
   }, [
     mode,
@@ -248,7 +256,7 @@ export function VoiceInputButton({
       return `Voice input error: ${currentError}. Click to try again.`;
     }
 
-    return "Click to dictate, double-click for hands-free mode";
+    return "Click to start dictation";
   };
 
   const getTitle = (): string => {
@@ -278,7 +286,7 @@ export function VoiceInputButton({
       return currentError;
     }
 
-    return "Click: dictate | Double-click: hands-free";
+    return "Click to dictate";
   };
 
   return (
