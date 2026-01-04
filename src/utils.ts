@@ -1,6 +1,6 @@
 // via https://github.com/vercel/ai/blob/main/examples/next-openai/app/api/use-chat-human-in-the-loop/utils.ts
 
-import { type UIMessage } from 'ai';
+import { type UIMessage } from "ai";
 import {
   convertToModelMessages,
   type UIMessageStreamWriter,
@@ -29,9 +29,7 @@ function isValidToolName<K extends PropertyKey, T extends object>(
  * @param executions - Map of tool names to execute functions
  * @returns Promise resolving to the processed messages
  */
-export async function processToolCalls<
-  Tools extends ToolSet
->({
+export async function processToolCalls<Tools extends ToolSet>({
   dataStream,
   messages,
   executions
@@ -39,7 +37,10 @@ export async function processToolCalls<
   tools: Tools; // used for type inference
   dataStream: UIMessageStreamWriter;
   messages: UIMessage[];
-  executions: Record<string, (args: unknown, context: ToolExecutionOptions) => Promise<unknown>>;
+  executions: Record<
+    string,
+    (args: unknown, context: ToolExecutionOptions) => Promise<unknown>
+  >;
 }): Promise<UIMessage[]> {
   const lastMessage = messages[messages.length - 1];
   const parts = lastMessage.parts;
@@ -104,7 +105,10 @@ export async function processToolCalls<
   );
 
   // Finally return the processed messages
-  return [...messages.slice(0, -1), { ...lastMessage, parts: processedParts }] as UIMessage[];
+  return [
+    ...messages.slice(0, -1),
+    { ...lastMessage, parts: processedParts }
+  ] as UIMessage[];
 }
 
 // export function getToolsRequiringConfirmation<

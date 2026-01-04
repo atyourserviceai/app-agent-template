@@ -1,7 +1,7 @@
 import puppeteer from "@cloudflare/puppeteer";
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 import type { AppAgent } from "../AppAgent";
 
 /**

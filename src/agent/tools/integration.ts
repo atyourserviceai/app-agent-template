@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { generateId, tool } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 import type { AppAgent, AppAgentState } from "../AppAgent";
 
 /**
@@ -51,7 +51,9 @@ export const recordTestResult = tool({
     }
   },
   inputSchema: z.object({
-    error: z.string().describe("Error message if the test failed, empty string if passed"),
+    error: z
+      .string()
+      .describe("Error message if the test failed, empty string if passed"),
     input: z.string().describe("JSON string of input provided to the tool"),
     notes: z.string().describe("Additional notes about the test"),
     output: z.string().describe("JSON string of output received from the tool"),
@@ -237,9 +239,7 @@ export const completeIntegrationTesting = tool({
     }
   },
   inputSchema: z.object({
-    force: z
-      .boolean()
-      .describe("Force completion even if tests failed")
+    force: z.boolean().describe("Force completion even if tests failed")
   })
 });
 

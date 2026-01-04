@@ -99,13 +99,11 @@ export class ShareAssetGenerator {
     ImageResponse: any
   ): Promise<Response> {
     return new ImageResponse(
-      (
-        <ShareAssetTemplate
-          agentState={agentState}
-          options={options}
-          dimensions={dimensions}
-        />
-      ),
+      <ShareAssetTemplate
+        agentState={agentState}
+        options={options}
+        dimensions={dimensions}
+      />,
       {
         width: dimensions.width,
         height: dimensions.height

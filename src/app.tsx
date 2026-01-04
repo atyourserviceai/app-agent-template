@@ -74,8 +74,7 @@ function SuggestedActions({
     (part) => isToolUIPart(part) && getToolName(part) === "suggestActions"
   );
 
-  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart))
-    return null;
+  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart)) return null;
 
   // In v6, properties are directly on the part (not in toolInvocation)
   const toolPart = suggestActionsPart;
@@ -90,7 +89,16 @@ function SuggestedActions({
 
   if (toolPart.state === "input-available") {
     // Handle input-available state (v6 equivalent of "call") - get actions from input
-    const input = toolPart.input as { actions?: Array<{ label: string; value: string; primary?: boolean; isOther?: boolean }> } | undefined;
+    const input = toolPart.input as
+      | {
+          actions?: Array<{
+            label: string;
+            value: string;
+            primary?: boolean;
+            isOther?: boolean;
+          }>;
+        }
+      | undefined;
     actions = input?.actions || [];
   } else if (toolPart.state === "output-available" && toolPart.output) {
     // Handle output-available state (v6 equivalent of "result") - get actions from output
@@ -105,7 +113,16 @@ function SuggestedActions({
         console.error("Failed to parse suggestActions result", e);
       }
     } else if (output && typeof output === "object" && "actions" in output) {
-      actions = (output as { actions: Array<{ label: string; value: string; primary?: boolean; isOther?: boolean }> }).actions;
+      actions = (
+        output as {
+          actions: Array<{
+            label: string;
+            value: string;
+            primary?: boolean;
+            isOther?: boolean;
+          }>;
+        }
+      ).actions;
     }
   }
 
@@ -395,9 +412,10 @@ function ProjectTabContent({
 
       // Initialize with current messages, falling back to last known good messages
       // This prevents losing all messages when an error occurs and agentMessages is empty
-      let currentMessages = agentMessages.length > 0
-        ? [...agentMessages]
-        : [...lastKnownMessagesRef.current];
+      let currentMessages =
+        agentMessages.length > 0
+          ? [...agentMessages]
+          : [...lastKnownMessagesRef.current];
 
       // If we have an original edit index from a recent edit
       if (
@@ -529,7 +547,7 @@ function ProjectTabContent({
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
     }
-  // Type assertion to access properties that exist at runtime but have type mismatches
+    // Type assertion to access properties that exist at runtime but have type mismatches
   }) as unknown as {
     messages: UIMessage[];
     sendMessage: (message?: { text: string } | string) => void;
@@ -556,12 +574,16 @@ function ProjectTabContent({
 
   // Local state for input since AI SDK v6 doesn't manage it
   const [agentInput, setAgentInput] = useState("");
-  const handleAgentInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setAgentInput(e.target.value);
-  }, []);
+  const handleAgentInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setAgentInput(e.target.value);
+    },
+    []
+  );
 
   // Derive isLoading from status
-  const isLoading = chatResult.status === "streaming" || chatResult.status === "submitted";
+  const isLoading =
+    chatResult.status === "streaming" || chatResult.status === "submitted";
 
   // Alias setInput for voice transcription
   const setInput = setAgentInput;
@@ -882,7 +904,9 @@ function ProjectTabContent({
       !isLoading &&
       !temporaryLoading
     ) {
-      const lastMessage = agentMessages[agentMessages.length - 1] as ExtendedUIMessage;
+      const lastMessage = agentMessages[
+        agentMessages.length - 1
+      ] as ExtendedUIMessage;
 
       // Check if last message is a system message with isModeMessage data
       if (lastMessage.role === "system") {
@@ -936,138 +960,147 @@ function ProjectTabContent({
     }
 
     // Render all regular messages (cast to ExtendedUIMessage for data/createdAt access)
-    const messageElements = agentMessages.map((message: ExtendedUIMessage, index) => {
-      // Common variable setup
-      const isUser = message.role === "user";
-      const isMessageError = isErrorMessage(message);
-      const isEditing = editingMessageId === message.id;
-      const isSystemMessage = message.role === "system";
+    const messageElements = agentMessages.map(
+      (message: ExtendedUIMessage, index) => {
+        // Common variable setup
+        const isUser = message.role === "user";
+        const isMessageError = isErrorMessage(message);
+        const isEditing = editingMessageId === message.id;
+        const isSystemMessage = message.role === "system";
 
-      // Special handling for error messages
-      if (isMessageError && !isUser) {
-        const errorData = parseErrorData(message);
+        // Special handling for error messages
+        if (isMessageError && !isUser) {
+          const errorData = parseErrorData(message);
 
-        return (
-          <div key={message.id}>
-            <ErrorMessage
-              errorData={errorData}
-              onRetry={() => handleRetryWithTokenCheck(index)}
-              isLoading={isLoading}
+          return (
+            <div key={message.id}>
+              <ErrorMessage
+                errorData={errorData}
+                onRetry={() => handleRetryWithTokenCheck(index)}
+                isLoading={isLoading}
+                formatTime={formatTime}
+                createdAt={message.createdAt}
+              />
+            </div>
+          );
+        }
+
+        // For user messages or system messages, use our ChatMessage component
+        if (isUser || isSystemMessage) {
+          return (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              index={index}
+              isEditing={isEditing}
+              editingValue={editingValue}
+              onStartEditing={startEditing}
+              onCancelEditing={cancelEditing}
+              onSaveEdit={handleEditMessage}
+              onEditingValueChange={setEditingValue}
               formatTime={formatTime}
-              createdAt={message.createdAt}
+              showDebug={showDebug}
             />
-          </div>
-        );
-      }
+          );
+        }
 
-      // For user messages or system messages, use our ChatMessage component
-      if (isUser || isSystemMessage) {
+        // For assistant messages with multiple parts
         return (
-          <ChatMessage
-            key={message.id}
-            message={message}
-            index={index}
-            isEditing={isEditing}
-            editingValue={editingValue}
-            onStartEditing={startEditing}
-            onCancelEditing={cancelEditing}
-            onSaveEdit={handleEditMessage}
-            onEditingValueChange={setEditingValue}
-            formatTime={formatTime}
-            showDebug={showDebug}
-          />
-        );
-      }
+          <div key={message.id} className="mb-4">
+            {showDebug && (
+              <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
+                {JSON.stringify(message, null, 2)}
+              </pre>
+            )}
 
-      // For assistant messages with multiple parts
-      return (
-        <div key={message.id} className="mb-4">
-          {showDebug && (
-            <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
-              {JSON.stringify(message, null, 2)}
-            </pre>
-          )}
+            <div className="flex justify-start">
+              <div className="flex gap-2 max-w-[85%] flex-row">
+                <Avatar username={"AI"} />
 
-          <div className="flex justify-start">
-            <div className="flex gap-2 max-w-[85%] flex-row">
-              <Avatar username={"AI"} />
-
-              <div className="space-y-3">
-                {/* Render each part in sequence */}
-                {message.parts?.map((part, i) => {
-                  // For text parts
-                  if (part.type === "text") {
-                    return (
-                      <div
-                        key={`${message.id}-text-${part.text?.substring(0, 10) || i}`}
-                      >
-                        <Card className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 rounded-bl-none border-assistant-border">
-                          <div className="text-base markdown-content">
-                            <MemoizedMarkdown
-                              id={`${message.id}-${i}`}
-                              content={part.text || ""}
-                            />
-                          </div>
-                        </Card>
-                      </div>
-                    );
-                  }
-
-                  // For tool UI parts (v6 pattern: type is tool-${toolName})
-                  if (isToolUIPart(part)) {
-                    const toolName = getToolName(part);
-                    const toolCallId = part.toolCallId;
-                    const needsConfirmation =
-                      toolsRequiringConfirmation.includes(
-                        toolName as keyof ToolTypes
-                      ) && part.state === "input-available";
-
-                    // Skip suggestActions since they are handled separately
-                    if (toolName === "suggestActions") {
-                      return null;
+                <div className="space-y-3">
+                  {/* Render each part in sequence */}
+                  {message.parts?.map((part, i) => {
+                    // For text parts
+                    if (part.type === "text") {
+                      return (
+                        <div
+                          key={`${message.id}-text-${part.text?.substring(0, 10) || i}`}
+                        >
+                          <Card className="p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 rounded-bl-none border-assistant-border">
+                            <div className="text-base markdown-content">
+                              <MemoizedMarkdown
+                                id={`${message.id}-${i}`}
+                                content={part.text || ""}
+                              />
+                            </div>
+                          </Card>
+                        </div>
+                      );
                     }
 
-                    // Create a v4-compatible toolInvocation object for ToolInvocationCard
-                    // Map v6 states to v4 states and cast to expected types
-                    const v4State = part.state === "input-available" ? "call" as const :
-                                   part.state === "output-available" ? "result" as const :
-                                   "call" as const; // Default to "call" for other states
-                    const toolInvocation = {
-                      toolCallId: part.toolCallId,
-                      toolName,
-                      state: v4State,
-                      args: (part.input || {}) as Record<string, unknown>,
-                      result: part.output as Record<string, unknown> | undefined
-                    };
+                    // For tool UI parts (v6 pattern: type is tool-${toolName})
+                    if (isToolUIPart(part)) {
+                      const toolName = getToolName(part);
+                      const toolCallId = part.toolCallId;
+                      const needsConfirmation =
+                        toolsRequiringConfirmation.includes(
+                          toolName as keyof ToolTypes
+                        ) && part.state === "input-available";
 
-                    return (
-                      <ToolInvocationCard
-                        key={`${message.id}-tool-${toolCallId}`}
-                        toolInvocation={toolInvocation}
-                        toolCallId={toolCallId}
-                        needsConfirmation={needsConfirmation}
-                        addToolResult={addToolResult}
-                      />
-                    );
-                  }
+                      // Skip suggestActions since they are handled separately
+                      if (toolName === "suggestActions") {
+                        return null;
+                      }
 
-                  return null;
-                })}
+                      // Create a v4-compatible toolInvocation object for ToolInvocationCard
+                      // Map v6 states to v4 states and cast to expected types
+                      const v4State =
+                        part.state === "input-available"
+                          ? ("call" as const)
+                          : part.state === "output-available"
+                            ? ("result" as const)
+                            : ("call" as const); // Default to "call" for other states
+                      const toolInvocation = {
+                        toolCallId: part.toolCallId,
+                        toolName,
+                        state: v4State,
+                        args: (part.input || {}) as Record<string, unknown>,
+                        result: part.output as
+                          | Record<string, unknown>
+                          | undefined
+                      };
 
-                {/* Timestamp for the entire message */}
-                <p className="text-xs text-muted-foreground mt-1 text-left">
-                  {(() => {
-                    if (!message.createdAt) return "";
-                    const date = new Date(message.createdAt as unknown as string);
-                    return !isNaN(date.getTime()) ? formatTime(date) : "";
-                  })()}
-                </p>
+                      return (
+                        <ToolInvocationCard
+                          key={`${message.id}-tool-${toolCallId}`}
+                          toolInvocation={toolInvocation}
+                          toolCallId={toolCallId}
+                          needsConfirmation={needsConfirmation}
+                          addToolResult={addToolResult}
+                        />
+                      );
+                    }
+
+                    return null;
+                  })}
+
+                  {/* Timestamp for the entire message */}
+                  <p className="text-xs text-muted-foreground mt-1 text-left">
+                    {(() => {
+                      if (!message.createdAt) return "";
+                      const date = new Date(
+                        message.createdAt as unknown as string
+                      );
+                      return !isNaN(date.getTime()) ? formatTime(date) : "";
+                    })()}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      );
-    });
+        );
+      }
+    );
 
     // Check if the last message is from the user with no assistant response
     if (!isLoading && !isRetrying && agentMessages.length > 0) {

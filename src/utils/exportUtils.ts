@@ -20,13 +20,11 @@ function getToolParts(message: Message): Array<{
   input: unknown;
   output: unknown;
 }> {
-  return (message.parts || [])
-    .filter(isToolUIPart)
-    .map((part) => ({
-      toolName: getToolName(part),
-      input: part.input,
-      output: part.output
-    }));
+  return (message.parts || []).filter(isToolUIPart).map((part) => ({
+    toolName: getToolName(part),
+    input: part.input,
+    output: part.output
+  }));
 }
 
 /**
@@ -65,7 +63,11 @@ export function exportConversationToMarkdown(messages: Message[]): string {
 
         toolParts.forEach((tool) => {
           lines.push(`**${tool.toolName}**`);
-          if (tool.input && typeof tool.input === "object" && Object.keys(tool.input as object).length > 0) {
+          if (
+            tool.input &&
+            typeof tool.input === "object" &&
+            Object.keys(tool.input as object).length > 0
+          ) {
             lines.push("```json");
             lines.push(JSON.stringify(tool.input, null, 2));
             lines.push("```");

@@ -1,4 +1,4 @@
-import type { LanguageModel } from 'ai';
+import type { LanguageModel } from "ai";
 
 /**
  * Middleware to simulate an LLM that streams thinking tokens during processing

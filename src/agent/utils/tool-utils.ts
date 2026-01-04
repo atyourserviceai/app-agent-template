@@ -1,4 +1,4 @@
-import { type UIMessage } from 'ai';
+import { type UIMessage } from "ai";
 import {
   convertToModelMessages,
   type UIMessageStreamWriter,
@@ -326,7 +326,11 @@ type ToolUIPart = {
   toolCallId: string;
   input?: unknown;
   output?: unknown;
-  state: "input-streaming" | "input-available" | "output-available" | "output-error";
+  state:
+    | "input-streaming"
+    | "input-available"
+    | "output-available"
+    | "output-error";
   [key: string]: unknown;
 };
 

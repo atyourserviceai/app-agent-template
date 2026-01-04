@@ -6,7 +6,11 @@
 export type VoiceInputState = "idle" | "recording" | "processing";
 
 /** State of VAD (Voice Activity Detection) streaming */
-export type VoiceStreamingState = "idle" | "listening" | "speaking" | "processing";
+export type VoiceStreamingState =
+  | "idle"
+  | "listening"
+  | "speaking"
+  | "processing";
 
 /** Configuration for voice input */
 export interface VoiceInputConfig {

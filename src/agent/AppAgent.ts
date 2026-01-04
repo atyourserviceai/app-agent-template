@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { UIMessage } from 'ai';
+import type { UIMessage } from "ai";
 // import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
@@ -12,7 +12,7 @@ import {
   type StreamTextOnFinishCallback,
   streamText,
   type ToolSet,
-  stepCountIs,
+  stepCountIs
 } from "ai";
 import { getUnifiedSystemPrompt } from "./prompts/index";
 import { executions, tools } from "./tools/registry";
@@ -458,9 +458,7 @@ export class AppAgent extends AIChatAgent<Env> {
     const currentMode = state.mode;
     const systemPrompt = this.getSystemPrompt();
 
-    console.log(
-      `[AppAgent] Processing chat message in ${currentMode} mode`
-    );
+    console.log(`[AppAgent] Processing chat message in ${currentMode} mode`);
 
     // We don't have MCP implementation yet, so just use mode tools
     const allTools = modeTools;
@@ -610,7 +608,9 @@ export class AppAgent extends AIChatAgent<Env> {
     await this.saveMessages([
       ...this.messages,
       {
-        parts: [{ type: "text", text: `Running scheduled task: ${description}` }],
+        parts: [
+          { type: "text", text: `Running scheduled task: ${description}` }
+        ],
         createdAt: new Date(),
         id: generateId(),
         role: "user"

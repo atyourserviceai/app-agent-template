@@ -12,7 +12,7 @@ import {
   type ToolSet,
   stepCountIs,
   convertToModelMessages,
-  type UIMessage,
+  type UIMessage
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { processToolCalls } from "./utils";
@@ -61,7 +61,13 @@ export class Chat extends AIChatAgent<Env> {
           messages: agent.messages as UIMessage[],
           dataStream: writer,
           tools: allTools,
-          executions: executions as Record<string, (args: unknown, context: { messages: unknown[]; toolCallId: string }) => Promise<unknown>>
+          executions: executions as Record<
+            string,
+            (
+              args: unknown,
+              context: { messages: unknown[]; toolCallId: string }
+            ) => Promise<unknown>
+          >
         });
 
         // Convert UI messages to model messages for streamText
@@ -83,7 +89,9 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
 
           onFinish: async (args) => {
             onFinish(
-              args as unknown as Parameters<StreamTextOnFinishCallback<ToolSet>>[0]
+              args as unknown as Parameters<
+                StreamTextOnFinishCallback<ToolSet>
+              >[0]
             );
             // await this.mcp.closeConnection(mcpConnection.id);
           },
@@ -116,10 +124,7 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
         }
       ]
     };
-    await this.saveMessages([
-      ...this.messages,
-      taskMessage
-    ] as UIMessage[]);
+    await this.saveMessages([...this.messages, taskMessage] as UIMessage[]);
   }
 }
 
@@ -143,7 +148,8 @@ export default {
     }
     return (
       // Route the request to our agent or return 404 if not found
-      ((await routeAgentRequest(request, env)) || new Response("Not found", { status: 404 }))
+      (await routeAgentRequest(request, env)) ||
+      new Response("Not found", { status: 404 })
     );
   }
 } satisfies ExportedHandler<Env>;

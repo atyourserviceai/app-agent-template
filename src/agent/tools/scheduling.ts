@@ -1,6 +1,6 @@
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
-import { z } from 'zod/v3';
+import { z } from "zod/v3";
 import type { AppAgent } from "../AppAgent";
 
 // Define a schedule input type
@@ -15,12 +15,22 @@ export type ScheduleInput = {
 // Note: All fields must be required for OpenAI function calling compatibility
 const scheduleSchema = z.object({
   description: z.string().describe("Description of the task to schedule"),
-  when: z.object({
-    cron: z.string().describe("Cron expression (required when type is 'cron')"),
-    date: z.string().describe("ISO date string (required when type is 'scheduled')"),
-    delayInSeconds: z.number().describe("Delay in seconds (required when type is 'delayed')"),
-    type: z.enum(["scheduled", "delayed", "cron", "no-schedule"]).describe("Type of schedule")
-  }).describe("Schedule timing configuration")
+  when: z
+    .object({
+      cron: z
+        .string()
+        .describe("Cron expression (required when type is 'cron')"),
+      date: z
+        .string()
+        .describe("ISO date string (required when type is 'scheduled')"),
+      delayInSeconds: z
+        .number()
+        .describe("Delay in seconds (required when type is 'delayed')"),
+      type: z
+        .enum(["scheduled", "delayed", "cron", "no-schedule"])
+        .describe("Type of schedule")
+    })
+    .describe("Schedule timing configuration")
 });
 
 /**

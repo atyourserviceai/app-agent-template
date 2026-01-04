@@ -27,7 +27,10 @@ interface TranscribeResponse {
  */
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return Response.json({ success: false, error: "Method not allowed" }, { status: 405 });
+    return Response.json(
+      { success: false, error: "Method not allowed" },
+      { status: 405 }
+    );
   }
 
   // Validate JWT authentication
@@ -64,7 +67,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
     if (!gatewayBaseUrl) {
       console.error("GATEWAY_BASE_URL not configured");
       return Response.json(
-        { success: false, error: "Server configuration error" } as TranscribeResponse,
+        {
+          success: false,
+          error: "Server configuration error"
+        } as TranscribeResponse,
         { status: 500 }
       );
     }
@@ -75,7 +81,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
     if (!jwtToken) {
       return Response.json(
-        { success: false, error: "Missing authentication token" } as TranscribeResponse,
+        {
+          success: false,
+          error: "Missing authentication token"
+        } as TranscribeResponse,
         { status: 401 }
       );
     }
@@ -107,9 +116,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
   } catch (error) {
     console.error("Transcription error:", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return Response.json(
-      { success: false, error: `Transcription failed: ${errorMessage}` } as TranscribeResponse,
+      {
+        success: false,
+        error: `Transcription failed: ${errorMessage}`
+      } as TranscribeResponse,
       { status: 500 }
     );
   }
