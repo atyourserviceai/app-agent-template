@@ -208,7 +208,7 @@ export function useVoiceStreaming(
         // Use legacy model with CDN paths
         model: "legacy",
         baseAssetPath:
-          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist",
+          "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.29/dist/",
         ortConfig: (ort: typeof import("onnxruntime-web")) => {
           ort.env.wasm.wasmPaths =
             "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/";
