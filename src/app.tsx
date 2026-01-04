@@ -1202,6 +1202,8 @@ function ProjectTabContent({
             }}
             onStop={stop}
             onCloseChat={() => setActiveTab("presentation")}
+            setInput={setInput}
+            jwtToken={auth?.authMethod?.apiKey}
           >
             {renderMessages()}
           </ChatContainer>

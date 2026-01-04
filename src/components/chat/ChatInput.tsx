@@ -1,8 +1,9 @@
 import { PaperPlaneRight, Stop } from "@phosphor-icons/react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button/Button";
 import { Textarea } from "@/components/textarea/Textarea";
+import { VoiceInputButton } from "@/components/chat/VoiceInputButton";
 
 type ChatInputProps = {
   value: string;
@@ -13,6 +14,12 @@ type ChatInputProps = {
   isThinking: boolean;
   pendingConfirmation: boolean;
   placeholder?: string;
+  /** Optional setter for voice transcription injection */
+  setInput?: (value: string) => void;
+  /** JWT token for voice API authentication */
+  jwtToken?: string;
+  /** Whether to show the voice input button */
+  enableVoiceInput?: boolean;
 };
 
 export function ChatInput({
@@ -23,10 +30,24 @@ export function ChatInput({
   isLoading,
   isThinking,
   pendingConfirmation,
-  placeholder
+  placeholder,
+  setInput,
+  jwtToken,
+  enableVoiceInput = true
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Handle voice transcription - append to existing input or set new
+  const handleVoiceTranscription = useCallback(
+    (text: string) => {
+      if (setInput) {
+        const newValue = value.trim() ? `${value} ${text}` : text;
+        setInput(newValue);
+      }
+    },
+    [value, setInput]
+  );
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -105,6 +126,14 @@ export function ChatInput({
             </div>
           )}
         </div>
+
+        {enableVoiceInput && setInput && (
+          <VoiceInputButton
+            onTranscription={handleVoiceTranscription}
+            jwtToken={jwtToken}
+            disabled={pendingConfirmation || isLoading || isThinking}
+          />
+        )}
 
         {isLoading && onStop ? (
           <Button
