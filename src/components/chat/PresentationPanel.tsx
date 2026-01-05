@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 
@@ -13,6 +13,31 @@ export function PresentationPanel({
   showDebug
 }: PresentationPanelProps) {
   const canvasRef = useRef<BallCanvasHandle>(null);
+  const processedCommandsRef = useRef<Set<string>>(new Set());
+
+  // Process ball commands from AI agent
+  useEffect(() => {
+    const commands = agentState.ballCommands;
+    if (!commands || commands.length === 0 || !canvasRef.current) return;
+
+    // Create a unique key for this batch of commands
+    const batchKey = JSON.stringify(commands);
+
+    // Skip if we've already processed this exact batch
+    if (processedCommandsRef.current.has(batchKey)) return;
+
+    // Process commands through the canvas
+    canvasRef.current.processCommands(commands);
+
+    // Mark as processed
+    processedCommandsRef.current.add(batchKey);
+
+    // Keep set from growing unbounded (only keep last 100)
+    if (processedCommandsRef.current.size > 100) {
+      const entries = Array.from(processedCommandsRef.current);
+      processedCommandsRef.current = new Set(entries.slice(-50));
+    }
+  }, [agentState.ballCommands]);
 
   // Determine theme based on document class
   const isDark =

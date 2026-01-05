@@ -18,7 +18,7 @@ import { getSystemPrompt } from "./prompt";
 import { executions, tools } from "./tools/registry";
 import { simulateThinkingLLM } from "./middleware/simulateThinkingMiddleware";
 import type { AdminContact, Operator } from "./types/generic";
-import type { BallState } from "../balls/types";
+import type { BallCommand } from "../balls/types";
 import {
   type DatabaseExportResult,
   exportAgentData,
@@ -117,8 +117,8 @@ export interface AppAgentState {
     // JWT API key removed - now stored only in SQLite
   };
 
-  // Ball simulation state
-  ballState?: BallState;
+  // Ball simulation commands queue (processed by client, then cleared)
+  ballCommands?: BallCommand[];
 
   // Optional metadata
   _lastModeChange?: string;

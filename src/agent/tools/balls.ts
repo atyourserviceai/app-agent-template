@@ -1,12 +1,25 @@
 /**
  * Ball manipulation tools for the AI agent
+ * Uses command pattern - tools push commands to state, client executes them
  */
 
 import { getCurrentAgent } from "agents";
 import { tool } from "ai";
 import { z } from "zod/v3";
 import type { AppAgent, AppAgentState } from "../AppAgent";
-import { BALL_COLORS, type Ball, type BallColorName } from "../../balls/types";
+import { BALL_COLORS, type Ball, type BallColorName, type BallCommand } from "../../balls/types";
+
+/**
+ * Helper to add a command to the agent state
+ */
+function pushCommand(agent: AppAgent, command: BallCommand) {
+  const state = agent.state as AppAgentState;
+  if (!state.ballCommands) {
+    state.ballCommands = [];
+  }
+  state.ballCommands.push(command);
+  agent.setState(state);
+}
 
 /**
  * Add a new ball to the simulation
@@ -16,7 +29,7 @@ export const addBall = tool({
     "Add a new bouncing ball to the simulation. You can specify color, size, position, and initial velocity.",
   execute: async ({
     color = "blue",
-    radius = 20,
+    radius = 25,
     x,
     y,
     vx = 0,
@@ -35,65 +48,30 @@ export const addBall = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
+    const newBall: Ball = {
+      id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      x: x ?? Math.random() * 400 + 100,
+      y: y ?? Math.random() * 200 + 50,
+      vx: vx ?? (Math.random() - 0.5) * 10,
+      vy: vy ?? (Math.random() - 0.5) * 5,
+      radius: Math.max(10, Math.min(100, radius)),
+      color: BALL_COLORS[color] || BALL_COLORS.blue
+    };
 
-      // Initialize ball state if needed
-      if (!state.ballState) {
-        state.ballState = {
-          balls: [],
-          gravity: 0.5,
-          friction: 0.99,
-          paused: false
-        };
-      }
+    pushCommand(agent, { type: "addBall", ball: newBall });
 
-      // Generate random position if not specified
-      const newBall: Ball = {
-        id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        x: x ?? Math.random() * 400 + 100,
-        y: y ?? Math.random() * 200 + 50,
-        vx: vx ?? (Math.random() - 0.5) * 10,
-        vy: vy ?? (Math.random() - 0.5) * 5,
-        radius: Math.max(10, Math.min(100, radius)),
-        color: BALL_COLORS[color] || BALL_COLORS.blue
-      };
-
-      state.ballState.balls.push(newBall);
-      agent.setState(state);
-
-      return {
-        success: true,
-        message: `Added a ${color} ball with radius ${newBall.radius}`,
-        ballId: newBall.id,
-        totalBalls: state.ballState.balls.length
-      };
-    } catch (error) {
-      console.error("Error adding ball:", error);
-      return `Error adding ball: ${error}`;
-    }
+    return {
+      success: true,
+      message: `Added a ${color} ball with radius ${newBall.radius}`,
+      ballId: newBall.id
+    };
   },
   inputSchema: z.object({
     color: z
-      .enum([
-        "red",
-        "orange",
-        "yellow",
-        "green",
-        "blue",
-        "purple",
-        "pink",
-        "cyan",
-        "white"
-      ])
+      .enum(["red", "orange", "yellow", "green", "blue", "purple", "pink", "cyan", "white"])
       .optional()
       .describe("Color of the ball"),
-    radius: z
-      .number()
-      .min(10)
-      .max(100)
-      .optional()
-      .describe("Radius of the ball in pixels (10-100)"),
+    radius: z.number().min(10).max(100).optional().describe("Radius of the ball in pixels (10-100)"),
     x: z.number().optional().describe("Initial X position"),
     y: z.number().optional().describe("Initial Y position"),
     vx: z.number().optional().describe("Initial X velocity"),
@@ -113,32 +91,12 @@ export const removeBall = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
+    pushCommand(agent, { type: "removeBall", ballId });
 
-      if (!state.ballState?.balls.length) {
-        return { success: false, message: "No balls to remove" };
-      }
-
-      const initialCount = state.ballState.balls.length;
-      state.ballState.balls = state.ballState.balls.filter(
-        (b) => b.id !== ballId
-      );
-      agent.setState(state);
-
-      if (state.ballState.balls.length < initialCount) {
-        return {
-          success: true,
-          message: `Removed ball ${ballId}`,
-          remainingBalls: state.ballState.balls.length
-        };
-      } else {
-        return { success: false, message: `Ball ${ballId} not found` };
-      }
-    } catch (error) {
-      console.error("Error removing ball:", error);
-      return `Error removing ball: ${error}`;
-    }
+    return {
+      success: true,
+      message: `Removed ball ${ballId}`
+    };
   },
   inputSchema: z.object({
     ballId: z.string().describe("ID of the ball to remove")
@@ -157,31 +115,12 @@ export const clearBalls = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
-      const count = state.ballState?.balls.length || 0;
+    pushCommand(agent, { type: "clearBalls" });
 
-      if (!state.ballState) {
-        state.ballState = {
-          balls: [],
-          gravity: 0.5,
-          friction: 0.99,
-          paused: false
-        };
-      } else {
-        state.ballState.balls = [];
-      }
-
-      agent.setState(state);
-
-      return {
-        success: true,
-        message: `Cleared ${count} balls from the simulation`
-      };
-    } catch (error) {
-      console.error("Error clearing balls:", error);
-      return `Error clearing balls: ${error}`;
-    }
+    return {
+      success: true,
+      message: "Cleared all balls from the simulation"
+    };
   },
   inputSchema: z.object({})
 });
@@ -199,37 +138,17 @@ export const setGravity = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
+    const clampedGravity = Math.max(0, Math.min(2, gravity));
+    pushCommand(agent, { type: "setGravity", gravity: clampedGravity });
 
-      if (!state.ballState) {
-        state.ballState = {
-          balls: [],
-          gravity: 0.5,
-          friction: 0.99,
-          paused: false
-        };
-      }
-
-      state.ballState.gravity = Math.max(0, Math.min(2, gravity));
-      agent.setState(state);
-
-      return {
-        success: true,
-        message: `Set gravity to ${state.ballState.gravity}`,
-        gravity: state.ballState.gravity
-      };
-    } catch (error) {
-      console.error("Error setting gravity:", error);
-      return `Error setting gravity: ${error}`;
-    }
+    return {
+      success: true,
+      message: `Set gravity to ${clampedGravity}`,
+      gravity: clampedGravity
+    };
   },
   inputSchema: z.object({
-    gravity: z
-      .number()
-      .min(0)
-      .max(2)
-      .describe("Gravity strength (0 = floating, 0.5 = normal, 2 = heavy)")
+    gravity: z.number().min(0).max(2).describe("Gravity strength (0 = floating, 0.5 = normal, 2 = heavy)")
   })
 });
 
@@ -245,30 +164,13 @@ export const toggleSimulation = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
+    pushCommand(agent, { type: "setPaused", paused });
 
-      if (!state.ballState) {
-        state.ballState = {
-          balls: [],
-          gravity: 0.5,
-          friction: 0.99,
-          paused: false
-        };
-      }
-
-      state.ballState.paused = paused;
-      agent.setState(state);
-
-      return {
-        success: true,
-        message: paused ? "Simulation paused" : "Simulation resumed",
-        paused: state.ballState.paused
-      };
-    } catch (error) {
-      console.error("Error toggling simulation:", error);
-      return `Error toggling simulation: ${error}`;
-    }
+    return {
+      success: true,
+      message: paused ? "Simulation paused" : "Simulation resumed",
+      paused
+    };
   },
   inputSchema: z.object({
     paused: z.boolean().describe("True to pause, false to resume")
@@ -277,10 +179,10 @@ export const toggleSimulation = tool({
 
 /**
  * Get the current ball simulation state
+ * Note: This returns info about what commands have been sent, not actual canvas state
  */
 export const getBallState = tool({
-  description:
-    "Get the current state of the ball simulation including all balls and physics settings",
+  description: "Get information about pending ball commands",
   execute: async () => {
     const { agent } = getCurrentAgent<AppAgent>();
 
@@ -288,33 +190,15 @@ export const getBallState = tool({
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
-      const ballState = state.ballState || {
-        balls: [],
-        gravity: 0.5,
-        friction: 0.99,
-        paused: false
-      };
+    const state = agent.state as AppAgentState;
+    const pendingCommands = state.ballCommands?.length || 0;
 
-      return {
-        totalBalls: ballState.balls.length,
-        balls: ballState.balls.map((b) => ({
-          id: b.id,
-          color: Object.entries(BALL_COLORS).find(
-            ([, v]) => v === b.color
-          )?.[0] || "unknown",
-          radius: b.radius,
-          position: { x: Math.round(b.x), y: Math.round(b.y) }
-        })),
-        gravity: ballState.gravity,
-        friction: ballState.friction,
-        paused: ballState.paused
-      };
-    } catch (error) {
-      console.error("Error getting ball state:", error);
-      return `Error getting ball state: ${error}`;
-    }
+    return {
+      pendingCommands,
+      message: pendingCommands > 0
+        ? `${pendingCommands} commands pending`
+        : "No pending commands - simulation running"
+    };
   },
   inputSchema: z.object({})
 });
@@ -324,79 +208,41 @@ export const getBallState = tool({
  */
 export const addMultipleBalls = tool({
   description: "Add multiple balls to the simulation at once",
-  execute: async ({
-    count,
-    color
-  }: {
-    count: number;
-    color?: BallColorName;
-  }) => {
+  execute: async ({ count, color }: { count: number; color?: BallColorName }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
     if (!agent) {
       return "Error: Could not get agent reference";
     }
 
-    try {
-      const state = agent.state as AppAgentState;
+    const colors = Object.keys(BALL_COLORS) as BallColorName[];
+    const balls: Ball[] = [];
 
-      if (!state.ballState) {
-        state.ballState = {
-          balls: [],
-          gravity: 0.5,
-          friction: 0.99,
-          paused: false
-        };
-      }
-
-      const colors = Object.keys(BALL_COLORS) as BallColorName[];
-      const addedBalls: string[] = [];
-
-      for (let i = 0; i < Math.min(count, 20); i++) {
-        const ballColor = color || colors[Math.floor(Math.random() * colors.length)];
-        const newBall: Ball = {
-          id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          x: Math.random() * 400 + 100,
-          y: Math.random() * 200 + 50,
-          vx: (Math.random() - 0.5) * 15,
-          vy: (Math.random() - 0.5) * 10,
-          radius: Math.random() * 20 + 15,
-          color: BALL_COLORS[ballColor]
-        };
-        state.ballState.balls.push(newBall);
-        addedBalls.push(newBall.id);
-      }
-
-      agent.setState(state);
-
-      return {
-        success: true,
-        message: `Added ${addedBalls.length} balls`,
-        totalBalls: state.ballState.balls.length
-      };
-    } catch (error) {
-      console.error("Error adding multiple balls:", error);
-      return `Error adding multiple balls: ${error}`;
+    for (let i = 0; i < Math.min(count, 20); i++) {
+      const ballColor = color || colors[Math.floor(Math.random() * colors.length)];
+      balls.push({
+        id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 200 + 50,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.5) * 10,
+        radius: Math.random() * 20 + 15,
+        color: BALL_COLORS[ballColor]
+      });
     }
+
+    pushCommand(agent, { type: "addBalls", balls });
+
+    return {
+      success: true,
+      message: `Added ${balls.length} balls`,
+      count: balls.length
+    };
   },
   inputSchema: z.object({
-    count: z
-      .number()
-      .min(1)
-      .max(20)
-      .describe("Number of balls to add (1-20)"),
+    count: z.number().min(1).max(20).describe("Number of balls to add (1-20)"),
     color: z
-      .enum([
-        "red",
-        "orange",
-        "yellow",
-        "green",
-        "blue",
-        "purple",
-        "pink",
-        "cyan",
-        "white"
-      ])
+      .enum(["red", "orange", "yellow", "green", "blue", "purple", "pink", "cyan", "white"])
       .optional()
       .describe("Color for all balls (random if not specified)")
   })

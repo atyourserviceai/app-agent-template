@@ -30,6 +30,17 @@ export const DEFAULT_BALL_STATE: BallState = {
   paused: false
 };
 
+/**
+ * Command types for AI to control the ball simulation
+ */
+export type BallCommand =
+  | { type: "addBall"; ball: Ball }
+  | { type: "addBalls"; balls: Ball[] }
+  | { type: "removeBall"; ballId: string }
+  | { type: "clearBalls" }
+  | { type: "setGravity"; gravity: number }
+  | { type: "setPaused"; paused: boolean };
+
 // Predefined colors for balls
 export const BALL_COLORS = {
   red: 0xff4444,

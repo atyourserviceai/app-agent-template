@@ -7,10 +7,11 @@
 
 import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { BallRenderer } from "./BallRenderer";
-import type { Ball, BallState, Theme } from "./types";
+import type { Ball, BallCommand, BallState, Theme } from "./types";
 
 export interface BallCanvasHandle {
   addBall: (ball: Ball) => void;
+  addBalls: (balls: Ball[]) => void;
   removeBall: (ballId: string) => void;
   clearBalls: () => void;
   setGravity: (gravity: number) => void;
@@ -18,6 +19,7 @@ export interface BallCanvasHandle {
   setPaused: (paused: boolean) => void;
   setTheme: (theme: Theme) => void;
   getState: () => BallState;
+  processCommands: (commands: BallCommand[]) => void;
 }
 
 interface BallCanvasProps {
@@ -91,6 +93,11 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
       ref,
       () => ({
         addBall: (ball: Ball) => rendererRef.current?.addBall(ball),
+        addBalls: (balls: Ball[]) => {
+          for (const ball of balls) {
+            rendererRef.current?.addBall(ball);
+          }
+        },
         removeBall: (ballId: string) => rendererRef.current?.removeBall(ballId),
         clearBalls: () => rendererRef.current?.clearBalls(),
         setGravity: (gravity: number) =>
@@ -106,7 +113,36 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
             gravityAngle: Math.PI / 2,
             friction: 0.998,
             paused: false
+          },
+        processCommands: (commands: BallCommand[]) => {
+          const renderer = rendererRef.current;
+          if (!renderer) return;
+
+          for (const cmd of commands) {
+            switch (cmd.type) {
+              case "addBall":
+                renderer.addBall(cmd.ball);
+                break;
+              case "addBalls":
+                for (const ball of cmd.balls) {
+                  renderer.addBall(ball);
+                }
+                break;
+              case "removeBall":
+                renderer.removeBall(cmd.ballId);
+                break;
+              case "clearBalls":
+                renderer.clearBalls();
+                break;
+              case "setGravity":
+                renderer.setGravity(cmd.gravity);
+                break;
+              case "setPaused":
+                renderer.setPaused(cmd.paused);
+                break;
+            }
           }
+        }
       }),
       []
     );
