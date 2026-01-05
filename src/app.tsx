@@ -902,9 +902,12 @@ function ProjectTabContent({
     }
 
     // Filter out empty assistant messages (SDK creates these during errors)
-    const filteredMessages = agentMessages.filter((msg) => {
+    // Keep the last message even if empty (might be in-progress)
+    const filteredMessages = agentMessages.filter((msg, idx) => {
       if (msg.role !== "assistant") return true;
-      // Keep assistant messages that have content in parts
+      // Always keep the last message (might be in-progress/streaming)
+      if (idx === agentMessages.length - 1) return true;
+      // Filter out older empty assistant messages
       return msg.parts && msg.parts.length > 0;
     });
 
