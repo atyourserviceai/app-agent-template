@@ -333,20 +333,13 @@ export class BallRenderer {
   }
 
   /**
-   * Update state without resetting the simulation
-   * Only updates physics parameters, not ball positions
+   * Update physics parameters only (not balls)
    */
-  setState(state: BallState): void {
-    // Preserve existing balls if they exist, only update physics params
-    if (this.state.balls.length > 0 && state.balls.length === 0) {
-      // Don't clear balls if incoming state has empty balls array
-      this.state.gravity = state.gravity;
-      this.state.gravityAngle = state.gravityAngle;
-      this.state.friction = state.friction;
-      this.state.paused = state.paused;
-    } else {
-      this.state = state;
-    }
+  setPhysicsParams(params: { gravity?: number; gravityAngle?: number; friction?: number; paused?: boolean }): void {
+    if (params.gravity !== undefined) this.state.gravity = params.gravity;
+    if (params.gravityAngle !== undefined) this.state.gravityAngle = params.gravityAngle;
+    if (params.friction !== undefined) this.state.friction = params.friction;
+    if (params.paused !== undefined) this.state.paused = params.paused;
   }
 
   getState(): BallState {
