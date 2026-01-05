@@ -14,7 +14,6 @@ import { getGmailTools as getRawGmailTools } from "./composio";
 import * as rawContextTools from "./context";
 import * as rawIntegrationTools from "./integration";
 import * as rawMessagingTools from "./messaging";
-import { suggestActions as rawSuggestActions } from "./messaging";
 import * as rawOnboardingTools from "./onboarding";
 import * as rawSchedulingTools from "./scheduling";
 import * as rawSearchTools from "./search";
@@ -59,9 +58,6 @@ export const integrationTools = wrapAllToolsWithErrorHandling(
 );
 export const messagingTools = wrapAllToolsWithErrorHandling(
   rawMessagingTools as unknown as ToolCollection
-);
-export const suggestActions = wrapToolWithErrorHandling(
-  rawSuggestActions as unknown as Tool
 );
 export const onboardingTools = wrapAllToolsWithErrorHandling(
   rawOnboardingTools as unknown as ToolCollection
@@ -110,8 +106,8 @@ const toolCounts = {
   scheduling: countTools(schedulingTools),
   search: countTools(searchTools),
   simpleFetch: countTools(simpleFetchTools),
-  special: 2,
-  state: countTools(stateTools) // testErrorTool and suggestActions
+  special: 1, // testErrorTool
+  state: countTools(stateTools)
 };
 
 const totalTools = Object.values(toolCounts).reduce(
@@ -163,7 +159,6 @@ export const tools = {
 
   // Messaging tools
   ...messagingTools,
-  suggestActions,
 
   // Search tools
   ...searchTools,

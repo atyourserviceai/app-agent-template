@@ -3,7 +3,6 @@ import { isToolUIPart, getToolName } from "ai";
 import type { ExtendedUIMessage } from "@/shared";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
 // Component imports
 import { Card } from "@/components/card/Card";
@@ -44,122 +43,7 @@ interface AgentData {
 }
 
 // List of tools that require human confirmation for the generic template
-const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
-  "getWeatherInformation"
-  // Do not add suggestActions here as we want it to display without confirmation
-];
-
-// Add this new component to show suggested actions above the chat input
-function SuggestedActions({
-  messages,
-  addToolResult,
-  reload: _reload
-}: {
-  messages: UIMessage[];
-  addToolResult: (args: { toolCallId: string; result: string }) => void;
-  reload: () => void;
-}) {
-  // SAFETY: Ensure messages is an array before processing
-  const safeMessages = Array.isArray(messages) ? messages : [];
-
-  // Find the latest message with suggestActions
-  const lastAssistantMessage = [...safeMessages]
-    .reverse()
-    .find((msg) => msg.role === "assistant");
-
-  if (!lastAssistantMessage) return null;
-
-  // Find the suggestActions tool part (v6: type is tool-suggestActions)
-  const suggestActionsPart = lastAssistantMessage.parts?.find(
-    (part) => isToolUIPart(part) && getToolName(part) === "suggestActions"
-  );
-
-  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart)) return null;
-
-  // In v6, properties are directly on the part (not in toolInvocation)
-  const toolPart = suggestActionsPart;
-
-  // Get the actions based on the state - they could be in input or output
-  let actions: Array<{
-    label: string;
-    value: string;
-    primary?: boolean;
-    isOther?: boolean;
-  }> = [];
-
-  if (toolPart.state === "input-available") {
-    // Handle input-available state (v6 equivalent of "call") - get actions from input
-    const input = toolPart.input as
-      | {
-          actions?: Array<{
-            label: string;
-            value: string;
-            primary?: boolean;
-            isOther?: boolean;
-          }>;
-        }
-      | undefined;
-    actions = input?.actions || [];
-  } else if (toolPart.state === "output-available" && toolPart.output) {
-    // Handle output-available state (v6 equivalent of "result") - get actions from output
-    const output = toolPart.output;
-    if (typeof output === "string") {
-      try {
-        const parsedResult = JSON.parse(output);
-        if (parsedResult.actions) {
-          actions = parsedResult.actions;
-        }
-      } catch (e) {
-        console.error("Failed to parse suggestActions result", e);
-      }
-    } else if (output && typeof output === "object" && "actions" in output) {
-      actions = (
-        output as {
-          actions: Array<{
-            label: string;
-            value: string;
-            primary?: boolean;
-            isOther?: boolean;
-          }>;
-        }
-      ).actions;
-    }
-  }
-
-  if (actions.length === 0) return null;
-
-  // Added margin-bottom to ensure space between buttons and input
-  return (
-    <div className="w-full mb-16 mt-2 px-2 flex justify-end">
-      <ActionButtons
-        actions={actions}
-        onActionClick={(value, isOther) => {
-          // Complete the tool call only if it's still in input-available state
-          if (toolPart.state === "input-available") {
-            addToolResult({
-              result: JSON.stringify({
-                actions,
-                message: "User selected an action",
-                selectedAction: value,
-                success: true
-              }),
-              toolCallId: toolPart.toolCallId
-            });
-          }
-
-          // Then dispatch the event for the app to handle
-          const event = new CustomEvent("action-button-clicked", {
-            detail: {
-              isOther: isOther,
-              text: value
-            }
-          });
-          window.dispatchEvent(event);
-        }}
-      />
-    </div>
-  );
-}
+const toolsRequiringConfirmation: (keyof ToolTypes)[] = ["getWeatherInformation"];
 
 // Multi-instance Chat - manages multiple project tabs
 function Chat() {
@@ -729,87 +613,6 @@ function ProjectTabContent({
     setMessages
   ]);
 
-  // Handle action button clicks from the suggestActions tool
-  useEffect(() => {
-    function handleActionButtonClick(event: CustomEvent) {
-      if (event.detail && event.detail.text !== undefined) {
-        const selectedText = event.detail.text;
-        const isOther = event.detail.isOther === true;
-
-        // If the user selects the "Other" option, just focus the input field
-        if (isOther) {
-          // Focus the input field for custom entry
-          setTimeout(() => {
-            // Find the textarea element directly (more reliable than using ref)
-            const textareas = document.querySelectorAll("textarea");
-            if (textareas.length > 0) {
-              const textarea = textareas[0];
-              textarea.focus();
-              // Optional: Add a slight delay to ensure focus works after UI updates
-              setTimeout(() => {
-                textarea.focus();
-              }, 100);
-            }
-          }, 50);
-          return;
-        }
-
-        // For non-Other options, directly add a user message with the selected text
-        if (selectedText) {
-          // Check token expiration before proceeding
-          if (auth?.checkTokenExpiration()) {
-            return; // Token expired, user will be redirected to login
-          }
-
-          // Set the input value first (needed for compatibility with input validation)
-          setInput(selectedText);
-
-          // Then create a synthetic form submit event
-          setTimeout(() => {
-            // Create a new user message
-            const newMessage = {
-              content: selectedText,
-              createdAt: new Date(),
-              id: crypto.randomUUID(),
-              parts: [
-                {
-                  text: selectedText,
-                  type: "text" as const
-                }
-              ],
-              role: "user" as const
-            };
-
-            // Add the message to the chat
-            setMessages([...agentMessages, newMessage]);
-
-            // Clear the input field
-            setInput("");
-
-            // Trigger the agent to respond with token check
-            setTimeout(() => {
-              reloadWithTokenCheck();
-            }, 50);
-          }, 10);
-        }
-      }
-    }
-
-    // Add event listener
-    window.addEventListener(
-      "action-button-clicked",
-      handleActionButtonClick as EventListener
-    );
-
-    // Cleanup
-    return () => {
-      window.removeEventListener(
-        "action-button-clicked",
-        handleActionButtonClick as EventListener
-      );
-    };
-  }, [setMessages, agentMessages, setInput, auth, reloadWithTokenCheck]);
-
   // Reset textarea height when input is empty
   useEffect(() => {
     if (agentInput === "" && textareaRef.current) {
@@ -1008,11 +811,6 @@ function ProjectTabContent({
                           toolName as keyof ToolTypes
                         ) && part.state === "input-available";
 
-                      // Skip suggestActions since they are handled separately
-                      if (toolName === "suggestActions") {
-                        return null;
-                      }
-
                       // Create a v4-compatible toolInvocation object for ToolInvocationCard
                       // Map v6 states to v4 states and cast to expected types
                       const v4State =
@@ -1145,16 +943,6 @@ function ProjectTabContent({
         </div>
       );
     }
-
-    // Add suggested actions at the end of messages
-    messageElements.push(
-      <SuggestedActions
-        key="suggested-actions"
-        messages={agentMessages}
-        addToolResult={addToolResult}
-        reload={reloadWithTokenCheck}
-      />
-    );
 
     return messageElements;
   };
