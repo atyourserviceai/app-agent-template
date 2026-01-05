@@ -54,7 +54,7 @@ export function PresentationPanel({
           </div>
         </div>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-          Ask the AI to add balls, change gravity, or control the simulation
+          Click to add balls, drag to throw. Ask AI to change gravity or colors.
         </p>
       </div>
 

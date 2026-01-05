@@ -14,7 +14,7 @@ import {
   type ToolSet,
   stepCountIs
 } from "ai";
-import { getUnifiedSystemPrompt } from "./prompts/index";
+import { getSystemPrompt } from "./prompt";
 import { executions, tools } from "./tools/registry";
 import { simulateThinkingLLM } from "./middleware/simulateThinkingMiddleware";
 import type { AdminContact, Operator } from "./types/generic";
@@ -335,8 +335,7 @@ export class AppAgent extends AIChatAgent<Env> {
    * Get system prompt for the agent
    */
   getSystemPrompt() {
-    // Use the unified system prompt for all modes
-    return getUnifiedSystemPrompt();
+    return getSystemPrompt();
   }
 
   /**

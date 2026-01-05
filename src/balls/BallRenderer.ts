@@ -15,8 +15,23 @@ const THEME_COLORS = {
   }
 };
 
+// Random color palette for balls
+const BALL_COLORS = [
+  0xff6b6b, // Red
+  0x4ecdc4, // Teal
+  0xffe66d, // Yellow
+  0x95e1d3, // Mint
+  0xf38181, // Coral
+  0xaa96da, // Purple
+  0xfcbad3, // Pink
+  0xa8d8ea, // Light blue
+  0xff9f43, // Orange
+  0x26de81  // Green
+];
+
 interface BallRendererOptions {
   onBallClick?: (ballId: string) => void;
+  onBallAdd?: (ball: Ball) => void;
 }
 
 export class BallRenderer {
@@ -26,8 +41,8 @@ export class BallRenderer {
   private options: BallRendererOptions;
   private state: BallState = {
     balls: [],
-    gravity: 0.5,
-    friction: 0.99,
+    gravity: 0.1, // Low gravity by default
+    friction: 0.995,
     paused: false
   };
   private theme: Theme = "dark";
@@ -35,6 +50,12 @@ export class BallRenderer {
   private height = 600;
   private isInitialized = false;
   private isDestroyed = false;
+
+  // Drag state
+  private draggedBall: Ball | null = null;
+  private dragStartPos: { x: number; y: number } | null = null;
+  private dragCurrentPos: { x: number; y: number } | null = null;
+  private lastDragPositions: { x: number; y: number; time: number }[] = [];
 
   constructor(options: BallRendererOptions = {}) {
     this.options = options;
@@ -78,10 +99,125 @@ export class BallRenderer {
     this.container = new Container();
     this.app.stage.addChild(this.container);
 
+    // Set up stage interaction for click-to-create
+    this.app.stage.eventMode = "static";
+    this.app.stage.hitArea = { contains: () => true };
+    this.app.stage.on("pointerdown", this.onStagePointerDown.bind(this));
+    this.app.stage.on("pointermove", this.onStagePointerMove.bind(this));
+    this.app.stage.on("pointerup", this.onStagePointerUp.bind(this));
+    this.app.stage.on("pointerupoutside", this.onStagePointerUp.bind(this));
+
     // Start animation loop using PixiJS ticker
     this.app.ticker.add(this.tick.bind(this));
 
+    // Add initial random balls
+    this.addInitialBalls();
+
     this.isInitialized = true;
+  }
+
+  private addInitialBalls(): void {
+    const numBalls = 5 + Math.floor(Math.random() * 5); // 5-9 balls
+
+    for (let i = 0; i < numBalls; i++) {
+      const ball = this.createRandomBall();
+      this.state.balls.push(ball);
+    }
+  }
+
+  private createRandomBall(x?: number, y?: number): Ball {
+    const radius = 15 + Math.random() * 25; // 15-40 radius
+    const color = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+
+    return {
+      id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      x: x ?? radius + Math.random() * (this.width - radius * 2),
+      y: y ?? radius + Math.random() * (this.height - radius * 2),
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      radius,
+      color
+    };
+  }
+
+  private onStagePointerDown(event: any): void {
+    const pos = event.global;
+
+    // Check if clicking on an existing ball
+    for (const ball of this.state.balls) {
+      const dx = pos.x - ball.x;
+      const dy = pos.y - ball.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < ball.radius) {
+        // Start dragging this ball
+        this.draggedBall = ball;
+        this.dragStartPos = { x: pos.x, y: pos.y };
+        this.dragCurrentPos = { x: pos.x, y: pos.y };
+        this.lastDragPositions = [{ x: pos.x, y: pos.y, time: Date.now() }];
+
+        // Stop ball velocity while dragging
+        ball.vx = 0;
+        ball.vy = 0;
+        return;
+      }
+    }
+
+    // Not clicking on a ball - create a new one
+    const newBall = this.createRandomBall(pos.x, pos.y);
+    newBall.vx = 0;
+    newBall.vy = 0;
+    this.state.balls.push(newBall);
+    this.options.onBallAdd?.(newBall);
+  }
+
+  private onStagePointerMove(event: any): void {
+    if (!this.draggedBall) return;
+
+    const pos = event.global;
+    this.dragCurrentPos = { x: pos.x, y: pos.y };
+
+    // Update ball position to follow cursor
+    this.draggedBall.x = pos.x;
+    this.draggedBall.y = pos.y;
+
+    // Track positions for velocity calculation
+    this.lastDragPositions.push({ x: pos.x, y: pos.y, time: Date.now() });
+
+    // Keep only last 5 positions
+    if (this.lastDragPositions.length > 5) {
+      this.lastDragPositions.shift();
+    }
+  }
+
+  private onStagePointerUp(_event: any): void {
+    if (!this.draggedBall) return;
+
+    // Calculate throw velocity from recent movement
+    if (this.lastDragPositions.length >= 2) {
+      const recent = this.lastDragPositions.slice(-3);
+      const first = recent[0];
+      const last = recent[recent.length - 1];
+      const dt = (last.time - first.time) / 1000; // Convert to seconds
+
+      if (dt > 0) {
+        // Scale velocity for a satisfying throw feel
+        const scale = 1.5;
+        this.draggedBall.vx = ((last.x - first.x) / dt) * scale * 0.016; // Convert to per-frame
+        this.draggedBall.vy = ((last.y - first.y) / dt) * scale * 0.016;
+
+        // Clamp velocity
+        const maxVel = 30;
+        this.draggedBall.vx = Math.max(-maxVel, Math.min(maxVel, this.draggedBall.vx));
+        this.draggedBall.vy = Math.max(-maxVel, Math.min(maxVel, this.draggedBall.vy));
+      }
+    }
+
+    // Clear drag state
+    this.draggedBall = null;
+    this.dragStartPos = null;
+    this.dragCurrentPos = null;
+    this.lastDragPositions = [];
   }
 
   private tick(): void {
@@ -93,6 +229,9 @@ export class BallRenderer {
 
   private updatePhysics(): void {
     for (const ball of this.state.balls) {
+      // Skip physics for dragged ball
+      if (ball === this.draggedBall) continue;
+
       // Apply gravity
       ball.vy += this.state.gravity;
 
@@ -146,13 +285,13 @@ export class BallRenderer {
       if (!graphics) {
         graphics = new Graphics();
         graphics.eventMode = "static";
-        graphics.cursor = "pointer";
-        graphics.on("pointerdown", () => {
-          this.options.onBallClick?.(ball.id);
-        });
+        graphics.cursor = "grab";
         this.container.addChild(graphics);
         this.ballGraphics.set(ball.id, graphics);
       }
+
+      // Update cursor based on drag state
+      graphics.cursor = ball === this.draggedBall ? "grabbing" : "grab";
 
       // Clear and redraw
       graphics.clear();

@@ -27,6 +27,7 @@ interface BallCanvasProps {
   initialState?: BallState;
   onStateChange?: (state: BallState) => void;
   onBallClick?: (ballId: string) => void;
+  onBallAdd?: (ball: Ball) => void;
   theme?: Theme;
   className?: string;
 }
@@ -37,6 +38,7 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
       initialState,
       onStateChange,
       onBallClick,
+      onBallAdd,
       theme = "dark",
       className = ""
     },
@@ -55,7 +57,8 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
       let mounted = true;
 
       const renderer = new BallRenderer({
-        onBallClick
+        onBallClick,
+        onBallAdd
       });
       rendererRef.current = renderer;
 
