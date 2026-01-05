@@ -194,11 +194,6 @@ export type ToolTypes = {
     params: SearchParams
   ) => Promise<Array<LeadParams & { leadId: string }>>;
 
-  // Messaging tools
-  suggestActions: (params: {
-    context: string;
-  }) => Promise<Array<{ action: string; confidence: number }>>;
-
   // Search tools
   searchWebPages: (
     params: SearchParams

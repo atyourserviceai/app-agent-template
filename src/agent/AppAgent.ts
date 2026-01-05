@@ -395,10 +395,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
-      setMode: tools.setMode,
-
-      // Messaging tools
-      suggestActions: tools.suggestActions
+      setMode: tools.setMode
     };
 
     // Mode-specific tools

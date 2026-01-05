@@ -271,6 +271,8 @@ export interface AppAgentState {
 Add tools for your specific integrations:
 
 ```typescript
+import { VercelAIToolSet } from "composio-core";
+
 // Add your domain-specific Composio tools
 export const getYourDomainTools = async () => {
   const toolset = new VercelAIToolSet();
@@ -284,52 +286,63 @@ export const getYourDomainTools = async () => {
 
 **File: `src/agent/tools/your-domain.ts`**
 
-Create domain-specific tools:
+Create domain-specific tools using AI SDK v6's `tool` function:
 
 ```typescript
-import { generateObject, generateText } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 
-export const yourCustomTool = {
+export const yourCustomTool = tool({
   description: "Description of what this tool does",
   parameters: z.object({
     input: z.string().describe("Input parameter description")
   }),
-  execute: async ({ input }, { agent }) => {
+  execute: async ({ input }) => {
     // Your tool logic here
     const result = await performYourOperation(input);
-
-    // Update agent state if needed
-    const currentState = agent.state as AppAgentState;
-    await agent.setState({
-      ...currentState,
-      yourCustomData: result
-    });
-
     return `Result message: ${result}`;
   }
-};
+});
+
+// Tool requiring human approval (no execute function)
+export const sensitiveAction = tool({
+  description: "Performs a sensitive action that requires user approval",
+  parameters: z.object({
+    target: z.string().describe("Target of the action")
+  })
+  // No execute = requires confirmation
+});
 ```
+
+**Note:** AI SDK v6 tools receive only the parameters object in `execute`. Agent state access should be handled at a higher level if needed.
 
 #### 4.3 Register New Tools
 
 **File: `src/agent/tools/registry.ts`**
 
-Add your tools to the registry:
+Add your tools to the registry with error handling:
 
 ```typescript
-import { yourCustomTool } from "./your-domain";
-import { getYourDomainTools } from "./composio";
+import * as rawYourDomainTools from "./your-domain";
+import { wrapAllToolsWithErrorHandling } from "./wrappers";
+
+// Wrap all tools with error handling
+export const yourDomainTools = wrapAllToolsWithErrorHandling(rawYourDomainTools);
 
 // Add to the tools object
 export const tools = {
   // ... existing tools ...
-  yourCustomTool: withErrorHandling(yourCustomTool)
+  yourCustomTool: yourDomainTools.yourCustomTool,
+  sensitiveAction: yourDomainTools.sensitiveAction,
 };
 
-// Add to executions if needed
+// Add execution handlers for tools requiring approval
 export const executions = {
   // ... existing executions ...
+  sensitiveAction: async ({ target }: { target: string }) => {
+    // Implementation when user approves
+    return `Action performed on ${target}`;
+  }
 };
 ```
 

@@ -151,6 +151,8 @@ The agent automatically adapts its behavior, available tools, and responses base
 
 ## Stack
 
+- **AI SDK v6** (`ai` ^6.0.x) with `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`
+- **Cloudflare AI Chat** (`@cloudflare/ai-chat` ^0.0.3) for `useAgentChat` hook
 - React Router v7 (SSR + hydration) with `@react-router/dev/vite`
 - Cloudflare Workers glue in `src/worker.ts` (agents routing + API endpoints)
 - Vite + `@cloudflare/vite-plugin` + `@tailwindcss/vite` + `vite-tsconfig-paths`
@@ -294,57 +296,49 @@ The project supports three deployment environments, each with its own configurat
 
 ### Adding New Tools
 
-Add new tools in `tools.ts` using the tool builder:
+Add new tools in `src/agent/tools/` using AI SDK v6's `tool` function:
 
 ```typescript
-// Example of a tool that requires confirmation
-const searchDatabase = tool({
-  description: "Search the database for user records",
-  parameters: z.object({
-    query: z.string(),
-    limit: z.number().optional()
-  })
-  // No execute function = requires confirmation
-});
+import { tool } from "ai";
+import { z } from "zod";
 
 // Example of an auto-executing tool
-const getCurrentTime = tool({
+export const getCurrentTime = tool({
   description: "Get current server time",
   parameters: z.object({}),
   execute: async () => new Date().toISOString()
 });
 
-// Scheduling tool implementation
-const scheduleTask = tool({
-  description:
-    "schedule a task to be executed at a later time. 'when' can be a date, a delay in seconds, or a cron pattern.",
+// Example of a tool that requires confirmation (no execute function)
+export const searchDatabase = tool({
+  description: "Search the database for user records",
   parameters: z.object({
-    type: z.enum(["scheduled", "delayed", "cron"]),
-    when: z.union([z.number(), z.string()]),
-    payload: z.string()
-  }),
-  execute: async ({ type, when, payload }) => {
-    // ... see the implementation in tools.ts
-  }
+    query: z.string(),
+    limit: z.number().optional()
+  })
+  // No execute function = requires human confirmation
 });
+```
+
+All tools are wrapped with error handling in `src/agent/tools/registry.ts`:
+
+```typescript
+import { wrapToolWithErrorHandling } from "./wrappers";
+
+export const tools = {
+  getCurrentTime: wrapToolWithErrorHandling(getCurrentTime),
+  searchDatabase: wrapToolWithErrorHandling(searchDatabase),
+};
 ```
 
 To handle tool confirmations, add execution functions to the `executions` object:
 
 ```typescript
 export const executions = {
-  searchDatabase: async ({
-    query,
-    limit
-  }: {
-    query: string;
-    limit?: number;
-  }) => {
-    // Implementation for when the tool is confirmed
+  searchDatabase: async ({ query, limit }: { query: string; limit?: number }) => {
     const results = await db.search(query, limit);
     return results;
   }
-  // Add more execution handlers for other tools that require confirmation
 };
 ```
 
@@ -352,6 +346,39 @@ Tools can be configured in two ways:
 
 1. With an `execute` function for automatic execution
 2. Without an `execute` function, requiring confirmation and using the `executions` object to handle the confirmed action
+
+### Error Handling
+
+The template uses AI SDK v6's error handling pattern with the `useAgentChat` hook from `@cloudflare/ai-chat/react`:
+
+```typescript
+import { useAgentChat } from "@cloudflare/ai-chat/react";
+
+// The hook returns an error state
+const { messages, error: chatError, setMessages } = useAgentChat({
+  agent,
+  // onError is for logging only, not for modifying messages
+  onError: (error) => console.error("Chat error:", error),
+});
+
+// Handle errors via useEffect watching the error state
+useEffect(() => {
+  if (!chatError) return;
+
+  // Add error message to chat
+  const errorMessage = {
+    id: crypto.randomUUID(),
+    role: "assistant" as const,
+    parts: [{ type: "text" as const, text: `__ERROR__: ${chatError.message}` }]
+  };
+  setMessages((prev) => [...prev, errorMessage]);
+}, [chatError, setMessages]);
+```
+
+**Key Points:**
+- Use the `error` state from the hook, not `onError` callback for message updates
+- Error messages use `__ERROR__` prefix format for identification
+- Tool invocation cards show "Executing..." state while tools are running
 
 ### Modifying the UI
 

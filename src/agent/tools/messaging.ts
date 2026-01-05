@@ -7,7 +7,6 @@ import { z } from "zod/v3";
  * Specific tools like 'messageLead' might be defined here or in crm-tools.ts.
  */
 
-// Define a type for the messagingTools to include suggestActions
 export const messagingTools = {
   sendEmail: tool({
     description: "Send an email to a recipient",
@@ -43,62 +42,3 @@ export const messagingTools = {
     })
   })
 };
-
-// Export suggestActions using the tool() pattern with Zod schema
-export const suggestActions = tool({
-  description: "Suggest clickable action buttons for the user to respond with",
-  execute: async ({ actions, includeOtherOption }) => {
-    // If includeOtherOption is true and no button has isOther set, add an "Other..." option
-    const processedActions = [...actions];
-
-    if (
-      includeOtherOption === true &&
-      !actions.some((action) => action.isOther)
-    ) {
-      processedActions.push({
-        isOther: true,
-        label: "Other...",
-        primary: false,
-        value: ""
-      });
-    }
-
-    return {
-      actions: processedActions,
-      message: "Action buttons displayed to user",
-      success: true
-    };
-  },
-  inputSchema: z.object({
-    actions: z
-      .array(
-        z.object({
-          isOther: z
-            .boolean()
-            .describe(
-              "Whether this is an Other option that should focus the input field"
-            ),
-          label: z.string().describe("Button text to display"),
-          primary: z
-            .boolean()
-            .describe(
-              "Whether this is a primary action (true) or secondary action (false)"
-            ),
-          value: z
-            .string()
-            .describe(
-              "Value to send when clicked (usually the text to send as a user message)"
-            )
-        })
-      )
-      .describe("Array of action buttons to display to the user"),
-    includeOtherOption: z
-      .boolean()
-      .describe(
-        "Whether to include an Other option that allows the user to type a custom response"
-      )
-  })
-});
-
-// Placeholder for messagingExecutions if needed separately
-// export const messagingExecutions = { ... };

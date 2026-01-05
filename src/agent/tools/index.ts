@@ -51,8 +51,7 @@ export const tools = {
   scheduleTask: schedulingTools.scheduleTask,
   setMode: stateTools.setMode,
 
-  // Messaging tools
-  suggestActions: messagingTools.suggestActions,
+  // Testing tools
   testErrorTool: integrationTools.testErrorTool
 };
 

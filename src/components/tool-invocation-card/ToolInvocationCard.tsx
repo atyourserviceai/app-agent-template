@@ -47,16 +47,6 @@ export function ToolInvocationCard({
   const [isExpanded, setIsExpanded] = useState(needsConfirmation);
   const [showRawData, setShowRawData] = useState(false);
 
-  // Special handling for suggestActions tool - don't render it at all
-  // as it's handled by the SuggestedActions component
-  if (toolInvocation.toolName === "suggestActions") {
-    console.log(
-      "suggestActions tool invocation skipped in ToolInvocationCard:",
-      toolInvocation.toolName
-    );
-    return null;
-  }
-
   // Check if the tool invocation has an error
   const hasError =
     toolInvocation.state === "result" &&
