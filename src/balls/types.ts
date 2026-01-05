@@ -14,7 +14,8 @@ export interface Ball {
 
 export interface BallState {
   balls: Ball[];
-  gravity: number;
+  gravity: number; // gravity magnitude
+  gravityAngle: number; // gravity direction in radians (0 = down, PI/2 = right, etc.)
   friction: number;
   paused: boolean;
 }
@@ -23,8 +24,9 @@ export type Theme = "dark" | "light";
 
 export const DEFAULT_BALL_STATE: BallState = {
   balls: [],
-  gravity: 0.5,
-  friction: 0.99,
+  gravity: 0.02, // Almost zero gravity
+  gravityAngle: Math.PI / 2, // Down by default
+  friction: 0.998,
   paused: false
 };
 

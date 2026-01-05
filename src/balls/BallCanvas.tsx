@@ -120,34 +120,35 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
       () => ({
         addBall: (ball: Ball) => {
           rendererRef.current?.addBall(ball);
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         removeBall: (ballId: string) => {
           rendererRef.current?.removeBall(ballId);
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         clearBalls: () => {
           rendererRef.current?.clearBalls();
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         setGravity: (gravity: number) => {
           rendererRef.current?.setGravity(gravity);
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         setFriction: (friction: number) => {
           rendererRef.current?.setFriction(friction);
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         setPaused: (paused: boolean) => {
           rendererRef.current?.setPaused(paused);
-          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.5, friction: 0.99, paused: false });
+          onStateChange?.(rendererRef.current?.getState() || { balls: [], gravity: 0.02, gravityAngle: Math.PI / 2, friction: 0.998, paused: false });
         },
         setTheme: (t: Theme) => rendererRef.current?.setTheme(t),
         getState: () =>
           rendererRef.current?.getState() || {
             balls: [],
-            gravity: 0.5,
-            friction: 0.99,
+            gravity: 0.02,
+            gravityAngle: Math.PI / 2,
+            friction: 0.998,
             paused: false
           }
       }),

@@ -41,8 +41,9 @@ export class BallRenderer {
   private options: BallRendererOptions;
   private state: BallState = {
     balls: [],
-    gravity: 0.1, // Low gravity by default
-    friction: 0.995,
+    gravity: 0.02, // Almost zero gravity
+    gravityAngle: Math.PI / 2, // Down by default
+    friction: 0.998,
     paused: false
   };
   private theme: Theme = "dark";
@@ -56,6 +57,9 @@ export class BallRenderer {
   private dragStartPos: { x: number; y: number } | null = null;
   private dragCurrentPos: { x: number; y: number } | null = null;
   private lastDragPositions: { x: number; y: number; time: number }[] = [];
+
+  // Gravity direction change timer
+  private gravityChangeInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: BallRendererOptions = {}) {
     this.options = options;
@@ -113,7 +117,20 @@ export class BallRenderer {
     // Add initial random balls
     this.addInitialBalls();
 
+    // Start random gravity direction changes every 5 seconds
+    this.startGravityChanges();
+
     this.isInitialized = true;
+  }
+
+  private startGravityChanges(): void {
+    // Change gravity direction randomly every 5 seconds
+    this.gravityChangeInterval = setInterval(() => {
+      if (!this.state.paused) {
+        // Random angle between 0 and 2*PI
+        this.state.gravityAngle = Math.random() * Math.PI * 2;
+      }
+    }, 5000);
   }
 
   private addInitialBalls(): void {
@@ -133,8 +150,8 @@ export class BallRenderer {
       id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       x: x ?? radius + Math.random() * (this.width - radius * 2),
       y: y ?? radius + Math.random() * (this.height - radius * 2),
-      vx: (Math.random() - 0.5) * 8,
-      vy: (Math.random() - 0.5) * 8,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4,
       radius,
       color
     };
@@ -228,12 +245,17 @@ export class BallRenderer {
   }
 
   private updatePhysics(): void {
+    // Calculate gravity components from magnitude and angle
+    const gravityX = Math.cos(this.state.gravityAngle) * this.state.gravity;
+    const gravityY = Math.sin(this.state.gravityAngle) * this.state.gravity;
+
     for (const ball of this.state.balls) {
       // Skip physics for dragged ball
       if (ball === this.draggedBall) continue;
 
-      // Apply gravity
-      ball.vy += this.state.gravity;
+      // Apply gravity in current direction
+      ball.vx += gravityX;
+      ball.vy += gravityY;
 
       // Apply friction
       ball.vx *= this.state.friction;
@@ -310,8 +332,21 @@ export class BallRenderer {
     }
   }
 
+  /**
+   * Update state without resetting the simulation
+   * Only updates physics parameters, not ball positions
+   */
   setState(state: BallState): void {
-    this.state = state;
+    // Preserve existing balls if they exist, only update physics params
+    if (this.state.balls.length > 0 && state.balls.length === 0) {
+      // Don't clear balls if incoming state has empty balls array
+      this.state.gravity = state.gravity;
+      this.state.gravityAngle = state.gravityAngle;
+      this.state.friction = state.friction;
+      this.state.paused = state.paused;
+    } else {
+      this.state = state;
+    }
   }
 
   getState(): BallState {
@@ -332,6 +367,10 @@ export class BallRenderer {
 
   setGravity(gravity: number): void {
     this.state.gravity = gravity;
+  }
+
+  setGravityAngle(angle: number): void {
+    this.state.gravityAngle = angle;
   }
 
   setFriction(friction: number): void {
@@ -359,6 +398,12 @@ export class BallRenderer {
 
   destroy(): void {
     this.isDestroyed = true;
+
+    // Clear gravity change interval
+    if (this.gravityChangeInterval) {
+      clearInterval(this.gravityChangeInterval);
+      this.gravityChangeInterval = null;
+    }
 
     // Clear ball graphics
     for (const graphics of this.ballGraphics.values()) {
