@@ -8,13 +8,11 @@
 import { tool } from "ai";
 import { z } from "zod/v3";
 // Import raw, unwrapped tools from their source modules
+import * as rawBallTools from "./balls";
 import * as rawBrowserTools from "./browser";
 import * as rawBrowserbaseTools from "./browserbase";
 import { getGmailTools as getRawGmailTools } from "./composio";
 import * as rawContextTools from "./context";
-import * as rawIntegrationTools from "./integration";
-import * as rawMessagingTools from "./messaging";
-import * as rawOnboardingTools from "./onboarding";
 import * as rawSchedulingTools from "./scheduling";
 import * as rawSearchTools from "./search";
 import * as rawSimpleFetchTools from "./simpleFetch";
@@ -44,6 +42,9 @@ const rawTestErrorTool = tool({
 });
 
 // Wrap all tools with error handling
+export const ballTools = wrapAllToolsWithErrorHandling(
+  rawBallTools as unknown as ToolCollection
+);
 export const browserTools = wrapAllToolsWithErrorHandling(
   rawBrowserTools as unknown as ToolCollection
 );
@@ -52,15 +53,6 @@ export const browserbaseTools = wrapAllToolsWithErrorHandling(
 );
 export const contextTools = wrapAllToolsWithErrorHandling(
   rawContextTools as unknown as ToolCollection
-);
-export const integrationTools = wrapAllToolsWithErrorHandling(
-  rawIntegrationTools as unknown as ToolCollection
-);
-export const messagingTools = wrapAllToolsWithErrorHandling(
-  rawMessagingTools as unknown as ToolCollection
-);
-export const onboardingTools = wrapAllToolsWithErrorHandling(
-  rawOnboardingTools as unknown as ToolCollection
 );
 export const schedulingTools = wrapAllToolsWithErrorHandling(
   rawSchedulingTools as unknown as ToolCollection
@@ -97,12 +89,10 @@ const countTools = (obj: ToolCollection): number => {
 
 // Count total executable tools
 const toolCounts = {
+  balls: countTools(ballTools),
   browser: countTools(browserTools),
   browserbase: countTools(browserbaseTools),
   context: countTools(contextTools),
-  integration: countTools(integrationTools),
-  messaging: countTools(messagingTools),
-  onboarding: countTools(onboardingTools),
   scheduling: countTools(schedulingTools),
   search: countTools(searchTools),
   simpleFetch: countTools(simpleFetchTools),
@@ -128,37 +118,32 @@ console.log(
  * This is useful for tools that need them all in a single object
  */
 export const tools = {
+  // Ball simulation tools
+  addBall: ballTools.addBall,
+  addMultipleBalls: ballTools.addMultipleBalls,
+  clearBalls: ballTools.clearBalls,
+  getBallState: ballTools.getBallState,
+  removeBall: ballTools.removeBall,
+  setGravity: ballTools.setGravity,
+  toggleSimulation: ballTools.toggleSimulation,
+
   // Browser tools
   browseWebPage: browserTools.browseWebPage,
   browseWithBrowserbase: browserbaseTools.browseWithBrowserbase,
-  cancelScheduledTask: schedulingTools.cancelScheduledTask,
-  checkExistingConfig: onboardingTools.checkExistingConfig,
-  completeIntegrationTesting: integrationTools.completeIntegrationTesting,
-  completeOnboarding: onboardingTools.completeOnboarding,
-  documentTool: integrationTools.documentTool,
   fetchWebPage: simpleFetchTools.fetchWebPage,
-  generateTestReport: integrationTools.generateTestReport,
+
+  // Scheduling tools
+  cancelScheduledTask: schedulingTools.cancelScheduledTask,
+  getScheduledTasks: schedulingTools.getScheduledTasks,
+  scheduleTask: schedulingTools.scheduleTask,
 
   // State access tools
   getAgentState: stateTools.getAgentState,
-  getLocalTime: contextTools.getLocalTime,
-  getOnboardingStatus: onboardingTools.getOnboardingStatus,
-  getScheduledTasks: schedulingTools.getScheduledTasks,
-  // Context tools
-  getWeatherInformation: contextTools.getWeatherInformation,
-
-  // Integration tools
-  recordTestResult: integrationTools.recordTestResult,
-
-  // Onboarding tools
-  saveSettings: onboardingTools.saveSettings,
-
-  // Scheduling tools
-  scheduleTask: schedulingTools.scheduleTask,
   setMode: stateTools.setMode,
 
-  // Messaging tools
-  ...messagingTools,
+  // Context tools
+  getLocalTime: contextTools.getLocalTime,
+  getWeatherInformation: contextTools.getWeatherInformation,
 
   // Search tools
   ...searchTools,

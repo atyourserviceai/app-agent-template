@@ -52,6 +52,7 @@ export default defineConfig({
           "react-router",
           "@cloudflare/ai-chat",
           "@cloudflare/ai-chat/react",
+          "@ai-sdk/anthropic",
           "@ai-sdk/openai",
           "@ai-sdk/react",
           "ai",
@@ -64,7 +65,8 @@ export default defineConfig({
           "@ricky0123/vad-web",
           "marked",
           "react-markdown",
-          "remark-gfm"
+          "remark-gfm",
+          "pixi.js"
         ]
       }
     }

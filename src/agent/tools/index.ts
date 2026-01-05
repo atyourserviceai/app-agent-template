@@ -7,9 +7,6 @@ import * as browserTools from "./browser";
 import * as browserbaseTools from "./browserbase";
 // Import all tools from specialized directories
 import * as contextTools from "./context";
-import * as integrationTools from "./integration";
-import * as messagingTools from "./messaging";
-import * as onboardingTools from "./onboarding";
 import * as schedulingTools from "./scheduling";
 import * as searchTools from "./search";
 import * as simpleFetchTools from "./simpleFetch";
@@ -22,37 +19,23 @@ import * as stateTools from "./state";
 export const tools = {
   browseWebPage: browserTools.browseWebPage,
   browseWithBrowserbase: browserbaseTools.browseWithBrowserbase,
-  cancelScheduledTask: schedulingTools.cancelScheduledTask,
-  checkExistingConfig: onboardingTools.checkExistingConfig,
-  completeIntegrationTesting: integrationTools.completeIntegrationTesting,
-  completeOnboarding: onboardingTools.completeOnboarding,
-  documentTool: integrationTools.documentTool,
   fetchWebPage: simpleFetchTools.fetchWebPage,
-  generateTestReport: integrationTools.generateTestReport,
+
+  // Scheduling tools
+  cancelScheduledTask: schedulingTools.cancelScheduledTask,
+  getScheduledTasks: schedulingTools.getScheduledTasks,
+  scheduleTask: schedulingTools.scheduleTask,
 
   // State access tools
   getAgentState: stateTools.getAgentState,
-  getLocalTime: contextTools.getLocalTime,
-  getOnboardingStatus: onboardingTools.getOnboardingStatus,
-  getScheduledTasks: schedulingTools.getScheduledTasks,
-  // Context tools
-  getWeatherInformation: contextTools.getWeatherInformation,
-
-  // Integration tools
-  recordTestResult: integrationTools.recordTestResult,
-
-  // Search tools
-  runResearch: searchTools.runResearch,
-
-  // Onboarding tools
-  saveSettings: onboardingTools.saveSettings,
-
-  // Scheduling tools
-  scheduleTask: schedulingTools.scheduleTask,
   setMode: stateTools.setMode,
 
-  // Testing tools
-  testErrorTool: integrationTools.testErrorTool
+  // Context tools
+  getLocalTime: contextTools.getLocalTime,
+  getWeatherInformation: contextTools.getWeatherInformation,
+
+  // Search tools
+  runResearch: searchTools.runResearch
 };
 
 /**
@@ -67,9 +50,6 @@ export const executions = {
 export * from "./browser";
 export * from "./browserbase";
 export * from "./context";
-export * from "./integration";
-export * from "./messaging";
-export * from "./onboarding";
 // Re-export all individual tools directly as well
 export * from "./scheduling";
 export * from "./search";

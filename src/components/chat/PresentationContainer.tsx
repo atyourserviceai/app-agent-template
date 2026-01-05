@@ -1,6 +1,4 @@
-import { Card } from "@/components/card/Card";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
-import { ModeInfoCard } from "./ModeInfoCard";
 import { PresentationPanel } from "./PresentationPanel";
 
 type PresentationContainerProps = {
@@ -20,9 +18,7 @@ export function PresentationContainer({
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
-    isOnboardingComplete: false,
-    mode: agentMode,
-    onboardingStep: "start"
+    mode: agentMode
   };
 
   // Use the provided state or the default state
@@ -32,7 +28,7 @@ export function PresentationContainer({
     return (
       <div className="h-full w-full overflow-hidden bg-white dark:bg-black">
         <div className="h-full flex flex-col pt-16 md:pt-0">
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-hidden">
             <PresentationPanel
               agentState={safeAgentState}
               agentMode={agentMode}
@@ -50,23 +46,11 @@ export function PresentationContainer({
         activeTab === "presentation" ? "block" : "hidden md:block"
       }`}
     >
-      <div className="h-full flex flex-col">
-        {/* Mode Info Card - Always visible as a separate card above the playbook panel */}
-        <div className="p-4">
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <ModeInfoCard agentMode={agentMode} />
-          </Card>
-        </div>
-
-        {/* Playbook content area */}
-        <div className="flex-1 overflow-auto">
-          <PresentationPanel
-            agentState={safeAgentState}
-            agentMode={agentMode}
-            showDebug={showDebug}
-          />
-        </div>
-      </div>
+      <PresentationPanel
+        agentState={safeAgentState}
+        agentMode={agentMode}
+        showDebug={showDebug}
+      />
     </div>
   );
 }

@@ -22,10 +22,7 @@ export const getAgentState = tool({
 
       // Return only the relevant fields to avoid large payloads
       return {
-        isIntegrationComplete: currentState.isIntegrationComplete || false,
-        isOnboardingComplete: currentState.isOnboardingComplete || false,
         mode: currentState.mode,
-        onboardingStep: currentState.onboardingStep || "start",
         settings: currentState.settings || {}
       };
     } catch (error) {
@@ -55,75 +52,11 @@ export const getAgentConfig = tool({
 
       // Return only the configuration
       return {
-        isOnboardingComplete: currentState.isOnboardingComplete || false,
-        onboardingStep: currentState.onboardingStep || "start",
         settings: currentState.settings || {}
       };
     } catch (error) {
       console.error("Error getting agent configuration:", error);
       return `Error getting agent configuration: ${error}`;
-    }
-  },
-  inputSchema: z.object({})
-});
-
-/**
- * Gets the testing results and tool documentation for the integration mode
- */
-export const getIntegrationState = tool({
-  description:
-    "Get the integration progress, results, and tool documentation for integration mode",
-  execute: async () => {
-    const { agent } = getCurrentAgent<AppAgent>();
-
-    if (!agent) {
-      return "Error: Could not get agent reference";
-    }
-
-    try {
-      // Get current state
-      const currentState = agent.state as AppAgentState;
-
-      // Calculate testing progress statistics
-      const testResults = currentState.testResults || {};
-      const toolDocumentation = currentState.toolDocumentation || {};
-
-      const totalTests = Object.keys(testResults).length;
-      const successCount = Object.values(testResults).filter(
-        (result) =>
-          result &&
-          typeof result === "object" &&
-          "success" in result &&
-          result.success
-      ).length;
-      const failedTests = totalTests - successCount;
-      const documentedTools = Object.keys(toolDocumentation).length;
-
-      // Return testing state with progress summary
-      return {
-        progress: {
-          completionPercentage:
-            totalTests > 0
-              ? Math.round(
-                  (successCount / totalTests) * 50 +
-                    (documentedTools / Math.max(totalTests, 1)) * 50
-                )
-              : 0,
-          documentedTools,
-          failedTests,
-          isComplete:
-            (totalTests > 0 && currentState.isIntegrationComplete) || false,
-          successCount,
-          totalTests
-        },
-        testReport: currentState.testReport || null,
-        testResults,
-        toolDocumentation,
-        transitionRecommendation: currentState.transitionRecommendation || null
-      };
-    } catch (error) {
-      console.error("Error getting integration state:", error);
-      return `Error getting integration state: ${error}`;
     }
   },
   inputSchema: z.object({})
@@ -153,34 +86,17 @@ export const getModeInfo = tool({
         currentMode,
         modeDescriptions: {
           act: "Execute tasks and take concrete actions",
-          integration: "Test tools and integrations before deployment",
-          onboarding: "Configure agent settings and initial setup",
           plan: "Analyze tasks and create strategic plans"
         }
       };
 
       // Determine available transitions based on current mode
-      // Allow flexible transitions between all modes for better UX
       switch (currentMode) {
-        case "onboarding":
-          modeInfo.availableTransitions.push("integration", "plan", "act");
-          break;
-        case "integration":
-          modeInfo.availableTransitions.push("onboarding", "plan", "act");
-          break;
         case "plan":
-          modeInfo.availableTransitions.push(
-            "onboarding",
-            "integration",
-            "act"
-          );
+          modeInfo.availableTransitions.push("act");
           break;
         case "act":
-          modeInfo.availableTransitions.push(
-            "onboarding",
-            "integration",
-            "plan"
-          );
+          modeInfo.availableTransitions.push("plan");
           break;
       }
 
@@ -197,8 +113,7 @@ export const getModeInfo = tool({
  * Sets the agent's operating mode
  */
 export const setMode = tool({
-  description:
-    "Set the agent's operating mode (onboarding, integration, plan, act)",
+  description: "Set the agent's operating mode (plan or act)",
   execute: async ({
     mode,
     force = false
@@ -229,8 +144,6 @@ export const setMode = tool({
     force: z
       .boolean()
       .describe("Force the mode change even if conditions are not met"),
-    mode: z
-      .enum(["onboarding", "integration", "plan", "act"])
-      .describe("The mode to switch to")
+    mode: z.enum(["plan", "act"]).describe("The mode to switch to")
   })
 });

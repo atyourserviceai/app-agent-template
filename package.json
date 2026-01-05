@@ -71,6 +71,7 @@
     "composio-core": "^0.5.39",
     "jsdom": "^26.1.0",
     "marked": "^16.1.2",
+    "pixi.js": "^8.14.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",

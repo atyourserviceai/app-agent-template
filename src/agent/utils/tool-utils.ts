@@ -55,44 +55,13 @@ export function validateToolAccessForMode(
     "advanceFunnelStage"
   ];
 
-  // Testing-specific tools (only available in testing mode)
-  const testingTools = [
-    "recordTestResult",
-    "documentTool",
-    "generateTestReport",
-    "saveCrmToolDocumentation",
-    "completeTestingPhase"
-  ];
-
-  // Onboarding-specific tools (only available in onboarding mode)
-  const onboardingTools = [
-    "saveSettings",
-    "saveCompanyInfo",
-    "saveProductInfo",
-    "saveFunnelStages",
-    "saveQualificationCriteria",
-    "saveObjectionResponses",
-    "saveTemplates",
-    "saveCommunicationChannels",
-    "savePlaybook",
-    "saveToolingPlan",
-    "completeOnboarding",
-    "checkExistingConfig",
-    "getOnboardingStatus"
-  ];
-
   // If it's a universal tool, always allow
   if (universalTools.includes(toolName)) {
     return true;
   }
 
-  // Check mode-specific permissions
+  // Check mode-specific permissions (simplified: only plan and act modes)
   switch (mode) {
-    case "integration":
-      // Integration mode can use both testing-specific tools and action tools
-      return testingTools.includes(toolName) || crmTools.includes(toolName);
-    case "onboarding":
-      return onboardingTools.includes(toolName);
     case "plan":
       // Plan mode only has universal tools
       return false;

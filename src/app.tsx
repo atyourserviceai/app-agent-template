@@ -102,7 +102,7 @@ function ProjectTabWithAgent({
 }) {
   const { agent, agentMode, changeAgentMode } = useAgentState(
     agentConfig,
-    "onboarding"
+    "act"
   );
 
   return (
@@ -1083,7 +1083,7 @@ function BackgroundPresentationPanel() {
     return (
       <PresentationContainer
         activeTab="presentation"
-        agentMode={"onboarding" as const}
+        agentMode={"act" as const}
         agentState={null}
         showDebug={false}
         variant="full"
@@ -1101,7 +1101,7 @@ function AuthenticatedPresentationPanel() {
   const agentConfig = useCurrentProjectAuth();
 
   // Use the agent state hook
-  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
+  const { agentState, agentMode } = useAgentState(agentConfig, "act");
 
   return (
     <PresentationContainer
@@ -1129,7 +1129,7 @@ function AuthenticatedTopPanel() {
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
   const agentConfig = useCurrentProjectAuth();
-  const { agentMode } = useAgentState(agentConfig, "onboarding");
+  const { agentMode } = useAgentState(agentConfig, "act");
   const [_showDebug, _setShowDebug] = useState(false);
   const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
     "presentation"

@@ -14,7 +14,8 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
               App Agent Template
             </h1>
             <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
-              A clean foundation for Cloudflare Worker agents with a modern UX.
+              A clean foundation for Cloudflare Worker agents with interactive
+              visuals.
             </p>
             <p className="text-blue-700 dark:text-blue-400 italic mb-6 md:mb-8 text-sm md:text-base">
               Free AI credits to get you going.
@@ -34,7 +35,7 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
                 onClick={onSignIn}
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Try it →
+                Try it
               </button>
               <a
                 href="https://github.com/atyourserviceai/app-agent-template"
@@ -57,15 +58,15 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
             <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
               <li>
                 <strong className="text-gray-900 dark:text-white">
-                  Four modes
+                  Interactive ball simulation
                 </strong>
-                : Onboarding, Integration, Plan, Act.
+                : PixiJS-powered bouncing balls controlled via AI chat.
               </li>
               <li>
                 <strong className="text-gray-900 dark:text-white">
-                  Presentation‑first UI
-                </strong>{" "}
-                with floating Chat.
+                  Two modes
+                </strong>
+                : Plan and Act for structured AI workflows.
               </li>
               <li>
                 <strong className="text-gray-900 dark:text-white">
@@ -83,9 +84,10 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
             <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
               <li>
                 <strong className="text-gray-900 dark:text-white">
-                  Composio integration
-                </strong>{" "}
-                option to connect 3rd‑party apps.
+                  AI-controlled physics
+                </strong>
+                : Change gravity, add balls, pause simulation via natural
+                language.
               </li>
               <li>
                 <strong className="text-gray-900 dark:text-white">
@@ -106,6 +108,69 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
                 : system default, persistent toggle, DRY component.
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Ball Simulation Demo */}
+        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            AI-controlled ball simulation
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 text-base">
+            <div className="space-y-4">
+              <p>
+                The template includes a PixiJS-powered bouncing ball simulation
+                that demonstrates how AI can control interactive visualizations
+                through natural language.
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                Try commands like:
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-sm">
+                <li>"Add a red ball"</li>
+                <li>"Add 5 blue balls"</li>
+                <li>"Set gravity to zero"</li>
+                <li>"Pause the simulation"</li>
+                <li>"Clear all balls"</li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <p className="font-medium text-gray-900 dark:text-white">
+                Available tools:
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-sm">
+                <li>
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    addBall
+                  </code>{" "}
+                  - Add a single ball with custom properties
+                </li>
+                <li>
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    addMultipleBalls
+                  </code>{" "}
+                  - Add up to 20 balls at once
+                </li>
+                <li>
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    setGravity
+                  </code>{" "}
+                  - Control physics (0 = floating, 2 = heavy)
+                </li>
+                <li>
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    toggleSimulation
+                  </code>{" "}
+                  - Pause/resume animation
+                </li>
+                <li>
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    clearBalls
+                  </code>{" "}
+                  - Remove all balls
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -161,40 +226,27 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
 
         <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Four modes
+            Two modes
           </h2>
-          <div className="grid md:grid-cols-4 gap-6 text-center text-gray-700 dark:text-gray-300 text-base">
+          <div className="grid md:grid-cols-2 gap-6 text-center text-gray-700 dark:text-gray-300 text-base max-w-2xl mx-auto">
             <div>
-              <div className="text-3xl mb-2">🧭</div>
+              <div className="text-3xl mb-2">Plan</div>
               <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                1. Onboarding
+                Planning mode
               </h3>
               <p>
-                Define the agent’s purpose, configuration and starting state.
+                Analyze tasks, create strategies, and break down complex
+                problems without executing actions.
               </p>
             </div>
             <div>
-              <div className="text-3xl mb-2">🧩</div>
+              <div className="text-3xl mb-2">Act</div>
               <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                2. Integration
-              </h3>
-              <p>Connect tools and require confirmation before execution.</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">🗺️</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                3. Plan
-              </h3>
-              <p>Analyze and decide without executing any tools.</p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">⚙️</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                4. Act
+                Action mode
               </h3>
               <p>
-                Execute approved actions using your own AI billing via the
-                gateway.
+                Execute approved actions, control the simulation, and interact
+                with external systems.
               </p>
             </div>
           </div>
@@ -215,11 +267,12 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
               AI@YourService.
             </li>
             <li>
-              Use the floating Chat to interact; switch modes from the header.
+              Chat with the AI to add balls, change gravity, or control the
+              simulation.
             </li>
             <li>
-              Export data via the provided endpoints when you want to back up or
-              migrate.
+              Switch between Plan and Act modes to explore different agent
+              behaviors.
             </li>
           </ol>
           <p className="text-center mt-6">
@@ -229,14 +282,14 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
               rel="noopener noreferrer"
               className="underline text-blue-700 dark:text-blue-400"
             >
-              Read the full README →
+              Read the full README
             </a>
           </p>
         </div>
 
         <div className="text-center">
           <p className="text-xl font-medium text-gray-900 dark:text-white mb-6">
-            Build faster with a production-ready agent foundation.
+            Build interactive AI agents with a production-ready foundation.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
@@ -244,7 +297,7 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
               onClick={onSignIn}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
             >
-              Try it →
+              Try it
             </button>
             <a
               href="https://github.com/atyourserviceai/app-agent-template"

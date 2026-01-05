@@ -27,23 +27,10 @@ export function ShareAssetTemplate({
   console.log("[ShareAssetTemplate] Full agent state:", agentState);
 
   // Extract key data from agent state with defensive checks
-  const mode = agentState?.mode || "onboarding";
-  const onboardingComplete = agentState?.isOnboardingComplete || false;
-  const integrationComplete = agentState?.isIntegrationComplete || false;
-  const testCount = agentState?.testResults
-    ? Object.keys(agentState.testResults).length
-    : 0;
+  const mode = agentState?.mode || "act";
 
-  // Mode information
+  // Mode information (simplified: only plan and act)
   const modeInfo = {
-    onboarding: {
-      title: "Welcome—let's set you up",
-      description: "Set up the agent's purpose, defaults and operators."
-    },
-    integration: {
-      title: "Validate and connect tools",
-      description: "Connect tools, run checks and document capabilities."
-    },
     plan: {
       title: "Think before you act",
       description: "Analyze context and propose next steps without executing."
@@ -55,7 +42,7 @@ export function ShareAssetTemplate({
   };
 
   const currentMode =
-    modeInfo[mode as keyof typeof modeInfo] || modeInfo.onboarding;
+    modeInfo[mode as keyof typeof modeInfo] || modeInfo.act;
 
   // Colors based on theme
   const colors = isDark
@@ -180,7 +167,7 @@ export function ShareAssetTemplate({
           marginBottom: config.spacing.marginBottom
         }}
       >
-        {/* Onboarding Status */}
+        {/* Current Mode */}
         <div
           style={{
             flex: 1,
@@ -201,21 +188,22 @@ export function ShareAssetTemplate({
               marginBottom: "8px"
             }}
           >
-            ONBOARDING
+            CURRENT MODE
           </div>
           <div
             style={{
               display: "flex",
               fontSize: "16px",
               color: colors.text,
-              fontWeight: "600"
+              fontWeight: "600",
+              textTransform: "capitalize"
             }}
           >
-            {onboardingComplete ? "Complete" : "In progress"}
+            {mode}
           </div>
         </div>
 
-        {/* Integration Status */}
+        {/* Last Change */}
         <div
           style={{
             flex: 1,
@@ -236,7 +224,7 @@ export function ShareAssetTemplate({
               marginBottom: "8px"
             }}
           >
-            INTEGRATION
+            LAST CHANGE
           </div>
           <div
             style={{
@@ -246,7 +234,9 @@ export function ShareAssetTemplate({
               fontWeight: "600"
             }}
           >
-            {integrationComplete ? "Complete" : `${testCount} tests`}
+            {agentState?._lastModeChange
+              ? new Date(agentState._lastModeChange).toLocaleDateString()
+              : "—"}
           </div>
         </div>
       </div>

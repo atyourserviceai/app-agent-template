@@ -107,8 +107,6 @@ export function ChatHeader({
           value={agentMode}
           onChange={(e) => onChangeMode(e.target.value as AgentMode)}
         >
-          <option value="onboarding">Onboarding Mode</option>
-          <option value="integration">Integration Mode</option>
           <option value="plan">Plan Mode</option>
           <option value="act">Act Mode</option>
         </select>
