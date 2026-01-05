@@ -1075,33 +1075,19 @@ function AppContent() {
 }
 
 // Background presentation panel that shows with or without agent state
+// This component always renders the same structure to avoid remounts
 function BackgroundPresentationPanel() {
   const auth = useAuth();
+  const isAuthenticated = !!auth?.authMethod;
 
-  // If not authenticated, show presentation panel without agent state
-  if (!auth?.authMethod) {
-    return (
-      <PresentationContainer
-        activeTab="presentation"
-        agentMode={"act" as const}
-        agentState={null}
-        showDebug={false}
-        variant="full"
-      />
-    );
-  }
-
-  // If authenticated, show presentation panel with agent state
-  return <AuthenticatedPresentationPanel />;
-}
-
-// Component that renders the presentation panel with agent state when authenticated
-function AuthenticatedPresentationPanel() {
-  // Get authenticated agent configuration for current project
+  // Always call hooks unconditionally
   const agentConfig = useCurrentProjectAuth();
 
-  // Use the agent state hook
-  const { agentState, agentMode } = useAgentState(agentConfig, "act");
+  // Only connect to agent if authenticated
+  const { agentState, agentMode } = useAgentState(
+    isAuthenticated ? agentConfig : null,
+    "act"
+  );
 
   return (
     <PresentationContainer

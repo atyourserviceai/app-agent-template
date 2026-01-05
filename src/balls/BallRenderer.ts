@@ -1,6 +1,5 @@
 /**
  * BallRenderer - PixiJS renderer for bouncing balls simulation
- * Based on Calitree's TreeRenderer pattern
  */
 
 import { Application, Graphics, Container } from "pixi.js";
@@ -26,7 +25,7 @@ const BALL_COLORS = [
   0xfcbad3, // Pink
   0xa8d8ea, // Light blue
   0xff9f43, // Orange
-  0x26de81  // Green
+  0x26de81 // Green
 ];
 
 interface BallRendererOptions {
@@ -39,13 +38,11 @@ export class BallRenderer {
   private container: Container | null = null;
   private ballGraphics: Map<string, Graphics> = new Map();
   private options: BallRendererOptions;
-  private state: BallState = {
-    balls: [],
-    gravity: 0.02, // Almost zero gravity
-    gravityAngle: Math.PI / 2, // Down by default
-    friction: 0.998,
-    paused: false
-  };
+  private balls: Ball[] = [];
+  private gravity = 0.02;
+  private gravityAngle = Math.PI / 2;
+  private friction = 0.998;
+  private paused = false;
   private theme: Theme = "dark";
   private width = 800;
   private height = 600;
@@ -114,7 +111,7 @@ export class BallRenderer {
     // Start animation loop using PixiJS ticker
     this.app.ticker.add(this.tick.bind(this));
 
-    // Add initial random balls
+    // Add some initial balls for visual interest
     this.addInitialBalls();
 
     // Start random gravity direction changes every 5 seconds
@@ -124,26 +121,23 @@ export class BallRenderer {
   }
 
   private startGravityChanges(): void {
-    // Change gravity direction randomly every 5 seconds
     this.gravityChangeInterval = setInterval(() => {
-      if (!this.state.paused) {
-        // Random angle between 0 and 2*PI
-        this.state.gravityAngle = Math.random() * Math.PI * 2;
+      if (!this.paused) {
+        this.gravityAngle = Math.random() * Math.PI * 2;
       }
     }, 5000);
   }
 
   private addInitialBalls(): void {
-    const numBalls = 5 + Math.floor(Math.random() * 5); // 5-9 balls
-
+    const numBalls = 5 + Math.floor(Math.random() * 5);
     for (let i = 0; i < numBalls; i++) {
       const ball = this.createRandomBall();
-      this.state.balls.push(ball);
+      this.balls.push(ball);
     }
   }
 
   private createRandomBall(x?: number, y?: number): Ball {
-    const radius = 15 + Math.random() * 25; // 15-40 radius
+    const radius = 15 + Math.random() * 25;
     const color = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
 
     return {
@@ -161,19 +155,16 @@ export class BallRenderer {
     const pos = event.global;
 
     // Check if clicking on an existing ball
-    for (const ball of this.state.balls) {
+    for (const ball of this.balls) {
       const dx = pos.x - ball.x;
       const dy = pos.y - ball.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < ball.radius) {
-        // Start dragging this ball
         this.draggedBall = ball;
         this.dragStartPos = { x: pos.x, y: pos.y };
         this.dragCurrentPos = { x: pos.x, y: pos.y };
         this.lastDragPositions = [{ x: pos.x, y: pos.y, time: Date.now() }];
-
-        // Stop ball velocity while dragging
         ball.vx = 0;
         ball.vy = 0;
         return;
@@ -184,7 +175,7 @@ export class BallRenderer {
     const newBall = this.createRandomBall(pos.x, pos.y);
     newBall.vx = 0;
     newBall.vy = 0;
-    this.state.balls.push(newBall);
+    this.balls.push(newBall);
     this.options.onBallAdd?.(newBall);
   }
 
@@ -193,44 +184,41 @@ export class BallRenderer {
 
     const pos = event.global;
     this.dragCurrentPos = { x: pos.x, y: pos.y };
-
-    // Update ball position to follow cursor
     this.draggedBall.x = pos.x;
     this.draggedBall.y = pos.y;
-
-    // Track positions for velocity calculation
     this.lastDragPositions.push({ x: pos.x, y: pos.y, time: Date.now() });
 
-    // Keep only last 5 positions
     if (this.lastDragPositions.length > 5) {
       this.lastDragPositions.shift();
     }
   }
 
-  private onStagePointerUp(_event: any): void {
+  private onStagePointerUp(): void {
     if (!this.draggedBall) return;
 
-    // Calculate throw velocity from recent movement
     if (this.lastDragPositions.length >= 2) {
       const recent = this.lastDragPositions.slice(-3);
       const first = recent[0];
       const last = recent[recent.length - 1];
-      const dt = (last.time - first.time) / 1000; // Convert to seconds
+      const dt = (last.time - first.time) / 1000;
 
       if (dt > 0) {
-        // Scale velocity for a satisfying throw feel
         const scale = 1.5;
-        this.draggedBall.vx = ((last.x - first.x) / dt) * scale * 0.016; // Convert to per-frame
+        this.draggedBall.vx = ((last.x - first.x) / dt) * scale * 0.016;
         this.draggedBall.vy = ((last.y - first.y) / dt) * scale * 0.016;
 
-        // Clamp velocity
         const maxVel = 30;
-        this.draggedBall.vx = Math.max(-maxVel, Math.min(maxVel, this.draggedBall.vx));
-        this.draggedBall.vy = Math.max(-maxVel, Math.min(maxVel, this.draggedBall.vy));
+        this.draggedBall.vx = Math.max(
+          -maxVel,
+          Math.min(maxVel, this.draggedBall.vx)
+        );
+        this.draggedBall.vy = Math.max(
+          -maxVel,
+          Math.min(maxVel, this.draggedBall.vy)
+        );
       }
     }
 
-    // Clear drag state
     this.draggedBall = null;
     this.dragStartPos = null;
     this.dragCurrentPos = null;
@@ -238,30 +226,23 @@ export class BallRenderer {
   }
 
   private tick(): void {
-    if (!this.state.paused) {
+    if (!this.paused) {
       this.updatePhysics();
     }
     this.render();
   }
 
   private updatePhysics(): void {
-    // Calculate gravity components from magnitude and angle
-    const gravityX = Math.cos(this.state.gravityAngle) * this.state.gravity;
-    const gravityY = Math.sin(this.state.gravityAngle) * this.state.gravity;
+    const gravityX = Math.cos(this.gravityAngle) * this.gravity;
+    const gravityY = Math.sin(this.gravityAngle) * this.gravity;
 
-    for (const ball of this.state.balls) {
-      // Skip physics for dragged ball
+    for (const ball of this.balls) {
       if (ball === this.draggedBall) continue;
 
-      // Apply gravity in current direction
       ball.vx += gravityX;
       ball.vy += gravityY;
-
-      // Apply friction
-      ball.vx *= this.state.friction;
-      ball.vy *= this.state.friction;
-
-      // Update position
+      ball.vx *= this.friction;
+      ball.vy *= this.friction;
       ball.x += ball.vx;
       ball.y += ball.vy;
 
@@ -288,8 +269,7 @@ export class BallRenderer {
   private render(): void {
     if (!this.container) return;
 
-    // Update or create graphics for each ball
-    const currentBallIds = new Set(this.state.balls.map((b) => b.id));
+    const currentBallIds = new Set(this.balls.map((b) => b.id));
 
     // Remove graphics for balls that no longer exist
     for (const [id, graphics] of this.ballGraphics) {
@@ -301,7 +281,7 @@ export class BallRenderer {
     }
 
     // Update or create graphics for each ball
-    for (const ball of this.state.balls) {
+    for (const ball of this.balls) {
       let graphics = this.ballGraphics.get(ball.id);
 
       if (!graphics) {
@@ -312,66 +292,61 @@ export class BallRenderer {
         this.ballGraphics.set(ball.id, graphics);
       }
 
-      // Update cursor based on drag state
       graphics.cursor = ball === this.draggedBall ? "grabbing" : "grab";
-
-      // Clear and redraw
       graphics.clear();
-
-      // Draw ball
       graphics.circle(0, 0, ball.radius);
       graphics.fill({ color: ball.color, alpha: 1 });
-
-      // Add highlight
-      graphics.circle(-ball.radius * 0.3, -ball.radius * 0.3, ball.radius * 0.3);
+      graphics.circle(
+        -ball.radius * 0.3,
+        -ball.radius * 0.3,
+        ball.radius * 0.3
+      );
       graphics.fill({ color: 0xffffff, alpha: 0.3 });
-
-      // Update position
       graphics.x = ball.x;
       graphics.y = ball.y;
     }
   }
 
-  /**
-   * Update physics parameters only (not balls)
-   */
-  setPhysicsParams(params: { gravity?: number; gravityAngle?: number; friction?: number; paused?: boolean }): void {
-    if (params.gravity !== undefined) this.state.gravity = params.gravity;
-    if (params.gravityAngle !== undefined) this.state.gravityAngle = params.gravityAngle;
-    if (params.friction !== undefined) this.state.friction = params.friction;
-    if (params.paused !== undefined) this.state.paused = params.paused;
-  }
-
+  // Public API - these methods can be called from outside
   getState(): BallState {
-    return this.state;
+    return {
+      balls: this.balls,
+      gravity: this.gravity,
+      gravityAngle: this.gravityAngle,
+      friction: this.friction,
+      paused: this.paused
+    };
   }
 
   addBall(ball: Ball): void {
-    this.state.balls.push(ball);
+    // Ensure ball has valid position within bounds
+    ball.x = Math.max(ball.radius, Math.min(this.width - ball.radius, ball.x));
+    ball.y = Math.max(ball.radius, Math.min(this.height - ball.radius, ball.y));
+    this.balls.push(ball);
   }
 
   removeBall(ballId: string): void {
-    this.state.balls = this.state.balls.filter((b) => b.id !== ballId);
+    this.balls = this.balls.filter((b) => b.id !== ballId);
   }
 
   clearBalls(): void {
-    this.state.balls = [];
+    this.balls = [];
   }
 
   setGravity(gravity: number): void {
-    this.state.gravity = gravity;
+    this.gravity = gravity;
   }
 
   setGravityAngle(angle: number): void {
-    this.state.gravityAngle = angle;
+    this.gravityAngle = angle;
   }
 
   setFriction(friction: number): void {
-    this.state.friction = friction;
+    this.friction = friction;
   }
 
   setPaused(paused: boolean): void {
-    this.state.paused = paused;
+    this.paused = paused;
   }
 
   setTheme(theme: Theme): void {
@@ -392,13 +367,11 @@ export class BallRenderer {
   destroy(): void {
     this.isDestroyed = true;
 
-    // Clear gravity change interval
     if (this.gravityChangeInterval) {
       clearInterval(this.gravityChangeInterval);
       this.gravityChangeInterval = null;
     }
 
-    // Clear ball graphics
     for (const graphics of this.ballGraphics.values()) {
       try {
         graphics.destroy();
@@ -408,10 +381,8 @@ export class BallRenderer {
     }
     this.ballGraphics.clear();
 
-    // Destroy the app if it exists
     if (this.app) {
       try {
-        // Remove canvas from DOM manually
         if (this.app.canvas && this.app.canvas.parentNode) {
           this.app.canvas.parentNode.removeChild(this.app.canvas);
         }
