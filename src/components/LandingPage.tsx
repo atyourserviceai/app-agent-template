@@ -1,4 +1,4 @@
-import { X } from "@phosphor-icons/react";
+import { X, GithubLogo, Lightning, CloudArrowUp, Microphone, DeviceMobile, Code, Rocket } from "@phosphor-icons/react";
 
 interface LandingPageProps {
   onSignIn: () => void;
@@ -30,303 +30,268 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
                 App Agent Template
               </h1>
-            <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
-              A clean foundation for Cloudflare Worker agents with interactive
-              visuals.
-            </p>
-            <p className="text-blue-700 dark:text-blue-400 italic mb-6 md:mb-8 text-sm md:text-base">
-              Free AI credits to get you going.
-            </p>
+              <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
+                Build AI-powered apps where users pay their own LLM costs.
+              </p>
+              <p className="text-blue-700 dark:text-blue-400 italic mb-6 md:mb-8 text-sm md:text-base">
+                Fork it. Customize it. Ship it.
+              </p>
 
-            {authError && (
-              <div className="mb-4 md:mb-6 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg max-w-md mx-auto">
-                <p className="text-red-600 dark:text-red-400 text-sm">
-                  {authError}
-                </p>
+              {authError && (
+                <div className="mb-4 md:mb-6 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg max-w-md mx-auto">
+                  <p className="text-red-600 dark:text-red-400 text-sm">
+                    {authError}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+                <a
+                  href="https://github.com/atyourserviceai/app-agent-template"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <GithubLogo size={24} weight="fill" />
+                  Fork on GitHub
+                </a>
+                <button
+                  type="button"
+                  onClick={onSignIn}
+                  className="w-full sm:w-auto bg-[#F48120] hover:bg-[#F48120]/90 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 cursor-pointer"
+                >
+                  Try the Demo
+                </button>
               </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={onDismiss}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+                className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 underline"
               >
-                Try the Simulation
+                or explore without signing in
               </button>
+            </div>
+          </div>
+
+          {/* What is this? */}
+          <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
+              What is this?
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg text-center max-w-2xl mx-auto mb-6">
+              An open-source template for building AI chat applications with built-in authentication and billing.
+              Your users sign in with{" "}
+              <a
+                href="https://atyourservice.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#F48120] hover:underline font-medium"
+              >
+                AI@YourService
+              </a>{" "}
+              and pay for their own LLM usage - you focus on your app, not billing infrastructure.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 text-sm">
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">AI SDK v6</span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">Cloudflare Agents SDK</span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">React Router 7</span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">TypeScript</span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">Tailwind CSS</span>
+            </div>
+          </div>
+
+          {/* Key Features */}
+          <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
+              Built-in features
+            </h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-[#F48120]/20 flex-shrink-0">
+                  <Lightning size={20} className="text-[#F48120]" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">AI Chat with Tools</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Streaming responses, tool calling, multi-turn conversations. Powered by AI SDK v6.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-blue-500/20 flex-shrink-0">
+                  <Microphone size={20} className="text-blue-500" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Voice Input</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Built-in speech-to-text transcription. Talk to your AI agent hands-free.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-green-500/20 flex-shrink-0">
+                  <DeviceMobile size={20} className="text-green-500" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Cross-Device Sync</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    State persists in Durable Objects. Pick up where you left off on any device.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-purple-500/20 flex-shrink-0">
+                  <CloudArrowUp size={20} className="text-purple-500" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">One-Click Deploy</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Deploy to Cloudflare Workers with wrangler. Global edge deployment included.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-yellow-500/20 flex-shrink-0">
+                  <Code size={20} className="text-yellow-600" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Export / Import</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Built-in data portability. Users can export their data anytime.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <div className="p-2 rounded-full bg-red-500/20 flex-shrink-0">
+                  <Rocket size={20} className="text-red-500" weight="fill" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Plan & Act Modes</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Structured workflows: plan before acting, or let the agent execute directly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* How it Works */}
+          <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+              How billing works
+            </h2>
+            <div className="max-w-2xl mx-auto text-gray-700 dark:text-gray-300 text-base space-y-4">
+              <p>
+                When users sign in to your app, they authenticate via{" "}
+                <a
+                  href="https://atyourservice.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#F48120] hover:underline font-medium"
+                >
+                  AI@YourService
+                </a>
+                {" "}and get their own credits. Every LLM call is billed to their account, not yours.
+              </p>
+              <p>
+                New users get free credits to try your app. Power users can add more credits or bring their own API keys (BYOK).
+              </p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
+                You build the app. We handle auth, billing, and the LLM gateway.
+              </p>
+            </div>
+          </div>
+
+          {/* Quickstart */}
+          <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+              Get started in 5 minutes
+            </h2>
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-neutral-900 dark:bg-neutral-800 rounded-lg p-4 mb-4 overflow-x-auto">
+                <code className="text-green-400 text-sm md:text-base font-mono whitespace-pre">
+{`# Clone the template
+git clone https://github.com/atyourserviceai/app-agent-template
+cd app-agent-template
+
+# Install & configure
+pnpm install
+cp .dev.vars.example .dev.vars
+
+# Start developing
+pnpm run dev`}
+                </code>
+              </div>
+              <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300 text-sm md:text-base">
+                <li>Fork or clone the template from GitHub</li>
+                <li>Configure your <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.dev.vars</code> with AI@YourService credentials</li>
+                <li>Customize the agent tools in <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">src/agent/</code></li>
+                <li>Replace the demo UI with your own application</li>
+                <li>Deploy with <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">pnpm run deploy</code></li>
+              </ol>
+            </div>
+          </div>
+
+          {/* Demo Section */}
+          <div className="bg-gradient-to-r from-[#F48120]/10 to-blue-500/10 rounded-2xl p-6 md:p-8 mb-8 border border-[#F48120]/20">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 text-center">
+              Try the demo
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 text-base text-center max-w-2xl mx-auto mb-6">
+              This template includes a bouncing ball simulation to demonstrate AI-controlled interactions.
+              Sign in to chat with the AI and control the simulation with natural language.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={onSignIn}
-                className="w-full sm:w-auto bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 cursor-pointer"
+                className="w-full sm:w-auto bg-[#F48120] hover:bg-[#F48120]/90 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 shadow-lg hover:shadow-xl"
               >
                 Sign in to Chat
               </button>
+              <button
+                type="button"
+                onClick={onDismiss}
+                className="w-full sm:w-auto bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-neutral-800 dark:text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200"
+              >
+                Explore Without Signing In
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* What You Get Section */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-4 md:p-6 lg:p-8 mb-6 md:mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center">
-            Feature highlights
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4 md:gap-6 text-gray-700 dark:text-gray-300 text-sm md:text-base">
-            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Interactive ball simulation
-                </strong>
-                : PixiJS-powered bouncing balls controlled via AI chat.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Two modes
-                </strong>
-                : Plan and Act for structured AI workflows.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Auth & LLM Gateway
-                </strong>{" "}
-                via AI@YourService (users pay their own usage).
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Export / Import
-                </strong>{" "}
-                endpoints for data portability.
-              </li>
-            </ul>
-            <ul className="list-disc pl-4 md:pl-6 space-y-1 md:space-y-2">
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  AI-controlled physics
-                </strong>
-                : Change gravity, add balls, pause simulation via natural
-                language.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Cloudflare Browser Rendering
-                </strong>{" "}
-                ready for remote scraping/automation.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Reliability & DX
-                </strong>
-                : improved auth/error handling, guarded mounts, readable logs.
-              </li>
-              <li>
-                <strong className="text-gray-900 dark:text-white">
-                  Theming
-                </strong>
-                : system default, persistent toggle, DRY component.
-              </li>
-            </ul>
+          {/* Footer CTA */}
+          <div className="text-center pt-4">
+            <p className="text-xl font-medium text-gray-900 dark:text-white mb-6">
+              Build your AI-powered app today.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href="https://github.com/atyourserviceai/app-agent-template"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900 font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                <GithubLogo size={20} weight="fill" />
+                View on GitHub
+              </a>
+              <a
+                href="https://atyourservice.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto bg-[#F48120] hover:bg-[#F48120]/90 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200"
+              >
+                Learn about AI@YourService
+              </a>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-4">
+              Open source under MIT license.
+            </p>
           </div>
-        </div>
-
-        {/* Ball Simulation Demo */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            AI-controlled ball simulation
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 text-base">
-            <div className="space-y-4">
-              <p>
-                The template includes a PixiJS-powered bouncing ball simulation
-                that demonstrates how AI can control interactive visualizations
-                through natural language.
-              </p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                Try commands like:
-              </p>
-              <ul className="list-disc pl-6 space-y-1 text-sm">
-                <li>"Add a red ball"</li>
-                <li>"Add 5 blue balls"</li>
-                <li>"Set gravity to zero"</li>
-                <li>"Pause the simulation"</li>
-                <li>"Clear all balls"</li>
-              </ul>
-            </div>
-            <div className="space-y-4">
-              <p className="font-medium text-gray-900 dark:text-white">
-                Available tools:
-              </p>
-              <ul className="list-disc pl-6 space-y-1 text-sm">
-                <li>
-                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                    addBall
-                  </code>{" "}
-                  - Add a single ball with custom properties
-                </li>
-                <li>
-                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                    addMultipleBalls
-                  </code>{" "}
-                  - Add up to 20 balls at once
-                </li>
-                <li>
-                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                    setGravity
-                  </code>{" "}
-                  - Control physics (0 = floating, 2 = heavy)
-                </li>
-                <li>
-                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                    toggleSimulation
-                  </code>{" "}
-                  - Pause/resume animation
-                </li>
-                <li>
-                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                    clearBalls
-                  </code>{" "}
-                  - Remove all balls
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Stack & Architecture */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Stack & architecture
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 text-base">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                  Cloudflare Workers + Durable Objects
-                </h3>
-                <p>
-                  Stateless request handling with strongly consistent state
-                  where you need it (sessions, chat state, and long-lived
-                  coordination).
-                </p>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                  Agents SDK
-                </h3>
-                <p>
-                  Agent lifecycle, tool execution, state sync and scheduling.
-                  Ship multi-mode agents with minimal glue code.
-                </p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                  AI@YourService
-                </h3>
-                <p>
-                  OAuth login and LLM Gateway so users pay for their own usage.
-                  Works locally and in staging without changing your app code.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                  Remix (RR7) + React 19
-                </h3>
-                <p>
-                  Modern routing/data APIs with React 19 UI and Tailwind CSS,
-                  powered by Vite for local dev.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Two modes
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6 text-center text-gray-700 dark:text-gray-300 text-base max-w-2xl mx-auto">
-            <div>
-              <div className="text-3xl mb-2">Plan</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                Planning mode
-              </h3>
-              <p>
-                Analyze tasks, create strategies, and break down complex
-                problems without executing actions.
-              </p>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">Act</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                Action mode
-              </h3>
-              <p>
-                Execute approved actions, control the simulation, and interact
-                with external systems.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quickstart (from README highlights) */}
-        <div className="bg-white/90 dark:bg-black/60 rounded-2xl p-6 md:p-8 mb-8 border border-gray-200 dark:border-blue-500/20 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Quickstart
-          </h2>
-          <ol className="list-decimal pl-6 space-y-3 text-gray-700 dark:text-gray-300 text-base max-w-3xl mx-auto">
-            <li>
-              Install dependencies and copy `.dev.vars.example` to `.dev.vars`
-              with your local values.
-            </li>
-            <li>
-              Start the dev server; visit the app and sign in with
-              AI@YourService.
-            </li>
-            <li>
-              Chat with the AI to add balls, change gravity, or control the
-              simulation.
-            </li>
-            <li>
-              Switch between Plan and Act modes to explore different agent
-              behaviors.
-            </li>
-          </ol>
-          <p className="text-center mt-6">
-            <a
-              href="https://github.com/atyourserviceai/app-agent-template"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-blue-700 dark:text-blue-400"
-            >
-              Read the full README
-            </a>
-          </p>
-        </div>
-
-        <div className="text-center pt-4">
-          <p className="text-xl font-medium text-gray-900 dark:text-white mb-6">
-            Build interactive AI agents with a production-ready foundation.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 shadow-lg hover:shadow-xl"
-            >
-              Try the Simulation
-            </button>
-            <button
-              type="button"
-              onClick={onSignIn}
-              className="w-full sm:w-auto bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 cursor-pointer"
-            >
-              Sign in to Chat
-            </button>
-          </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-4">
-            Simulation works locally. Sign in to use the AI chat.
-          </p>
-        </div>
         </div>
       </div>
     </div>
