@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 import { Moon, Sun } from "@phosphor-icons/react";
@@ -7,6 +7,8 @@ import { UserProfile } from "../auth/UserProfile";
 import { AnonymousProfile } from "../auth/AnonymousProfile";
 import { useThemePreference } from "../../hooks/useThemePreference";
 import { useUserProgress } from "../../hooks/useUserProgress";
+
+type CanvasTheme = "dark" | "light";
 
 interface PresentationPanelProps {
   agentState: AppAgentState;
@@ -59,6 +61,34 @@ export function PresentationPanel({
     }
   }, [instructionsVisible, dismissInstructions]);
 
+  // Canvas theme state - needs to watch for changes via MutationObserver
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("dark");
+
+  // Detect and watch for theme changes (dark/light class on html element)
+  useEffect(() => {
+    const html = document.documentElement;
+
+    const updateTheme = () => {
+      setCanvasTheme(html.classList.contains("dark") ? "dark" : "light");
+    };
+
+    // Set initial theme
+    updateTheme();
+
+    // Watch for class changes on html element
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.attributeName === "class") {
+          updateTheme();
+        }
+      }
+    });
+
+    observer.observe(html, { attributes: true });
+
+    return () => observer.disconnect();
+  }, []);
+
   // Process ball commands from AI agent
   useEffect(() => {
     const commands = agentState.ballCommands;
@@ -82,11 +112,6 @@ export function PresentationPanel({
       processedCommandsRef.current = new Set(entries.slice(-50));
     }
   }, [agentState.ballCommands]);
-
-  // Determine theme based on document class
-  const isDark =
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark");
 
   // Get simulation state from canvas ref
   const isPaused = canvasRef.current?.getState().paused ?? false;
@@ -136,7 +161,7 @@ export function PresentationPanel({
       <div className="flex-1 relative">
         <BallCanvas
           ref={canvasRef}
-          theme={isDark ? "dark" : "light"}
+          theme={canvasTheme}
           className="absolute inset-0"
           onUserInteraction={handleUserInteraction}
         />
