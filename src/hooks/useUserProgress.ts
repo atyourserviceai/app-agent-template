@@ -85,11 +85,21 @@ export function useUserProgress({
   agentConfig,
   onSyncMessage
 }: UseUserProgressOptions) {
-  // Local state for anonymous users
-  const [localProgress, setLocalProgress] = useState<UserProgress | null>(() => loadLocalProgress());
+  // Local state for anonymous users - start null for SSR compatibility
+  const [localProgress, setLocalProgress] = useState<UserProgress | null>(null);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   // Track if we've done migration for this session
   const hasMigratedRef = useRef(false);
+
+  // Load from localStorage after hydration (client-only)
+  useEffect(() => {
+    setHasHydrated(true);
+    const stored = loadLocalProgress();
+    if (stored) {
+      setLocalProgress(stored);
+    }
+  }, []);
 
   // Get progress from the appropriate source
   const serverProgress = agentState?.userProgress ?? null;

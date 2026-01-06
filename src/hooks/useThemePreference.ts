@@ -3,16 +3,30 @@ import { useEffect, useState } from "react";
 export type Theme = "dark" | "light";
 
 export function useThemePreference() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof document !== "undefined") {
-      return document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "light";
-    }
-    return "dark";
-  });
+  // Always start with "dark" for consistent SSR/CSR hydration
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  // Load saved theme from localStorage after hydration
   useEffect(() => {
+    setIsHydrated(true);
+    try {
+      const savedTheme = localStorage.getItem("theme") as Theme | null;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        setTheme(savedTheme);
+      } else if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches
+      ) {
+        setTheme("light");
+      }
+    } catch {}
+  }, []);
+
+  // Apply theme to DOM
+  useEffect(() => {
+    if (!isHydrated) return;
+
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
       document.documentElement.classList.remove("light");
@@ -23,7 +37,7 @@ export function useThemePreference() {
     try {
       localStorage.setItem("theme", theme);
     } catch {}
-  }, [theme]);
+  }, [theme, isHydrated]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 

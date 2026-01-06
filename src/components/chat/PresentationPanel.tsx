@@ -61,14 +61,9 @@ export function PresentationPanel({
     }
   }, [instructionsVisible, dismissInstructions]);
 
-  // Canvas theme state - needs to watch for changes via MutationObserver
-  // Initialize by checking the document class (same as useThemePreference)
-  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>(() => {
-    if (typeof document !== "undefined") {
-      return document.documentElement.classList.contains("dark") ? "dark" : "light";
-    }
-    return "dark";
-  });
+  // Canvas theme state - default to "dark" to match server render, then update after mount
+  // This avoids hydration mismatch errors
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("dark");
 
   // Detect and watch for theme changes (dark/light class on html element)
   useEffect(() => {
@@ -78,7 +73,7 @@ export function PresentationPanel({
       setCanvasTheme(html.classList.contains("dark") ? "dark" : "light");
     };
 
-    // Set initial theme
+    // Set initial theme after mount
     updateTheme();
 
     // Watch for class changes on html element

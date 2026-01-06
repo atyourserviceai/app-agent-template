@@ -12,9 +12,9 @@ interface AIChatPromoProps {
 export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
   return (
     <div className="fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-auto md:max-h-[75vh] md:inset-auto overflow-hidden z-[70]">
-      <div className="h-full md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="h-full flex flex-col md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-[#F48120]/10 to-transparent">
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-[#F48120]/10 to-transparent">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-[#F48120]/20">
               <Robot size={24} className="text-[#F48120]" weight="fill" />
@@ -39,7 +39,7 @@ export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(75vh-140px)] md:max-h-none">
+        <div className="flex-1 p-6 space-y-6 overflow-y-auto">
           {/* Hero section */}
           <div className="text-center space-y-3">
             <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
@@ -119,7 +119,7 @@ export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
         </div>
 
         {/* Footer CTA */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+        <div className="flex-shrink-0 p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
           <button
             type="button"
             onClick={onSignIn}
