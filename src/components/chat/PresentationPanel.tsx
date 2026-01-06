@@ -1,19 +1,36 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
+import { Info, X } from "@phosphor-icons/react";
 
 interface PresentationPanelProps {
   agentState: AppAgentState;
   agentMode: AgentMode;
   showDebug: boolean;
+  onShowLandingPage?: () => void;
 }
 
 export function PresentationPanel({
   agentState,
-  showDebug
+  showDebug,
+  onShowLandingPage
 }: PresentationPanelProps) {
   const canvasRef = useRef<BallCanvasHandle>(null);
   const processedCommandsRef = useRef<Set<string>>(new Set());
+
+  // Track if instructions have been dismissed (persist to localStorage)
+  const [showInstructions, setShowInstructions] = useState(true);
+
+  // Load instructions visibility from localStorage after mount
+  useEffect(() => {
+    const dismissed = localStorage.getItem("instructions_dismissed") === "true";
+    setShowInstructions(!dismissed);
+  }, []);
+
+  const handleDismissInstructions = () => {
+    setShowInstructions(false);
+    localStorage.setItem("instructions_dismissed", "true");
+  };
 
   // Process ball commands from AI agent
   useEffect(() => {
@@ -44,8 +61,7 @@ export function PresentationPanel({
     typeof document !== "undefined" &&
     document.documentElement.classList.contains("dark");
 
-  // Get ball count from canvas ref (fallback to 0)
-  const ballCount = canvasRef.current?.getState().balls.length ?? 0;
+  // Get simulation state from canvas ref
   const isPaused = canvasRef.current?.getState().paused ?? false;
 
   return (
@@ -65,11 +81,19 @@ export function PresentationPanel({
                 Paused
               </span>
             )}
+            {onShowLandingPage && (
+              <button
+                type="button"
+                onClick={onShowLandingPage}
+                className="p-1.5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                aria-label="Show information"
+                title="About this template"
+              >
+                <Info size={16} className="text-neutral-500 dark:text-neutral-400" />
+              </button>
+            )}
           </div>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-          Click to add balls, drag to throw. Gravity shifts every 5 seconds.
-        </p>
       </div>
 
       {/* Ball Canvas */}
@@ -80,6 +104,31 @@ export function PresentationPanel({
           className="absolute inset-0"
         />
       </div>
+
+      {/* Instructions at bottom */}
+      {showInstructions && (
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white/95 dark:from-neutral-900/95 to-transparent">
+          <div className="flex items-start justify-between gap-2 bg-white/90 dark:bg-neutral-800/90 rounded-lg p-3 shadow-lg border border-neutral-200 dark:border-neutral-700">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                Interactive Ball Simulation
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Click anywhere to add balls. Drag balls to throw them. Gravity changes direction every 5 seconds.
+                Sign in to control with AI chat.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismissInstructions}
+              className="p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
+              aria-label="Dismiss instructions"
+            >
+              <X size={16} className="text-neutral-400" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Debug Info */}
       {showDebug && (

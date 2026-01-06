@@ -13,11 +13,13 @@ import { ErrorMessage } from "@/components/chat/ErrorMessage";
 import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
 import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndicator";
 import { PresentationContainer } from "@/components/chat/PresentationContainer";
+import { AIChatPromo } from "@/components/chat/AIChatPromo";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { UserProfile } from "./components/auth/UserProfile";
+import { LandingPage } from "./components/LandingPage";
 import { Moon, Sun } from "@phosphor-icons/react";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
@@ -1056,12 +1058,72 @@ export default function App() {
 
 // App content that has access to project context
 function AppContent() {
+  const auth = useAuth();
+  // Start with false to match server, update from localStorage after hydration
+  const [hasMounted, setHasMounted] = useState(false);
+  const [landingDismissed, setLandingDismissed] = useState(false);
+  const [showAIChatPromo, setShowAIChatPromo] = useState(false);
+
+  // Load localStorage values after hydration to avoid SSR mismatch
+  useEffect(() => {
+    setHasMounted(true);
+    const dismissed = localStorage.getItem("landing_dismissed") === "true";
+    setLandingDismissed(dismissed);
+  }, []);
+
+  const handleDismissLanding = useCallback(() => {
+    setLandingDismissed(true);
+    localStorage.setItem("landing_dismissed", "true");
+  }, []);
+
+  const handleShowLandingPage = useCallback(() => {
+    setLandingDismissed(false);
+    localStorage.removeItem("landing_dismissed");
+  }, []);
+
+  const handleSignIn = useCallback(() => {
+    auth?.login();
+  }, [auth]);
+
+  // Show landing page when not authenticated and not dismissed
+  // Before hydration (hasMounted=false), always show landing page to match SSR
+  const showLandingPage = !auth?.authMethod && (!hasMounted || !landingDismissed);
+  const isAuthenticated = !!auth?.authMethod;
+
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
       {/* Background Presentation Panel - always visible */}
       <div className="absolute inset-0 z-50">
-        <BackgroundPresentationPanel />
+        <BackgroundPresentationPanel onShowLandingPage={handleShowLandingPage} />
       </div>
+      {/* Landing page overlay for unauthenticated users */}
+      {showLandingPage && (
+        <LandingPage
+          onSignIn={handleSignIn}
+          onDismiss={handleDismissLanding}
+        />
+      )}
+      {/* AI Chat button for unauthenticated users (when landing page is dismissed) */}
+      {/* Only render after hydration to avoid SSR mismatch */}
+      {hasMounted && !isAuthenticated && !showLandingPage && !showAIChatPromo && (
+        <div className="fixed bottom-4 right-4 z-[60]">
+          <button
+            type="button"
+            aria-label="Open AI Chat"
+            className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
+            onClick={() => setShowAIChatPromo(true)}
+          >
+            AI Chat
+          </button>
+        </div>
+      )}
+      {/* AI Chat promo panel for unauthenticated users */}
+      {hasMounted && !isAuthenticated && showAIChatPromo && (
+        <AIChatPromo
+          onSignIn={handleSignIn}
+          onClose={() => setShowAIChatPromo(false)}
+        />
+      )}
       {/* Always-available theme toggle when unauthenticated */}
       <RootThemeToggle />
       {/* Auth overlay and authenticated content */}
@@ -1076,7 +1138,7 @@ function AppContent() {
 
 // Background presentation panel that shows with or without agent state
 // This component always renders the same structure to avoid remounts
-function BackgroundPresentationPanel() {
+function BackgroundPresentationPanel({ onShowLandingPage }: { onShowLandingPage?: () => void }) {
   const auth = useAuth();
   const isAuthenticated = !!auth?.authMethod;
 
@@ -1096,6 +1158,7 @@ function BackgroundPresentationPanel() {
       agentState={agentState}
       showDebug={false}
       variant="full"
+      onShowLandingPage={onShowLandingPage}
     />
   );
 }

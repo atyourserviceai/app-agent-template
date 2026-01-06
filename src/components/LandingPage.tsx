@@ -1,18 +1,35 @@
+import { X } from "@phosphor-icons/react";
+
 interface LandingPageProps {
   onSignIn: () => void;
+  onDismiss: () => void;
   authError?: string | null;
 }
 
-export function LandingPage({ onSignIn, authError }: LandingPageProps) {
+export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps) {
   return (
-    <div className="w-full py-4 md:py-6 px-3 md:px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Hero Section */}
-        <div className="text-center mb-8 md:mb-12">
-          <div className="inline-block max-w-4xl w-full mx-auto rounded-2xl bg-transparent supports-[backdrop-filter]:backdrop-blur-[8px] px-4 md:px-6 lg:px-10 py-6 md:py-8 lg:py-10">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
-              App Agent Template
-            </h1>
+    <div className="absolute inset-0 z-[55] overflow-auto bg-neutral-100/95 dark:bg-neutral-950/95 backdrop-blur-sm">
+      <div className="w-full py-4 md:py-6 px-3 md:px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Close button - inline at top */}
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors"
+              aria-label="Close and explore"
+            >
+              <X size={16} />
+              <span>Skip intro</span>
+            </button>
+          </div>
+
+          {/* Hero Section */}
+          <div className="text-center mb-8 md:mb-12">
+            <div className="inline-block max-w-4xl w-full mx-auto rounded-2xl bg-transparent supports-[backdrop-filter]:backdrop-blur-[8px] px-4 md:px-6 lg:px-10 py-6 md:py-8 lg:py-10">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
+                App Agent Template
+              </h1>
             <p className="text-lg md:text-xl text-gray-800 dark:text-gray-200 mb-2">
               A clean foundation for Cloudflare Worker agents with interactive
               visuals.
@@ -32,19 +49,18 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={onSignIn}
+                onClick={onDismiss}
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 shadow-lg hover:shadow-xl cursor-pointer"
               >
-                Try it
+                Try the Simulation
               </button>
-              <a
-                href="https://github.com/atyourserviceai/app-agent-template"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto bg-black text-white dark:bg-white dark:text-black font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
+              <button
+                type="button"
+                onClick={onSignIn}
+                className="w-full sm:w-auto bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 text-white font-semibold py-3 md:py-4 px-6 md:px-8 rounded-lg text-base md:text-lg transition-colors duration-200 cursor-pointer"
               >
-                GitHub
-              </a>
+                Sign in to Chat
+              </button>
             </div>
           </div>
         </div>
@@ -287,27 +303,30 @@ export function LandingPage({ onSignIn, authError }: LandingPageProps) {
           </p>
         </div>
 
-        <div className="text-center">
+        <div className="text-center pt-4">
           <p className="text-xl font-medium text-gray-900 dark:text-white mb-6">
             Build interactive AI agents with a production-ready foundation.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 shadow-lg hover:shadow-xl"
+            >
+              Try the Simulation
+            </button>
             <button
               type="button"
               onClick={onSignIn}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+              className="w-full sm:w-auto bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 dark:hover:bg-neutral-600 text-white font-semibold py-3 px-6 rounded-lg text-base transition-colors duration-200 cursor-pointer"
             >
-              Try it
+              Sign in to Chat
             </button>
-            <a
-              href="https://github.com/atyourserviceai/app-agent-template"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-black text-white dark:bg-white dark:text-black font-semibold py-4 px-8 rounded-lg text-lg transition-colors duration-200 hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
-            >
-              GitHub
-            </a>
           </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-4">
+            Simulation works locally. Sign in to use the AI chat.
+          </p>
+        </div>
         </div>
       </div>
     </div>
