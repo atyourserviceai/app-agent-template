@@ -62,7 +62,13 @@ export function PresentationPanel({
   }, [instructionsVisible, dismissInstructions]);
 
   // Canvas theme state - needs to watch for changes via MutationObserver
-  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("dark");
+  // Initialize by checking the document class (same as useThemePreference)
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>(() => {
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark") ? "dark" : "light";
+    }
+    return "dark";
+  });
 
   // Detect and watch for theme changes (dark/light class on html element)
   useEffect(() => {
