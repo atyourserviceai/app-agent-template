@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
-import { Moon, Sun, X } from "@phosphor-icons/react";
+import { Moon, Sun } from "@phosphor-icons/react";
 import { useAuth } from "../auth/AuthProvider";
 import { UserProfile } from "../auth/UserProfile";
 import { AnonymousProfile } from "../auth/AnonymousProfile";
@@ -24,19 +24,32 @@ export function PresentationPanel({
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
 
-  // Track if instructions have been dismissed (persist to localStorage)
-  const [showInstructions, setShowInstructions] = useState(true);
+  // Track if instructions should be shown (first use - nothing dismissed yet)
+  const [instructionsDismissed, setInstructionsDismissed] = useState(false);
 
   // Load instructions visibility from localStorage after mount
   useEffect(() => {
     const dismissed = localStorage.getItem("instructions_dismissed") === "true";
-    setShowInstructions(!dismissed);
+    setInstructionsDismissed(dismissed);
   }, []);
 
-  const handleDismissInstructions = () => {
-    setShowInstructions(false);
-    localStorage.setItem("instructions_dismissed", "true");
-  };
+  // Instructions visible when not dismissed
+  const instructionsVisible = !instructionsDismissed;
+
+  // Signal when instructions overlay is visible (for AI Chat button positioning)
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("simulation-instructions", {
+      detail: { isVisible: instructionsVisible }
+    }));
+  }, [instructionsVisible]);
+
+  // Dismiss instructions on user interaction
+  const handleUserInteraction = useCallback(() => {
+    if (!instructionsDismissed) {
+      setInstructionsDismissed(true);
+      localStorage.setItem("instructions_dismissed", "true");
+    }
+  }, [instructionsDismissed]);
 
   // Process ball commands from AI agent
   useEffect(() => {
@@ -113,30 +126,17 @@ export function PresentationPanel({
           ref={canvasRef}
           theme={isDark ? "dark" : "light"}
           className="absolute inset-0"
+          onUserInteraction={handleUserInteraction}
         />
       </div>
 
-      {/* Instructions at bottom */}
-      {showInstructions && (
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white/95 dark:from-neutral-900/95 to-transparent">
-          <div className="flex items-start justify-between gap-2 bg-white/90 dark:bg-neutral-800/90 rounded-lg p-3 shadow-lg border border-neutral-200 dark:border-neutral-700">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Interactive Ball Simulation
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Click anywhere to add balls. Drag balls to throw them. Gravity changes direction every 5 seconds.
-                Sign in to control with AI chat.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleDismissInstructions}
-              className="p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
-              aria-label="Dismiss instructions"
-            >
-              <X size={16} className="text-neutral-400" />
-            </button>
+      {/* Instructions overlay (only when not dismissed) */}
+      {instructionsVisible && (
+        <div className="absolute bottom-4 left-4 right-4 text-center pointer-events-none">
+          <div className="inline-block bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Click to add balls. Drag to throw. Gravity shifts every 5 seconds.
+            </p>
           </div>
         </div>
       )}

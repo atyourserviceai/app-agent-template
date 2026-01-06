@@ -1059,12 +1059,24 @@ function AppContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [landingDismissed, setLandingDismissed] = useState(false);
   const [showAIChatPromo, setShowAIChatPromo] = useState(false);
+  const [instructionsVisible, setInstructionsVisible] = useState(false);
 
   // Load localStorage values after hydration to avoid SSR mismatch
   useEffect(() => {
     setHasMounted(true);
     const dismissed = localStorage.getItem("landing_dismissed") === "true";
     setLandingDismissed(dismissed);
+  }, []);
+
+  // Listen for instructions state changes from PresentationPanel
+  useEffect(() => {
+    const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
+      setInstructionsVisible(event.detail.isVisible);
+    };
+    window.addEventListener("simulation-instructions", handleInstructions as EventListener);
+    return () => {
+      window.removeEventListener("simulation-instructions", handleInstructions as EventListener);
+    };
   }, []);
 
   const handleDismissLanding = useCallback(() => {
@@ -1100,9 +1112,10 @@ function AppContent() {
         />
       )}
       {/* AI Chat button for unauthenticated users (when landing page is dismissed) */}
+      {/* Positioned higher on mobile only if instructions visible */}
       {/* Only render after hydration to avoid SSR mismatch */}
       {hasMounted && !isAuthenticated && !showLandingPage && !showAIChatPromo && (
-        <div className="fixed bottom-4 right-4 z-[60]">
+        <div className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}>
           <button
             type="button"
             aria-label="Open AI Chat"

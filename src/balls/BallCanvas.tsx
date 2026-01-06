@@ -25,12 +25,19 @@ export interface BallCanvasHandle {
 interface BallCanvasProps {
   theme?: Theme;
   className?: string;
+  onUserInteraction?: () => void;
 }
 
 export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
-  function BallCanvas({ theme = "dark", className = "" }, ref) {
+  function BallCanvas({ theme = "dark", className = "", onUserInteraction }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<BallRenderer | null>(null);
+    const onUserInteractionRef = useRef(onUserInteraction);
+
+    // Keep ref updated
+    useEffect(() => {
+      onUserInteractionRef.current = onUserInteraction;
+    }, [onUserInteraction]);
 
     // Initialize renderer once on mount - empty dependency array
     useEffect(() => {
@@ -40,7 +47,11 @@ export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
       // Don't re-initialize if already exists
       if (rendererRef.current) return;
 
-      const renderer = new BallRenderer();
+      const renderer = new BallRenderer({
+        onBallAdd: () => {
+          onUserInteractionRef.current?.();
+        }
+      });
       const rect = container.getBoundingClientRect();
       const width = rect.width || 400;
       const height = rect.height || 400;
