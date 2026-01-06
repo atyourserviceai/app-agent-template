@@ -206,6 +206,12 @@ function ProjectTabContent({
   // Track instructions state for AI Chat button positioning
   const [instructionsVisible, setInstructionsVisible] = useState(true);
 
+  // Sync instructions state from localStorage on mount
+  useEffect(() => {
+    const instructionsDismissed = localStorage.getItem("instructions_dismissed") === "true";
+    setInstructionsVisible(!instructionsDismissed);
+  }, []);
+
   // Listen for instructions state changes from PresentationPanel
   useEffect(() => {
     const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
@@ -1080,6 +1086,9 @@ function AppContent() {
     setHasMounted(true);
     const dismissed = localStorage.getItem("landing_dismissed") === "true";
     setLandingDismissed(dismissed);
+    // Also sync instructions state from localStorage
+    const instructionsDismissed = localStorage.getItem("instructions_dismissed") === "true";
+    setInstructionsVisible(!instructionsDismissed);
   }, []);
 
   // Listen for instructions state changes from PresentationPanel
