@@ -90,9 +90,13 @@ export function PresentationPanel({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <button
+              type="button"
+              onClick={onShowLandingPage}
+              className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            >
               App Agent Template
-            </span>
+            </button>
             {isPaused && (
               <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded text-xs">
                 Paused
