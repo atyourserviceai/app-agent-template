@@ -8,6 +8,8 @@ type PresentationContainerProps = {
   showDebug: boolean;
   variant?: "panel" | "full"; // full = full-screen background variant
   onShowLandingPage?: () => void;
+  /** Agent config for making API calls (for authenticated users) */
+  agentConfig?: { agent: string; name: string; query?: Record<string, string> } | null;
 };
 
 export function PresentationContainer({
@@ -16,7 +18,8 @@ export function PresentationContainer({
   agentState,
   showDebug,
   variant = "panel",
-  onShowLandingPage
+  onShowLandingPage,
+  agentConfig
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
@@ -36,6 +39,7 @@ export function PresentationContainer({
               agentMode={agentMode}
               showDebug={showDebug}
               onShowLandingPage={onShowLandingPage}
+              agentConfig={agentConfig}
             />
           </div>
         </div>
@@ -54,6 +58,7 @@ export function PresentationContainer({
         agentMode={agentMode}
         showDebug={showDebug}
         onShowLandingPage={onShowLandingPage}
+        agentConfig={agentConfig}
       />
     </div>
   );

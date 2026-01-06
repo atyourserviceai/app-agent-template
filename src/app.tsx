@@ -1187,6 +1187,7 @@ function BackgroundPresentationPanel({ onShowLandingPage }: { onShowLandingPage?
       showDebug={false}
       variant="full"
       onShowLandingPage={onShowLandingPage}
+      agentConfig={isAuthenticated ? agentConfig : null}
     />
   );
 }

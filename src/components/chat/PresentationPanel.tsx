@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
 import { Moon, Sun } from "@phosphor-icons/react";
@@ -6,35 +6,44 @@ import { useAuth } from "../auth/AuthProvider";
 import { UserProfile } from "../auth/UserProfile";
 import { AnonymousProfile } from "../auth/AnonymousProfile";
 import { useThemePreference } from "../../hooks/useThemePreference";
+import { useUserProgress } from "../../hooks/useUserProgress";
 
 interface PresentationPanelProps {
   agentState: AppAgentState;
   agentMode: AgentMode;
   showDebug: boolean;
   onShowLandingPage?: () => void;
+  /** Agent config for making API calls (for authenticated users) */
+  agentConfig?: { agent: string; name: string; query?: Record<string, string> } | null;
 }
 
 export function PresentationPanel({
   agentState,
   showDebug,
-  onShowLandingPage
+  onShowLandingPage,
+  agentConfig
 }: PresentationPanelProps) {
   const canvasRef = useRef<BallCanvasHandle>(null);
   const processedCommandsRef = useRef<Set<string>>(new Set());
   const auth = useAuth();
   const { theme, toggleTheme } = useThemePreference();
 
-  // Track if instructions should be shown (first use - nothing dismissed yet)
-  const [instructionsDismissed, setInstructionsDismissed] = useState(false);
-
-  // Load instructions visibility from localStorage after mount
-  useEffect(() => {
-    const dismissed = localStorage.getItem("instructions_dismissed") === "true";
-    setInstructionsDismissed(dismissed);
-  }, []);
-
-  // Instructions visible when not dismissed
-  const instructionsVisible = !instructionsDismissed;
+  // Use the dual-storage hook for instructions state
+  // - Anonymous users: localStorage
+  // - Authenticated users: agentState (source of truth, synced via WebSocket)
+  const isAuthenticated = !!auth?.authMethod;
+  const {
+    instructionsVisible,
+    dismissInstructions
+  } = useUserProgress({
+    isAuthenticated,
+    agentState,
+    agentConfig: agentConfig ?? null,
+    onSyncMessage: (message) => {
+      // TODO: Show toast notification (Phase 5)
+      console.log("[PresentationPanel] Sync message:", message);
+    }
+  });
 
   // Signal when instructions overlay is visible (for AI Chat button positioning)
   useEffect(() => {
@@ -45,11 +54,10 @@ export function PresentationPanel({
 
   // Dismiss instructions on user interaction
   const handleUserInteraction = useCallback(() => {
-    if (!instructionsDismissed) {
-      setInstructionsDismissed(true);
-      localStorage.setItem("instructions_dismissed", "true");
+    if (instructionsVisible) {
+      dismissInstructions();
     }
-  }, [instructionsDismissed]);
+  }, [instructionsVisible, dismissInstructions]);
 
   // Process ball commands from AI agent
   useEffect(() => {

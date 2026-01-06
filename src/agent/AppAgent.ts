@@ -120,6 +120,12 @@ export interface AppAgentState {
   // Ball simulation commands queue (processed by client, then cleared)
   ballCommands?: BallCommand[];
 
+  // User progress (persisted across sessions, synced cross-device when authenticated)
+  userProgress?: {
+    instructionsDismissed: boolean;
+    lastUpdated: string;
+  };
+
   // Optional metadata
   _lastModeChange?: string;
 }
@@ -817,6 +823,35 @@ export class AppAgent extends AIChatAgent<Env> {
       } catch (error) {
         console.error("[AppAgent] Error clearing user info:", error);
         return new Response("Error clearing user info", { status: 500 });
+      }
+    }
+
+    // Handle user progress updates (persisted via agent state)
+    // Client reads userProgress directly from agentState via WebSocket
+    if (
+      url.pathname.endsWith("/update-user-progress") &&
+      request.method === "POST"
+    ) {
+      try {
+        const userProgress = (await request.json()) as {
+          instructionsDismissed: boolean;
+          lastUpdated: string;
+        };
+
+        console.log("[AppAgent] Updating user progress:", userProgress);
+
+        const updatedState: AppAgentState = {
+          ...currentState,
+          userProgress
+        };
+
+        this.setState(updatedState);
+
+        console.log("[AppAgent] Successfully updated user progress");
+        return new Response("OK");
+      } catch (error) {
+        console.error("[AppAgent] Error updating user progress:", error);
+        return new Response("Error updating user progress", { status: 500 });
       }
     }
 
