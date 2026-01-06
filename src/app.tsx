@@ -203,6 +203,19 @@ function ProjectTabContent({
   // Thinking tokens state
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingTokens, setThinkingTokens] = useState<string>("");
+  // Track instructions state for AI Chat button positioning
+  const [instructionsVisible, setInstructionsVisible] = useState(true);
+
+  // Listen for instructions state changes from PresentationPanel
+  useEffect(() => {
+    const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
+      setInstructionsVisible(event.detail.isVisible);
+    };
+    window.addEventListener("simulation-instructions", handleInstructions as EventListener);
+    return () => {
+      window.removeEventListener("simulation-instructions", handleInstructions as EventListener);
+    };
+  }, []);
 
   // Add auth context for token expiration checks
   const auth = useAuth();
@@ -974,16 +987,16 @@ function ProjectTabContent({
   // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
+      {/* Floating chat launcher - positioned higher on mobile only if instructions visible */}
       {activeTab !== "chat" && (
-        <div className="fixed bottom-4 right-4 z-[60]">
+        <div className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}>
           <button
             type="button"
-            aria-label="Open chat"
+            aria-label="Open AI Chat"
             className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
             onClick={() => setActiveTab("chat")}
           >
-            Chat
+            AI Chat
           </button>
         </div>
       )}
@@ -1059,7 +1072,8 @@ function AppContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [landingDismissed, setLandingDismissed] = useState(false);
   const [showAIChatPromo, setShowAIChatPromo] = useState(false);
-  const [instructionsVisible, setInstructionsVisible] = useState(false);
+  // Default to true since instructions are visible by default (before user interaction)
+  const [instructionsVisible, setInstructionsVisible] = useState(true);
 
   // Load localStorage values after hydration to avoid SSR mismatch
   useEffect(() => {
