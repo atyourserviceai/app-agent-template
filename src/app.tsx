@@ -18,18 +18,14 @@ import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
-import { UserProfile } from "./components/auth/UserProfile";
 import { LandingPage } from "./components/LandingPage";
-import { Moon, Sun } from "@phosphor-icons/react";
-import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
-import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { useCurrentProjectAuth, useProjectAuth } from "./hooks/useAgentAuth";
 import { ProjectProvider, useProject } from "./contexts/ProjectContext";
-import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
+import { useThemePreference } from "./hooks/useThemePreference";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
@@ -1124,12 +1120,8 @@ function AppContent() {
           onClose={() => setShowAIChatPromo(false)}
         />
       )}
-      {/* Always-available theme toggle when unauthenticated */}
-      <RootThemeToggle />
       {/* Auth overlay and authenticated content */}
       <AuthGuard>
-        {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-        <AuthenticatedTopPanel />
         <Chat />
       </AuthGuard>
     </div>
@@ -1163,57 +1155,3 @@ function BackgroundPresentationPanel({ onShowLandingPage }: { onShowLandingPage?
   );
 }
 
-function RootThemeToggle() {
-  const auth = useAuth();
-  const { theme, toggleTheme } = useThemePreference();
-  if (auth?.authMethod) return null;
-  return (
-    <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
-      <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-    </div>
-  );
-}
-
-function AuthenticatedTopPanel() {
-  const auth = useAuth();
-  const { theme, toggleTheme } = useThemePreference();
-  const agentConfig = useCurrentProjectAuth();
-  const { agentMode } = useAgentState(agentConfig, "act");
-  const [_showDebug, _setShowDebug] = useState(false);
-  const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
-    "presentation"
-  );
-
-  // Only render if authenticated
-  if (!auth?.authMethod) {
-    return null;
-  }
-
-  return (
-    <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
-    >
-      <div className="flex items-center gap-2">
-        <div className="order-0 md:order-0">
-          <ProjectSelector />
-        </div>
-        <button
-          type="button"
-          aria-label="Toggle theme"
-          className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 order-2 md:order-1"
-          onClick={toggleTheme}
-          title="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-        <div className="order-1 md:order-2">
-          <UserProfile />
-        </div>
-      </div>
-      {/* Mobile: show current mode */}
-      <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
-        {agentMode}
-      </div>
-    </div>
-  );
-}

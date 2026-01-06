@@ -1,7 +1,11 @@
 import { useRef, useEffect, useState } from "react";
 import { BallCanvas, type BallCanvasHandle } from "../../balls";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
-import { Info, X } from "@phosphor-icons/react";
+import { Moon, Sun, X } from "@phosphor-icons/react";
+import { useAuth } from "../auth/AuthProvider";
+import { UserProfile } from "../auth/UserProfile";
+import { AnonymousProfile } from "../auth/AnonymousProfile";
+import { useThemePreference } from "../../hooks/useThemePreference";
 
 interface PresentationPanelProps {
   agentState: AppAgentState;
@@ -17,6 +21,8 @@ export function PresentationPanel({
 }: PresentationPanelProps) {
   const canvasRef = useRef<BallCanvasHandle>(null);
   const processedCommandsRef = useRef<Set<string>>(new Set());
+  const auth = useAuth();
+  const { theme, toggleTheme } = useThemePreference();
 
   // Track if instructions have been dismissed (persist to localStorage)
   const [showInstructions, setShowInstructions] = useState(true);
@@ -74,23 +80,28 @@ export function PresentationPanel({
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Ball Simulation
             </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
             {isPaused && (
-              <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded">
+              <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded text-xs">
                 Paused
               </span>
             )}
-            {onShowLandingPage && (
-              <button
-                type="button"
-                onClick={onShowLandingPage}
-                className="p-1.5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                aria-label="Show information"
-                title="About this template"
-              >
-                <Info size={16} className="text-neutral-500 dark:text-neutral-400" />
-              </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              className="rounded-full h-9 w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200"
+              onClick={toggleTheme}
+              title="Toggle theme"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            {/* Profile - anonymous or authenticated */}
+            {auth?.authMethod ? (
+              <UserProfile />
+            ) : (
+              <AnonymousProfile onShowLandingPage={onShowLandingPage} />
             )}
           </div>
         </div>
