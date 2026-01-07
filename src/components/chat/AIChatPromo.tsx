@@ -11,7 +11,7 @@ interface AIChatPromoProps {
  */
 export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
   return (
-    <div className="fixed inset-0 md:absolute md:left-auto md:right-6 md:bottom-8 md:w-[520px] md:h-auto md:max-h-[75vh] md:inset-auto overflow-hidden z-[70]">
+    <div className="fixed inset-0 md:inset-auto md:right-6 md:bottom-8 md:w-[520px] md:max-h-[calc(100vh-4rem)] overflow-hidden z-[70]">
       <div className="h-full flex flex-col md:mx-0 md:rounded-lg overflow-hidden shadow-2xl border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-[#F48120]/10 to-transparent">
