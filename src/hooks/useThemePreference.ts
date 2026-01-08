@@ -14,10 +14,7 @@ export function useThemePreference() {
       const savedTheme = localStorage.getItem("theme") as Theme | null;
       if (savedTheme === "light" || savedTheme === "dark") {
         setTheme(savedTheme);
-      } else if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: light)").matches
-      ) {
+      } else if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
         setTheme("light");
       }
     } catch {}

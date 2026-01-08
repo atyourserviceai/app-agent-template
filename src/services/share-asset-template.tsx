@@ -41,8 +41,7 @@ export function ShareAssetTemplate({
     }
   };
 
-  const currentMode =
-    modeInfo[mode as keyof typeof modeInfo] || modeInfo.act;
+  const currentMode = modeInfo[mode as keyof typeof modeInfo] || modeInfo.act;
 
   // Colors based on theme
   const colors = isDark

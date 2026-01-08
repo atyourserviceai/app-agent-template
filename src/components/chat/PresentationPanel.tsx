@@ -16,7 +16,11 @@ interface PresentationPanelProps {
   showDebug: boolean;
   onShowLandingPage?: () => void;
   /** Agent config for making API calls (for authenticated users) */
-  agentConfig?: { agent: string; name: string; query?: Record<string, string> } | null;
+  agentConfig?: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null;
 }
 
 export function PresentationPanel({
@@ -34,10 +38,7 @@ export function PresentationPanel({
   // - Anonymous users: localStorage
   // - Authenticated users: agentState (source of truth, synced via WebSocket)
   const isAuthenticated = !!auth?.authMethod;
-  const {
-    instructionsVisible,
-    dismissInstructions
-  } = useUserProgress({
+  const { instructionsVisible, dismissInstructions } = useUserProgress({
     isAuthenticated,
     agentState,
     agentConfig: agentConfig ?? null,
@@ -49,9 +50,11 @@ export function PresentationPanel({
 
   // Signal when instructions overlay is visible (for AI Chat button positioning)
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("simulation-instructions", {
-      detail: { isVisible: instructionsVisible }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("simulation-instructions", {
+        detail: { isVisible: instructionsVisible }
+      })
+    );
   }, [instructionsVisible]);
 
   // Dismiss instructions on user interaction

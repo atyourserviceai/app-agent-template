@@ -31,6 +31,7 @@ import { ShareAssetGenerator } from "../services/share-asset-generator";
 // AI @ Your Service Gateway configuration for OpenAI (kept for reference)
 // Using openai-compatible provider to disable stream_options.include_usage
 // which the gateway doesn't support
+// @ts-expect-error Kept for reference - may be used in future
 const _getOpenAI = (env: Env, apiKey?: string) => {
   if (!apiKey) {
     throw new Error("API key is required for AI requests");
@@ -394,9 +395,8 @@ export class AppAgent extends AIChatAgent<Env> {
           testErrorTool: tools.testErrorTool
         } as ToolSet;
 
-      case "plan":
       default:
-        // Planning mode - basic tools for planning and analysis
+        // Planning mode (and any other mode) - basic tools for planning and analysis
         return {
           ...baseTools
         } as ToolSet;

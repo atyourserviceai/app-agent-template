@@ -29,7 +29,10 @@ interface BallCanvasProps {
 }
 
 export const BallCanvas = forwardRef<BallCanvasHandle, BallCanvasProps>(
-  function BallCanvas({ theme = "dark", className = "", onUserInteraction }, ref) {
+  function BallCanvas(
+    { theme = "dark", className = "", onUserInteraction },
+    ref
+  ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const rendererRef = useRef<BallRenderer | null>(null);
     const onUserInteractionRef = useRef(onUserInteraction);

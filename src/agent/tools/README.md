@@ -42,7 +42,10 @@ export const myTool = tool({
 All tools should be wrapped with error handling before being exported from `registry.ts`:
 
 ```typescript
-import { wrapToolWithErrorHandling, wrapAllToolsWithErrorHandling } from "./wrappers";
+import {
+  wrapToolWithErrorHandling,
+  wrapAllToolsWithErrorHandling
+} from "./wrappers";
 
 // Wrap a single tool
 export const myTool = wrapToolWithErrorHandling(rawMyTool);
@@ -101,7 +104,7 @@ export const contextTools = wrapAllToolsWithErrorHandling(rawContextTools);
 
 export const tools = {
   getWeatherInformation: contextTools.getWeatherInformation,
-  getLocalTime: contextTools.getLocalTime,
+  getLocalTime: contextTools.getLocalTime
   // ... other tools
 };
 ```

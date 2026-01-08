@@ -40,9 +40,11 @@ function saveLocalProgress(progress: UserProgress): void {
 /**
  * Get agent endpoint URL for updating user progress
  */
-function getUpdateUrl(
-  agentConfig: { agent: string; name: string; query?: Record<string, string> }
-): string {
+function getUpdateUrl(agentConfig: {
+  agent: string;
+  name: string;
+  query?: Record<string, string>;
+}): string {
   const urlObj = new URL(
     `/agents/${agentConfig.agent}/${agentConfig.name}/update-user-progress`,
     window.location.origin
@@ -66,7 +68,11 @@ interface UseUserProgressOptions {
   /** Current agent state (synced via WebSocket) */
   agentState: AppAgentState | null;
   /** Agent configuration for making update requests */
-  agentConfig: { agent: string; name: string; query?: Record<string, string> } | null;
+  agentConfig: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null;
   /** Callback when sync message should be shown */
   onSyncMessage?: (message: string) => void;
 }
@@ -87,7 +93,7 @@ export function useUserProgress({
 }: UseUserProgressOptions) {
   // Local state for anonymous users - start null for SSR compatibility
   const [localProgress, setLocalProgress] = useState<UserProgress | null>(null);
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const [_hasHydrated, setHasHydrated] = useState(false);
 
   // Track if we've done migration for this session
   const hasMigratedRef = useRef(false);
@@ -108,30 +114,36 @@ export function useUserProgress({
   /**
    * Update progress - writes to agent state (authenticated) or localStorage (anonymous)
    */
-  const updateProgress = useCallback(async (updates: Partial<UserProgress>) => {
-    const currentProgress = isAuthenticated ? serverProgress : localProgress;
-    const newProgress: UserProgress = {
-      instructionsDismissed: updates.instructionsDismissed ?? currentProgress?.instructionsDismissed ?? false,
-      lastUpdated: new Date().toISOString()
-    };
+  const updateProgress = useCallback(
+    async (updates: Partial<UserProgress>) => {
+      const currentProgress = isAuthenticated ? serverProgress : localProgress;
+      const newProgress: UserProgress = {
+        instructionsDismissed:
+          updates.instructionsDismissed ??
+          currentProgress?.instructionsDismissed ??
+          false,
+        lastUpdated: new Date().toISOString()
+      };
 
-    if (isAuthenticated && agentConfig) {
-      // Update agent state via endpoint (agent will persist via setState)
-      try {
-        await fetch(getUpdateUrl(agentConfig), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newProgress)
-        });
-      } catch (error) {
-        console.error("[useUserProgress] Error updating agent state:", error);
+      if (isAuthenticated && agentConfig) {
+        // Update agent state via endpoint (agent will persist via setState)
+        try {
+          await fetch(getUpdateUrl(agentConfig), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newProgress)
+          });
+        } catch (error) {
+          console.error("[useUserProgress] Error updating agent state:", error);
+        }
+      } else {
+        // Update localStorage for anonymous users
+        setLocalProgress(newProgress);
+        saveLocalProgress(newProgress);
       }
-    } else {
-      // Update localStorage for anonymous users
-      setLocalProgress(newProgress);
-      saveLocalProgress(newProgress);
-    }
-  }, [isAuthenticated, agentConfig, serverProgress, localProgress]);
+    },
+    [isAuthenticated, agentConfig, serverProgress, localProgress]
+  );
 
   /**
    * Migration: On login, if server is empty but localStorage has data, migrate once
@@ -151,13 +163,21 @@ export function useUserProgress({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(localProgress)
-      }).then(() => {
-        onSyncMessage?.("Migrated local progress to your account");
-      }).catch((error) => {
-        console.error("[useUserProgress] Migration failed:", error);
-      });
+      })
+        .then(() => {
+          onSyncMessage?.("Migrated local progress to your account");
+        })
+        .catch((error) => {
+          console.error("[useUserProgress] Migration failed:", error);
+        });
     }
-  }, [isAuthenticated, agentConfig, serverProgress, localProgress, onSyncMessage]);
+  }, [
+    isAuthenticated,
+    agentConfig,
+    serverProgress,
+    localProgress,
+    onSyncMessage
+  ]);
 
   // Reset migration flag on logout
   useEffect(() => {

@@ -1,4 +1,9 @@
-import { ArrowCounterClockwise, Info, SignIn, User } from "@phosphor-icons/react";
+import {
+  ArrowCounterClockwise,
+  Info,
+  SignIn,
+  User
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 
@@ -72,7 +77,8 @@ export function AnonymousProfile({ onShowLandingPage }: AnonymousProfileProps) {
 
           <div className="px-4 py-3 space-y-2">
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-              Sign in to control the simulation with AI chat and unlock all features.
+              Sign in to control the simulation with AI chat and unlock all
+              features.
             </p>
             <button
               type="button"

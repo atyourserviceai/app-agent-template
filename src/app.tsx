@@ -41,7 +41,9 @@ interface AgentData {
 }
 
 // List of tools that require human confirmation for the generic template
-const toolsRequiringConfirmation: (keyof ToolTypes)[] = ["getWeatherInformation"];
+const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
+  "getWeatherInformation"
+];
 
 // Multi-instance Chat - manages multiple project tabs
 function Chat() {
@@ -208,7 +210,8 @@ function ProjectTabContent({
 
   // Sync instructions state from localStorage on mount
   useEffect(() => {
-    const instructionsDismissed = localStorage.getItem("instructions_dismissed") === "true";
+    const instructionsDismissed =
+      localStorage.getItem("instructions_dismissed") === "true";
     setInstructionsVisible(!instructionsDismissed);
   }, []);
 
@@ -217,9 +220,15 @@ function ProjectTabContent({
     const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
       setInstructionsVisible(event.detail.isVisible);
     };
-    window.addEventListener("simulation-instructions", handleInstructions as EventListener);
+    window.addEventListener(
+      "simulation-instructions",
+      handleInstructions as EventListener
+    );
     return () => {
-      window.removeEventListener("simulation-instructions", handleInstructions as EventListener);
+      window.removeEventListener(
+        "simulation-instructions",
+        handleInstructions as EventListener
+      );
     };
   }, []);
 
@@ -380,6 +389,26 @@ function ProjectTabContent({
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
+  // Use the message editing hook to manage message editing and retry logic
+  // Declared early so setIsRetrying is available for error handling useEffect
+  const {
+    editingMessageId,
+    editingValue,
+    currentEditIndex: _currentEditIndex,
+    isRetrying,
+    originalMessagesLengthRef,
+    originalEditIndexRef,
+    editedMessageContentRef,
+    setEditingValue,
+    setCurrentEditIndex: _setCurrentEditIndex,
+    setIsRetrying,
+    startEditing,
+    cancelEditing,
+    handleEditMessage,
+    handleRetry,
+    handleRetryLastUserMessage
+  } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
   // Update last known messages whenever we have valid messages
   // Only update if we have more messages than before (prevents losing messages during error states)
   useEffect(() => {
@@ -462,26 +491,14 @@ function ProjectTabContent({
 
     // Reset retry state
     setIsRetrying(false);
-  }, [chatError, formatErrorForMessage, setMessages, agentMessages, isErrorMessage]);
-
-  // Use the message editing hook to manage message editing and retry logic
-  const {
-    editingMessageId,
-    editingValue,
-    currentEditIndex: _currentEditIndex,
-    isRetrying,
-    originalMessagesLengthRef,
-    originalEditIndexRef,
-    editedMessageContentRef,
-    setEditingValue,
-    setCurrentEditIndex: _setCurrentEditIndex,
-    setIsRetrying,
-    startEditing,
-    cancelEditing,
-    handleEditMessage,
-    handleRetry,
-    handleRetryLastUserMessage
-  } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+  }, [
+    chatError,
+    formatErrorForMessage,
+    setMessages,
+    agentMessages,
+    isErrorMessage,
+    setIsRetrying
+  ]);
 
   // Listen for thinking tokens from agent data stream
   useEffect(() => {
@@ -995,7 +1012,9 @@ function ProjectTabContent({
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
       {/* Floating chat launcher - positioned higher on mobile only if instructions visible */}
       {activeTab !== "chat" && (
-        <div className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}>
+        <div
+          className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}
+        >
           <button
             type="button"
             aria-label="Open AI Chat"
@@ -1087,7 +1106,8 @@ function AppContent() {
     const dismissed = localStorage.getItem("landing_dismissed") === "true";
     setLandingDismissed(dismissed);
     // Also sync instructions state from localStorage
-    const instructionsDismissed = localStorage.getItem("instructions_dismissed") === "true";
+    const instructionsDismissed =
+      localStorage.getItem("instructions_dismissed") === "true";
     setInstructionsVisible(!instructionsDismissed);
   }, []);
 
@@ -1096,9 +1116,15 @@ function AppContent() {
     const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
       setInstructionsVisible(event.detail.isVisible);
     };
-    window.addEventListener("simulation-instructions", handleInstructions as EventListener);
+    window.addEventListener(
+      "simulation-instructions",
+      handleInstructions as EventListener
+    );
     return () => {
-      window.removeEventListener("simulation-instructions", handleInstructions as EventListener);
+      window.removeEventListener(
+        "simulation-instructions",
+        handleInstructions as EventListener
+      );
     };
   }, []);
 
@@ -1118,37 +1144,42 @@ function AppContent() {
 
   // Show landing page when not authenticated and not dismissed
   // Before hydration (hasMounted=false), always show landing page to match SSR
-  const showLandingPage = !auth?.authMethod && (!hasMounted || !landingDismissed);
+  const showLandingPage =
+    !auth?.authMethod && (!hasMounted || !landingDismissed);
   const isAuthenticated = !!auth?.authMethod;
 
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
       {/* Background Presentation Panel - always visible */}
       <div className="absolute inset-0 z-50">
-        <BackgroundPresentationPanel onShowLandingPage={handleShowLandingPage} />
+        <BackgroundPresentationPanel
+          onShowLandingPage={handleShowLandingPage}
+        />
       </div>
       {/* Landing page overlay for unauthenticated users */}
       {showLandingPage && (
-        <LandingPage
-          onSignIn={handleSignIn}
-          onDismiss={handleDismissLanding}
-        />
+        <LandingPage onSignIn={handleSignIn} onDismiss={handleDismissLanding} />
       )}
       {/* AI Chat button for unauthenticated users (when landing page is dismissed) */}
       {/* Positioned higher on mobile only if instructions visible */}
       {/* Only render after hydration to avoid SSR mismatch */}
-      {hasMounted && !isAuthenticated && !showLandingPage && !showAIChatPromo && (
-        <div className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}>
-          <button
-            type="button"
-            aria-label="Open AI Chat"
-            className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
-            onClick={() => setShowAIChatPromo(true)}
+      {hasMounted &&
+        !isAuthenticated &&
+        !showLandingPage &&
+        !showAIChatPromo && (
+          <div
+            className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}
           >
-            AI Chat
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              aria-label="Open AI Chat"
+              className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
+              onClick={() => setShowAIChatPromo(true)}
+            >
+              AI Chat
+            </button>
+          </div>
+        )}
       {/* AI Chat promo panel for unauthenticated users */}
       {hasMounted && !isAuthenticated && showAIChatPromo && (
         <AIChatPromo
@@ -1166,7 +1197,11 @@ function AppContent() {
 
 // Background presentation panel that shows with or without agent state
 // This component always renders the same structure to avoid remounts
-function BackgroundPresentationPanel({ onShowLandingPage }: { onShowLandingPage?: () => void }) {
+function BackgroundPresentationPanel({
+  onShowLandingPage
+}: {
+  onShowLandingPage?: () => void;
+}) {
   const auth = useAuth();
   const isAuthenticated = !!auth?.authMethod;
 
@@ -1191,4 +1226,3 @@ function BackgroundPresentationPanel({ onShowLandingPage }: { onShowLandingPage?
     />
   );
 }
-

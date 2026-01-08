@@ -4,15 +4,15 @@ This guide covers migrating demos from the older AI SDK v4/agents package to the
 
 ## Overview of Changes
 
-| Component | Old Version | New Version |
-|-----------|-------------|-------------|
-| `ai` | ^4.x | ^6.0.x |
-| `agents` | ^0.0.x | ^0.3.x |
-| `@ai-sdk/react` | ^1.x | ^3.x |
-| `@ai-sdk/openai` | ^1.x | ^3.x |
-| `@ai-sdk/anthropic` | ^1.x | ^3.x |
-| `@ai-sdk/google` | ^1.x | ^2.x |
-| `@cloudflare/ai-chat` | N/A | ^0.0.3 (NEW) |
+| Component             | Old Version | New Version  |
+| --------------------- | ----------- | ------------ |
+| `ai`                  | ^4.x        | ^6.0.x       |
+| `agents`              | ^0.0.x      | ^0.3.x       |
+| `@ai-sdk/react`       | ^1.x        | ^3.x         |
+| `@ai-sdk/openai`      | ^1.x        | ^3.x         |
+| `@ai-sdk/anthropic`   | ^1.x        | ^3.x         |
+| `@ai-sdk/google`      | ^1.x        | ^2.x         |
+| `@cloudflare/ai-chat` | N/A         | ^0.0.3 (NEW) |
 
 ## Migration Steps
 
@@ -49,7 +49,7 @@ const {
   handleSubmit,
   clearHistory,
   setMessages,
-  isLoading,
+  isLoading
 } = useAgentChat({
   agent,
   maxSteps: 5,
@@ -58,7 +58,7 @@ const {
     // Messages may be in unstable state during error
     const errorMessage = formatError(error);
     setMessages([...messages, errorMessage]);
-  },
+  }
 });
 ```
 
@@ -74,7 +74,7 @@ const chatResult = useAgentChat({
   onError: (error) => {
     // Only use for logging, not for modifying messages
     console.error("Chat error:", error);
-  },
+  }
 }) as ReturnType<typeof useAgentChat> & { error: Error | undefined };
 
 const {
@@ -85,7 +85,7 @@ const {
   clearHistory,
   setMessages,
   isLoading,
-  error: chatError,  // ← NEW: error state from hook
+  error: chatError // ← NEW: error state from hook
 } = chatResult;
 
 // Handle errors via useEffect
@@ -104,9 +104,12 @@ useEffect(() => {
   lastProcessedErrorRef.current = chatError.message;
 
   // Check if error message already exists
-  const hasExistingError = agentMessages.some((msg) =>
-    msg.role === "assistant" &&
-    msg.parts?.some((p) => p.type === "text" && p.text.startsWith("__ERROR__"))
+  const hasExistingError = agentMessages.some(
+    (msg) =>
+      msg.role === "assistant" &&
+      msg.parts?.some(
+        (p) => p.type === "text" && p.text.startsWith("__ERROR__")
+      )
   );
   if (hasExistingError) return;
 

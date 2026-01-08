@@ -1,4 +1,11 @@
-import { Robot, X, CheckCircle, Gear, Lightning, ChatCircle } from "@phosphor-icons/react";
+import {
+  Robot,
+  X,
+  CheckCircle,
+  Gear,
+  Lightning,
+  ChatCircle
+} from "@phosphor-icons/react";
 
 interface AIChatPromoProps {
   onSignIn: () => void;
@@ -46,7 +53,8 @@ export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
               Chat with AI to control the simulation
             </h3>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Add balls, change gravity, pause the animation - all through natural language commands.
+              Add balls, change gravity, pause the animation - all through
+              natural language commands.
             </p>
           </div>
 
@@ -54,35 +62,46 @@ export function AIChatPromo({ onSignIn, onClose }: AIChatPromoProps) {
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
               <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <ChatCircle size={20} className="text-blue-600 dark:text-blue-400" />
+                <ChatCircle
+                  size={20}
+                  className="text-blue-600 dark:text-blue-400"
+                />
               </div>
               <div>
                 <h4 className="font-medium text-neutral-900 dark:text-white">
                   Natural Language Control
                 </h4>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Just describe what you want: "Add 5 red balls" or "Set gravity to zero"
+                  Just describe what you want: "Add 5 red balls" or "Set gravity
+                  to zero"
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
               <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                <Gear size={20} className="text-green-600 dark:text-green-400" />
+                <Gear
+                  size={20}
+                  className="text-green-600 dark:text-green-400"
+                />
               </div>
               <div>
                 <h4 className="font-medium text-neutral-900 dark:text-white">
                   Physics Control
                 </h4>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Adjust gravity, pause/resume animation, and control the simulation parameters
+                  Adjust gravity, pause/resume animation, and control the
+                  simulation parameters
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
               <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                <Lightning size={20} className="text-purple-600 dark:text-purple-400" />
+                <Lightning
+                  size={20}
+                  className="text-purple-600 dark:text-purple-400"
+                />
               </div>
               <div>
                 <h4 className="font-medium text-neutral-900 dark:text-white">

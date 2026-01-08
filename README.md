@@ -327,7 +327,7 @@ import { wrapToolWithErrorHandling } from "./wrappers";
 
 export const tools = {
   getCurrentTime: wrapToolWithErrorHandling(getCurrentTime),
-  searchDatabase: wrapToolWithErrorHandling(searchDatabase),
+  searchDatabase: wrapToolWithErrorHandling(searchDatabase)
 };
 ```
 
@@ -335,7 +335,13 @@ To handle tool confirmations, add execution functions to the `executions` object
 
 ```typescript
 export const executions = {
-  searchDatabase: async ({ query, limit }: { query: string; limit?: number }) => {
+  searchDatabase: async ({
+    query,
+    limit
+  }: {
+    query: string;
+    limit?: number;
+  }) => {
     const results = await db.search(query, limit);
     return results;
   }
@@ -355,10 +361,14 @@ The template uses AI SDK v6's error handling pattern with the `useAgentChat` hoo
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 
 // The hook returns an error state
-const { messages, error: chatError, setMessages } = useAgentChat({
+const {
+  messages,
+  error: chatError,
+  setMessages
+} = useAgentChat({
   agent,
   // onError is for logging only, not for modifying messages
-  onError: (error) => console.error("Chat error:", error),
+  onError: (error) => console.error("Chat error:", error)
 });
 
 // Handle errors via useEffect watching the error state
@@ -376,6 +386,7 @@ useEffect(() => {
 ```
 
 **Key Points:**
+
 - Use the `error` state from the hook, not `onError` callback for message updates
 - Error messages use `__ERROR__` prefix format for identification
 - Tool invocation cards show "Executing..." state while tools are running

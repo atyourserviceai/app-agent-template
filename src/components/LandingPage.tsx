@@ -1,4 +1,13 @@
-import { X, GithubLogo, Lightning, CloudArrowUp, Microphone, DeviceMobile, Code, Rocket } from "@phosphor-icons/react";
+import {
+  X,
+  GithubLogo,
+  Lightning,
+  CloudArrowUp,
+  Microphone,
+  DeviceMobile,
+  Code,
+  Rocket
+} from "@phosphor-icons/react";
 
 interface LandingPageProps {
   onSignIn: () => void;
@@ -6,7 +15,11 @@ interface LandingPageProps {
   authError?: string | null;
 }
 
-export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps) {
+export function LandingPage({
+  onSignIn,
+  onDismiss,
+  authError
+}: LandingPageProps) {
   return (
     <div className="absolute inset-0 z-[55] overflow-auto bg-neutral-100/95 dark:bg-neutral-950/95 backdrop-blur-sm">
       <div className="w-full py-4 md:py-6 px-3 md:px-4">
@@ -79,8 +92,8 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
               What is this?
             </h2>
             <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg text-center max-w-2xl mx-auto mb-6">
-              An open-source template for building AI chat applications with built-in authentication and billing.
-              Your users sign in with{" "}
+              An open-source template for building AI chat applications with
+              built-in authentication and billing. Your users sign in with{" "}
               <a
                 href="https://atyourservice.ai"
                 target="_blank"
@@ -89,14 +102,25 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
               >
                 AI@YourService
               </a>{" "}
-              and pay for their own LLM usage - you focus on your app, not billing infrastructure.
+              and pay for their own LLM usage - you focus on your app, not
+              billing infrastructure.
             </p>
             <div className="flex flex-wrap justify-center gap-2 text-sm">
-              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">AI SDK v6</span>
-              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">Cloudflare Agents SDK</span>
-              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">React Router 7</span>
-              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">TypeScript</span>
-              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">Tailwind CSS</span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">
+                AI SDK v6
+              </span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">
+                Cloudflare Agents SDK
+              </span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">
+                React Router 7
+              </span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">
+                TypeScript
+              </span>
+              <span className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-neutral-700 dark:text-neutral-300">
+                Tailwind CSS
+              </span>
             </div>
           </div>
 
@@ -108,48 +132,76 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
                 <div className="p-2 rounded-full bg-[#F48120]/20 flex-shrink-0">
-                  <Lightning size={20} className="text-[#F48120]" weight="fill" />
+                  <Lightning
+                    size={20}
+                    className="text-[#F48120]"
+                    weight="fill"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">AI Chat with Tools</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    AI Chat with Tools
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Streaming responses, tool calling, multi-turn conversations. Powered by AI SDK v6.
+                    Streaming responses, tool calling, multi-turn conversations.
+                    Powered by AI SDK v6.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
                 <div className="p-2 rounded-full bg-blue-500/20 flex-shrink-0">
-                  <Microphone size={20} className="text-blue-500" weight="fill" />
+                  <Microphone
+                    size={20}
+                    className="text-blue-500"
+                    weight="fill"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Voice Input</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Voice Input
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Built-in speech-to-text transcription. Talk to your AI agent hands-free.
+                    Built-in speech-to-text transcription. Talk to your AI agent
+                    hands-free.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
                 <div className="p-2 rounded-full bg-green-500/20 flex-shrink-0">
-                  <DeviceMobile size={20} className="text-green-500" weight="fill" />
+                  <DeviceMobile
+                    size={20}
+                    className="text-green-500"
+                    weight="fill"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Cross-Device Sync</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Cross-Device Sync
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    State persists in Durable Objects. Pick up where you left off on any device.
+                    State persists in Durable Objects. Pick up where you left
+                    off on any device.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
                 <div className="p-2 rounded-full bg-purple-500/20 flex-shrink-0">
-                  <CloudArrowUp size={20} className="text-purple-500" weight="fill" />
+                  <CloudArrowUp
+                    size={20}
+                    className="text-purple-500"
+                    weight="fill"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">One-Click Deploy</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    One-Click Deploy
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Deploy to Cloudflare Workers with wrangler. Global edge deployment included.
+                    Deploy to Cloudflare Workers with wrangler. Global edge
+                    deployment included.
                   </p>
                 </div>
               </div>
@@ -159,9 +211,12 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
                   <Code size={20} className="text-yellow-600" weight="fill" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Export / Import</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Export / Import
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Built-in data portability. Users can export their data anytime.
+                    Built-in data portability. Users can export their data
+                    anytime.
                   </p>
                 </div>
               </div>
@@ -171,9 +226,12 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
                   <Rocket size={20} className="text-red-500" weight="fill" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Plan & Act Modes</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Plan & Act Modes
+                  </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Structured workflows: plan before acting, or let the agent execute directly.
+                    Structured workflows: plan before acting, or let the agent
+                    execute directly.
                   </p>
                 </div>
               </div>
@@ -195,11 +253,13 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
                   className="text-[#F48120] hover:underline font-medium"
                 >
                   AI@YourService
-                </a>
-                {" "}and get their own credits. Every LLM call is billed to their account, not yours.
+                </a>{" "}
+                and get their own credits. Every LLM call is billed to their
+                account, not yours.
               </p>
               <p>
-                New users get free credits to try your app. Power users can add more credits or bring their own API keys (BYOK).
+                New users get free credits to try your app. Power users can add
+                more credits or bring their own API keys (BYOK).
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
                 You build the app. We handle auth, billing, and the LLM gateway.
@@ -215,7 +275,7 @@ export function LandingPage({ onSignIn, onDismiss, authError }: LandingPageProps
             <div className="max-w-2xl mx-auto">
               <div className="bg-neutral-900 dark:bg-neutral-800 rounded-lg p-4 mb-4 overflow-x-auto">
                 <code className="text-green-400 text-sm md:text-base font-mono whitespace-pre">
-{`# Clone the template
+                  {`# Clone the template
 git clone https://github.com/atyourserviceai/app-agent-template
 cd app-agent-template
 
@@ -229,10 +289,26 @@ pnpm run dev`}
               </div>
               <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300 text-sm md:text-base">
                 <li>Fork or clone the template from GitHub</li>
-                <li>Configure your <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.dev.vars</code> with AI@YourService credentials</li>
-                <li>Customize the agent tools in <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">src/agent/</code></li>
+                <li>
+                  Configure your{" "}
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    .dev.vars
+                  </code>{" "}
+                  with AI@YourService credentials
+                </li>
+                <li>
+                  Customize the agent tools in{" "}
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    src/agent/
+                  </code>
+                </li>
                 <li>Replace the demo UI with your own application</li>
-                <li>Deploy with <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">pnpm run deploy</code></li>
+                <li>
+                  Deploy with{" "}
+                  <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                    pnpm run deploy
+                  </code>
+                </li>
               </ol>
             </div>
           </div>
@@ -243,8 +319,9 @@ pnpm run dev`}
               Try the demo
             </h2>
             <p className="text-gray-700 dark:text-gray-300 text-base text-center max-w-2xl mx-auto mb-6">
-              This template includes a bouncing ball simulation to demonstrate AI-controlled interactions.
-              Sign in to chat with the AI and control the simulation with natural language.
+              This template includes a bouncing ball simulation to demonstrate
+              AI-controlled interactions. Sign in to chat with the AI and
+              control the simulation with natural language.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button

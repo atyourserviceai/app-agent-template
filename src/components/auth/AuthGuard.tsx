@@ -71,7 +71,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       {authError && (
         <div className="fixed bottom-4 left-4 z-[60]">
           <div className="bg-red-50 dark:bg-red-900/50 backdrop-blur-sm rounded-lg shadow-xl border border-red-200 dark:border-red-700 p-4 max-w-sm">
-            <p className="text-red-600 dark:text-red-400 text-sm">{authError}</p>
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              {authError}
+            </p>
           </div>
         </div>
       )}

@@ -327,13 +327,14 @@ import * as rawYourDomainTools from "./your-domain";
 import { wrapAllToolsWithErrorHandling } from "./wrappers";
 
 // Wrap all tools with error handling
-export const yourDomainTools = wrapAllToolsWithErrorHandling(rawYourDomainTools);
+export const yourDomainTools =
+  wrapAllToolsWithErrorHandling(rawYourDomainTools);
 
 // Add to the tools object
 export const tools = {
   // ... existing tools ...
   yourCustomTool: yourDomainTools.yourCustomTool,
-  sensitiveAction: yourDomainTools.sensitiveAction,
+  sensitiveAction: yourDomainTools.sensitiveAction
 };
 
 // Add execution handlers for tools requiring approval

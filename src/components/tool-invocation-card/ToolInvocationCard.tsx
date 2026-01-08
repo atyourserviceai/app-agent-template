@@ -172,13 +172,12 @@ export function ToolInvocationCard({
         <div className="flex-1 text-left">
           <div className="flex items-center gap-2">
             <h4 className="font-medium text-sm">{getActionSummary()}</h4>
-            {!needsConfirmation &&
-              toolInvocation.state === "call" && (
-                <span className="text-xs text-[#F48120]/70 flex items-center gap-1">
-                  <span className="animate-spin inline-block w-3 h-3 border border-[#F48120]/50 border-t-[#F48120] rounded-full" />
-                  Executing...
-                </span>
-              )}
+            {!needsConfirmation && toolInvocation.state === "call" && (
+              <span className="text-xs text-[#F48120]/70 flex items-center gap-1">
+                <span className="animate-spin inline-block w-3 h-3 border border-[#F48120]/50 border-t-[#F48120] rounded-full" />
+                Executing...
+              </span>
+            )}
             {!needsConfirmation &&
               toolInvocation.state === "result" &&
               !hasError && (
@@ -209,7 +208,9 @@ export function ToolInvocationCard({
           {!needsConfirmation && toolInvocation.state === "call" && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="animate-spin inline-block w-4 h-4 border-2 border-[#F48120]/30 border-t-[#F48120] rounded-full" />
-              <span>Running {getFriendlyToolName(toolInvocation.toolName)}...</span>
+              <span>
+                Running {getFriendlyToolName(toolInvocation.toolName)}...
+              </span>
             </div>
           )}
 

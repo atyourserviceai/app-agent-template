@@ -7,7 +7,12 @@ import { getCurrentAgent } from "agents";
 import { tool } from "ai";
 import { z } from "zod/v3";
 import type { AppAgent, AppAgentState } from "../AppAgent";
-import { BALL_COLORS, type Ball, type BallColorName, type BallCommand } from "../../balls/types";
+import {
+  BALL_COLORS,
+  type Ball,
+  type BallColorName,
+  type BallCommand
+} from "../../balls/types";
 
 /**
  * Helper to add a command to the agent state
@@ -68,10 +73,25 @@ export const addBall = tool({
   },
   inputSchema: z.object({
     color: z
-      .enum(["red", "orange", "yellow", "green", "blue", "purple", "pink", "cyan", "white"])
+      .enum([
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "purple",
+        "pink",
+        "cyan",
+        "white"
+      ])
       .optional()
       .describe("Color of the ball"),
-    radius: z.number().min(10).max(100).optional().describe("Radius of the ball in pixels (10-100)"),
+    radius: z
+      .number()
+      .min(10)
+      .max(100)
+      .optional()
+      .describe("Radius of the ball in pixels (10-100)"),
     x: z.number().optional().describe("Initial X position"),
     y: z.number().optional().describe("Initial Y position"),
     vx: z.number().optional().describe("Initial X velocity"),
@@ -148,7 +168,11 @@ export const setGravity = tool({
     };
   },
   inputSchema: z.object({
-    gravity: z.number().min(0).max(2).describe("Gravity strength (0 = floating, 0.5 = normal, 2 = heavy)")
+    gravity: z
+      .number()
+      .min(0)
+      .max(2)
+      .describe("Gravity strength (0 = floating, 0.5 = normal, 2 = heavy)")
   })
 });
 
@@ -195,9 +219,10 @@ export const getBallState = tool({
 
     return {
       pendingCommands,
-      message: pendingCommands > 0
-        ? `${pendingCommands} commands pending`
-        : "No pending commands - simulation running"
+      message:
+        pendingCommands > 0
+          ? `${pendingCommands} commands pending`
+          : "No pending commands - simulation running"
     };
   },
   inputSchema: z.object({})
@@ -208,7 +233,13 @@ export const getBallState = tool({
  */
 export const addMultipleBalls = tool({
   description: "Add multiple balls to the simulation at once",
-  execute: async ({ count, color }: { count: number; color?: BallColorName }) => {
+  execute: async ({
+    count,
+    color
+  }: {
+    count: number;
+    color?: BallColorName;
+  }) => {
     const { agent } = getCurrentAgent<AppAgent>();
 
     if (!agent) {
@@ -219,7 +250,8 @@ export const addMultipleBalls = tool({
     const balls: Ball[] = [];
 
     for (let i = 0; i < Math.min(count, 20); i++) {
-      const ballColor = color || colors[Math.floor(Math.random() * colors.length)];
+      const ballColor =
+        color || colors[Math.floor(Math.random() * colors.length)];
       balls.push({
         id: `ball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         x: Math.random() * 400 + 100,
@@ -242,7 +274,17 @@ export const addMultipleBalls = tool({
   inputSchema: z.object({
     count: z.number().min(1).max(20).describe("Number of balls to add (1-20)"),
     color: z
-      .enum(["red", "orange", "yellow", "green", "blue", "purple", "pink", "cyan", "white"])
+      .enum([
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "purple",
+        "pink",
+        "cyan",
+        "white"
+      ])
       .optional()
       .describe("Color for all balls (random if not specified)")
   })

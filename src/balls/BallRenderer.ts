@@ -51,8 +51,6 @@ export class BallRenderer {
 
   // Drag state
   private draggedBall: Ball | null = null;
-  private dragStartPos: { x: number; y: number } | null = null;
-  private dragCurrentPos: { x: number; y: number } | null = null;
   private lastDragPositions: { x: number; y: number; time: number }[] = [];
 
   // Gravity direction change timer
@@ -162,8 +160,6 @@ export class BallRenderer {
 
       if (dist < ball.radius) {
         this.draggedBall = ball;
-        this.dragStartPos = { x: pos.x, y: pos.y };
-        this.dragCurrentPos = { x: pos.x, y: pos.y };
         this.lastDragPositions = [{ x: pos.x, y: pos.y, time: Date.now() }];
         ball.vx = 0;
         ball.vy = 0;
@@ -183,7 +179,6 @@ export class BallRenderer {
     if (!this.draggedBall) return;
 
     const pos = event.global;
-    this.dragCurrentPos = { x: pos.x, y: pos.y };
     this.draggedBall.x = pos.x;
     this.draggedBall.y = pos.y;
     this.lastDragPositions.push({ x: pos.x, y: pos.y, time: Date.now() });
@@ -220,8 +215,6 @@ export class BallRenderer {
     }
 
     this.draggedBall = null;
-    this.dragStartPos = null;
-    this.dragCurrentPos = null;
     this.lastDragPositions = [];
   }
 
@@ -383,7 +376,7 @@ export class BallRenderer {
 
     if (this.app) {
       try {
-        if (this.app.canvas && this.app.canvas.parentNode) {
+        if (this.app.canvas?.parentNode) {
           this.app.canvas.parentNode.removeChild(this.app.canvas);
         }
         this.app.destroy(true, { children: true, texture: true });

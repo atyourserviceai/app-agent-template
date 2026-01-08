@@ -9,7 +9,11 @@ type PresentationContainerProps = {
   variant?: "panel" | "full"; // full = full-screen background variant
   onShowLandingPage?: () => void;
   /** Agent config for making API calls (for authenticated users) */
-  agentConfig?: { agent: string; name: string; query?: Record<string, string> } | null;
+  agentConfig?: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null;
 };
 
 export function PresentationContainer({
