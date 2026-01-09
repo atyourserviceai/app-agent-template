@@ -10,9 +10,9 @@ Integrated with **[AI@YourService](https://atyourservice.ai)** for authenticatio
 
 Based on Cloudflare's [agents-starter](https://github.com/cloudflare/agents-starter) with additional features:
 
+- **Interactive PixiJS ball demo** showing AI-controlled state manipulation
 - Enhanced chat functionality (message editing, retrying, error handling)
-- Improved error display and user feedback
-- Four-mode agent architecture (onboarding/integration/plan/act)
+- Simple **plan/act mode** architecture for strategic thinking vs execution
 - Better TypeScript types and organization
 - **AI@YourService integration** for user authentication and cost-effective LLM access
 
@@ -61,93 +61,70 @@ Since the React app has access to the agent's state, you can create:
 ## Features
 
 - 🤖 **App Agent Architecture**: React app with access to agent state for rich UX
-- 🏗️ **Four-Mode System**: Setup phases (onboarding + integration) before operational phases (plan + act)
-- 📋 **Saved Configuration**: Onboarding produces defaults and settings the agent operates with
+- 🎱 **Interactive Ball Demo**: PixiJS-based physics simulation controlled by AI commands
+- 🎯 **Plan/Act Modes**: Simple two-mode system for strategic thinking vs execution
 - 💬 Interactive chat interface with AI
 - ✏️ Enhanced chat functionality (edit messages, retry, error handling)
 - 🛠️ Built-in tool system with human-in-the-loop confirmation
 - 📅 Advanced task scheduling (one-time, delayed, and recurring via cron)
-- 🔧 **Tool Validation & Testing**: Integration mode ensures reliable production deployments
-- 🌓 Dark/Light theme support
+- 🌓 Dark/Light theme support (synced between UI and canvas)
 - ⚡️ Real-time streaming responses
 - 🔄 State management and chat history
 - 🎨 Modern, responsive UI
 - 🚀 Generic architecture for easy customization
 
-## Four-Mode Architecture
+## Interactive Ball Demo
 
-This template uses a four-mode agent architecture that goes beyond typical plan/act agents. Unlike traditional coding agents that only have planning and execution phases, this approach includes **setup phases** before operational use:
+This template includes an interactive PixiJS ball simulation that demonstrates how to:
 
-### The Four Modes & Workflow
+1. **Expose UI state to the AI agent** via tools
+2. **Let the AI control application state** through commands
+3. **Allow users to interact with both UI and AI** simultaneously
 
-#### 1. **🎯 Onboarding Mode** - _Agent Owner Configuration_
+### Ball Simulation Features
 
-- **Purpose**: Define the agent's goals, methodology, and operating configuration
-- **Who uses it**: The agent owner/primary stakeholder (one-time setup)
-- **What it does**: Conducts an interactive interview to document:
-  - What the agent should accomplish
-  - How it should approach tasks
-  - Company-specific processes and methodologies
-  - Success criteria and best practices
-- **Output**: Saved configuration and defaults used in future sessions (e.g., preferences, operators, guardrails)
+- **Physics simulation**: Balls bounce with gravity, friction, and wall collisions
+- **Random gravity changes**: Gravity direction shifts every 5 seconds for visual interest
+- **Click to create**: Click anywhere on the canvas to add new balls
+- **Drag and throw**: Drag balls and release to throw them with velocity
+- **Theme sync**: Canvas background syncs with the app's dark/light theme
 
-#### 2. **🔧 Integration Mode** - _Developer/Admin Setup_
+### AI Control
 
-- **Purpose**: Configure and test the tools needed to achieve the defined goals
-- **Who uses it**: Agent developers and system administrators
-- **What it does**:
-- Analyzes the onboarding configuration to identify required tools
-  - Guides integration setup for external services
-  - Tests tool functionality before production use
-  - Documents working integrations
-- **Output**: Validated, documented tool ecosystem
+The agent can manipulate the simulation through tools:
 
-#### 3. **🎯 Plan Mode** - _Strategy & Discussion_
+- Add/remove balls with specific properties (position, color, velocity)
+- Clear all balls
+- Adjust gravity strength and direction
+- Change friction settings
+- Pause/resume the simulation
+
+This pattern shows how to build apps where users can interact directly with the UI while also asking the AI to make changes through natural language.
+
+## Plan/Act Architecture
+
+This template uses a simple two-mode architecture:
+
+### 🎯 Plan Mode - _Strategy & Discussion_
 
 - **Purpose**: Planning and strategy development without execution
-- **Who uses it**: End users for strategic thinking
 - **What it does**: Task analysis, creating action plans, strategic discussions
-- **Tools**: No execution tools - pure planning and analysis
+- **Tools**: Limited to planning and analysis tools
 
-#### 4. **🚀 Act Mode** - _Execution & Operations_
+### 🚀 Act Mode - _Execution & Operations_
 
-- **Purpose**: Execute actions using the established configuration and tools
-- **Who uses it**: End users for day-to-day operations
-- **What it does**: Performs concrete actions guided by saved configuration and plans
-- **Tools**: Full access to execution tools
+- **Purpose**: Execute actions using available tools
+- **What it does**: Performs concrete actions, manipulates state, runs operations
+- **Tools**: Full access to execution tools (including ball simulation controls)
 
-### Why This Architecture Works
+### Mode Switching
 
-Most AI agents jump straight into plan/act cycles without proper foundation. This approach ensures:
+Switch modes anytime by typing the mode name:
 
-1. **Clear Purpose Definition**: Onboarding captures the "why" and "how" before building
-2. **Reliable Tool Setup**: Integration mode prevents production failures
-3. **Persisted Configuration**: Onboarding choices become default operating configuration
-4. **Scalable Operations**: Multiple users can operate the agent consistently
-
-### Natural Progression Flow
-
-```
-Onboarding → Integration → Plan ⟷ Act
-    ↓            ↓          ↓      ↓
- Define       Set up    Discuss Execute
- Goals        Tools     Strategy Actions
-```
-
-The agent automatically adapts its behavior, available tools, and responses based on the current mode, ensuring users get the right capabilities at the right time.
-
-### Getting Started with the Four-Mode Workflow
-
-1. **Start with Onboarding**: Begin by switching to onboarding mode to define your agent's purpose and methodology
-2. **Configure Integrations**: Use integration mode to set up and test any external tools or services needed
-3. **Plan & Execute**: Use plan mode for strategy and act mode for execution in daily operations
-
-**Quick Mode Switching**: You can switch modes anytime by typing just the mode name:
-
-- Type "onboarding" to switch to onboarding mode
-- Type "integration" to switch to integration mode
 - Type "plan" to switch to plan mode
 - Type "act" to switch to act mode
+
+The agent adapts its available tools and behavior based on the current mode.
 
 ## Stack
 
@@ -273,23 +250,26 @@ The project supports three deployment environments, each with its own configurat
 
 ```
 ├── src/
-│   ├── app.tsx        # Chat UI implementation
-│   ├── server.ts      # Chat agent logic
-│   ├── styles.css     # UI styling
+│   ├── app.tsx        # Main app with chat UI
+│   ├── server.ts      # Server-side agent logic
+│   ├── styles.css     # Tailwind CSS styling
+│   ├── balls/         # PixiJS ball simulation
+│   │   ├── BallCanvas.tsx       # React wrapper component
+│   │   ├── BallRenderer.ts      # PixiJS renderer with physics
+│   │   └── types.ts             # Ball and state types
 │   └── agent/         # Agent implementation
 │       ├── AppAgent.ts          # Main agent class
-│       ├── tools/                # Tool definitions
-│       ├── prompts/              # System prompts
+│       ├── tools/               # Tool definitions
+│       │   ├── balls.ts         # Ball simulation tools
+│       │   └── ...              # Other tools
 │       ├── utils/
 │       │   ├── export-import-utils.ts  # Export/import functionality
-│       │   └── tool-utils.ts      # Tool utility functions
-│       ├── types/                # Type definitions
-│       │   └── generic.ts        # Generic type definitions
-│       └── storage/              # Data persistence layer
-│           ├── entities.ts       # Generic entity storage
-│           └── history.ts        # Interaction history
+│       │   └── tool-utils.ts    # Tool utility functions
+│       ├── types/               # Type definitions
+│       └── storage/             # Data persistence layer
 ├── docs/
-│   └── agent-export-import.md  # Documentation for export/import functionality
+│   ├── MIGRATION.md             # AI SDK v4 to v6 migration guide
+│   └── VOICE.md                 # Voice input documentation
 ```
 
 ## Customization Guide
@@ -468,93 +448,57 @@ This functionality is useful for:
 - Creating backups before major changes
 - Recovering from data loss
 
-## Four-Mode Workflow Example
+## Usage Example
 
-Here's how to use the four-mode architecture to build a customer support agent:
+Here's how to interact with the ball simulation using natural language:
 
-### 1. Onboarding Mode - Define Purpose & Methodology
-
-```
-User: "onboarding"
-Agent: Switches to onboarding mode
-
-User: "I want to create a customer support agent"
-Agent: Interviews you about:
-- What types of customer issues you handle
-- Your support process and escalation procedures
-- Response time goals and quality standards
-- Knowledge base and FAQ structure
-- Communication preferences (email, chat, etc.)
-
-Output: Saved configuration stored for future operation
-```
-
-### 2. Integration Mode - Set Up & Test Tools
-
-```
-User: "integration"
-Agent: Switches to integration mode
-
-Agent: Analyzes your configuration and identifies needed tools:
-- Ticket system integration (Zendesk, Freshdesk, etc.)
-- Knowledge base search
-- Customer database lookup
-- Email template system
-- Escalation notification system
-
-Agent: Guides you through testing each integration and documents working tools
-Output: Validated, documented tool ecosystem
-```
-
-### 3. Plan Mode - Strategic Support Planning
+### Plan Mode - Discuss Strategy
 
 ```
 User: "plan"
-Agent: Switches to plan mode (no execution tools)
+Agent: Switches to plan mode
 
-User: "Help me plan a strategy for reducing response times"
-Agent: Analyzes your support data and suggests:
-- Automation opportunities based on common issues
-- Knowledge base improvements
-- Process optimizations
-- Performance metrics to track
-
-Output: Strategic plan for implementation
+User: "I want to create an interesting visual with the balls"
+Agent: Suggests ideas like:
+- Creating a pattern with specific ball positions
+- Using gravity changes for dynamic effects
+- Color-coding balls for visual organization
 ```
 
-### 4. Act Mode - Execute Support Operations
+### Act Mode - Execute Commands
 
 ```
 User: "act"
 Agent: Switches to act mode (full tool access)
 
-Agent: Actively handles support operations:
-- Processes incoming tickets using your documented methodology
-- Searches knowledge base for solutions
-- Drafts responses using your templates
-- Escalates complex issues per your procedures
-- Tracks metrics and suggests improvements
+User: "Add 5 red balls in a row at the top"
+Agent: Uses addBall tool to create balls with:
+- Positions spaced evenly at the top
+- Red color (0xff0000)
+- Initial downward velocity
 
-Output: Executed support actions using your configured settings
+User: "Make gravity pull to the left"
+Agent: Uses setGravityAngle tool to change gravity direction
+
+User: "Clear everything and start fresh"
+Agent: Uses clearBalls tool to reset the simulation
 ```
 
-## Example Use Cases
+## Building Your Own App Agent
 
-This four-mode architecture works for any domain:
+This template demonstrates the pattern for any app agent:
 
-1. **Customer Support Agent** (as shown above)
-2. **Sales CRM Agent** (see superfans demo)
-3. **Development Assistant**
-4. **Data Analysis Assistant**
-5. **Personal Productivity Assistant**
-6. **Project Management Agent**
+1. **Create your UI state** (like the ball simulation)
+2. **Expose state to the agent** via tools in `src/agent/tools/`
+3. **Let users interact directly** with the UI
+4. **Let the AI control state** through natural language
 
-Each use case follows the same pattern:
+Example use cases you could build:
 
-1. **Onboarding**: Define goals, methodology, and success criteria
-2. **Integration**: Set up and test required tools and services
-3. **Plan**: Strategic thinking and analysis without execution
-4. **Act**: Execute tasks using the established playbook and tools
+- **Data visualization agent** - AI helps create and modify charts
+- **Form builder agent** - AI assists in creating form layouts
+- **Game agent** - AI controls game elements or provides hints
+- **Design tool agent** - AI helps with color schemes, layouts
 
 ## Composio Integration
 
