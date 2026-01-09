@@ -1,9 +1,9 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import type { UIMessage } from "ai";
-// import { createAnthropic } from "@ai-sdk/anthropic";
 // import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { AgentContext, Connection, Schedule } from "agents";
-import { AIChatAgent } from "agents/ai-chat-agent";
+import { AIChatAgent } from "@cloudflare/ai-chat";
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -14,18 +14,11 @@ import {
   type ToolSet,
   stepCountIs
 } from "ai";
-import { getUnifiedSystemPrompt } from "./prompts/index";
+import { getSystemPrompt } from "./prompt";
 import { executions, tools } from "./tools/registry";
 import { simulateThinkingLLM } from "./middleware/simulateThinkingMiddleware";
-import type {
-  AdminContact,
-  Operator,
-  TestReport,
-  TestResult,
-  ToolDocumentation,
-  TransitionRecommendation,
-  TypedRecord
-} from "./types/generic";
+import type { AdminContact, Operator } from "./types/generic";
+import type { BallCommand } from "../balls/types";
 import {
   type DatabaseExportResult,
   exportAgentData,
@@ -35,10 +28,11 @@ import {
 import { processToolCalls } from "./utils/tool-utils";
 import { ShareAssetGenerator } from "../services/share-asset-generator";
 
-// AI @ Your Service Gateway configuration
+// AI @ Your Service Gateway configuration for OpenAI (kept for reference)
 // Using openai-compatible provider to disable stream_options.include_usage
 // which the gateway doesn't support
-const getOpenAI = (env: Env, apiKey?: string) => {
+// @ts-expect-error Kept for reference - may be used in future
+const _getOpenAI = (env: Env, apiKey?: string) => {
   if (!apiKey) {
     throw new Error("API key is required for AI requests");
   }
@@ -50,7 +44,6 @@ const getOpenAI = (env: Env, apiKey?: string) => {
   });
 };
 
-/*
 // AI @ Your Service Gateway configuration for Anthropic
 const getAnthropic = (env: Env, apiKey?: string) => {
   if (!apiKey) {
@@ -58,10 +51,9 @@ const getAnthropic = (env: Env, apiKey?: string) => {
   }
   return createAnthropic({
     apiKey: apiKey,
-    baseURL: `${env.GATEWAY_BASE_URL}/v1/anthropic`,
+    baseURL: `${env.GATEWAY_BASE_URL}/v1/anthropic`
   });
 };
-*/
 
 /*
 // AI @ Your Service Gateway configuration for Gemini
@@ -104,8 +96,8 @@ export function getErrorMessage(error: unknown): string {
   return JSON.stringify(error);
 }
 
-// Agent operating modes
-export type AgentMode = "onboarding" | "integration" | "plan" | "act";
+// Agent operating modes (simplified: only plan and act)
+export type AgentMode = "plan" | "act";
 
 // Define AppAgentState interface for proper typing
 export interface AppAgentState {
@@ -126,16 +118,14 @@ export interface AppAgentState {
     // JWT API key removed - now stored only in SQLite
   };
 
-  // Onboarding mode state
-  onboardingStep?: string;
-  isOnboardingComplete: boolean;
+  // Ball simulation commands queue (processed by client, then cleared)
+  ballCommands?: BallCommand[];
 
-  // Integration mode state
-  testResults?: TypedRecord<string, TestResult>;
-  toolDocumentation?: TypedRecord<string, ToolDocumentation>;
-  testReport?: TestReport;
-  isIntegrationComplete?: boolean;
-  transitionRecommendation?: TransitionRecommendation;
+  // User progress (persisted across sessions, synced cross-device when authenticated)
+  userProgress?: {
+    instructionsDismissed: boolean;
+    lastUpdated: string;
+  };
 
   // Optional metadata
   _lastModeChange?: string;
@@ -151,10 +141,7 @@ export class AppAgent extends AIChatAgent<Env> {
 
   // Define initial agent state including the current mode
   initialState: AppAgentState = {
-    isIntegrationComplete: false,
-    isOnboardingComplete: false,
-    mode: "act" as AgentMode, // Default to act mode for MVP
-    onboardingStep: "start",
+    mode: "act" as AgentMode, // Default to act mode
     settings: {
       adminContact: {
         email: "",
@@ -162,10 +149,7 @@ export class AppAgent extends AIChatAgent<Env> {
       },
       language: "en",
       operators: []
-    },
-    // Integration state
-    testResults: {},
-    toolDocumentation: {}
+    }
   };
 
   // Ensure the current state matches the latest schema, merging in any missing fields
@@ -173,16 +157,12 @@ export class AppAgent extends AIChatAgent<Env> {
     // Create a local copy of the state to avoid parameter reassignment
     const state = inputState ? { ...inputState } : ({} as AppAgentState);
 
-    // Always ensure a valid mode is set
-    if (
-      !state ||
-      !state.mode ||
-      !["onboarding", "integration", "plan", "act"].includes(state.mode)
-    ) {
+    // Always ensure a valid mode is set (only plan and act are valid)
+    if (!state || !state.mode || !["plan", "act"].includes(state.mode)) {
       console.log(
-        "[AppAgent] No valid mode found in state, defaulting to onboarding mode"
+        "[AppAgent] No valid mode found in state, defaulting to act mode"
       );
-      state.mode = "onboarding";
+      state.mode = "act";
     }
 
     // Ensure settings exists
@@ -313,7 +293,7 @@ export class AppAgent extends AIChatAgent<Env> {
       console.log(
         `[AppAgent] Using user-specific API key for user: ${state.userInfo?.id}`
       );
-      return getOpenAI(this.env, userApiKey);
+      return getAnthropic(this.env, userApiKey);
     }
     const errorMsg =
       "No user API key available. User must be authenticated to use AI features.";
@@ -362,8 +342,7 @@ export class AppAgent extends AIChatAgent<Env> {
    * Get system prompt for the agent
    */
   getSystemPrompt() {
-    // Use the unified system prompt for all modes
-    return getUnifiedSystemPrompt();
+    return getSystemPrompt();
   }
 
   /**
@@ -377,6 +356,15 @@ export class AppAgent extends AIChatAgent<Env> {
 
     // Base tools available in all modes
     const baseTools = {
+      // Ball simulation tools
+      addBall: tools.addBall,
+      addMultipleBalls: tools.addMultipleBalls,
+      clearBalls: tools.clearBalls,
+      getBallState: tools.getBallState,
+      removeBall: tools.removeBall,
+      setGravity: tools.setGravity,
+      toggleSimulation: tools.toggleSimulation,
+
       // Browser tools
       browseWebPage: tools.browseWebPage,
       browseWithBrowserbase: tools.browseWithBrowserbase,
@@ -395,35 +383,11 @@ export class AppAgent extends AIChatAgent<Env> {
 
       // Scheduling tools
       scheduleTask: tools.scheduleTask,
-      setMode: tools.setMode,
-
-      // Messaging tools
-      suggestActions: tools.suggestActions
+      setMode: tools.setMode
     };
 
     // Mode-specific tools
     switch (mode) {
-      case "onboarding":
-        // Onboarding mode - enable configuration tools
-        return {
-          ...baseTools,
-          checkExistingConfig: tools.checkExistingConfig,
-          completeOnboarding: tools.completeOnboarding,
-          getOnboardingStatus: tools.getOnboardingStatus,
-          saveSettings: tools.saveSettings
-        } as ToolSet;
-
-      case "integration":
-        // Integration mode - enable testing and documentation tools
-        return {
-          ...baseTools,
-          completeIntegrationTesting: tools.completeIntegrationTesting,
-          documentTool: tools.documentTool,
-          generateTestReport: tools.generateTestReport,
-          recordTestResult: tools.recordTestResult,
-          testErrorTool: tools.testErrorTool
-        } as ToolSet;
-
       case "act":
         // Action mode - enable all tools for execution
         return {
@@ -432,7 +396,7 @@ export class AppAgent extends AIChatAgent<Env> {
         } as ToolSet;
 
       default:
-        // Planning mode - basic tools for planning and analysis
+        // Planning mode (and any other mode) - basic tools for planning and analysis
         return {
           ...baseTools
         } as ToolSet;
@@ -488,8 +452,8 @@ export class AppAgent extends AIChatAgent<Env> {
 
           while (retryCount <= maxRetries) {
             try {
-              const openai = await this.getAIProvider();
-              let model = openai("gpt-5-mini-2025-08-07");
+              const anthropic = await this.getAIProvider();
+              let model = anthropic("claude-haiku-4-5-20251001");
 
               // Enable simulation for testing if environment variable is set
               if ((this.env as any).SIMULATE_THINKING_TOKENS === "true") {
@@ -862,6 +826,35 @@ export class AppAgent extends AIChatAgent<Env> {
       }
     }
 
+    // Handle user progress updates (persisted via agent state)
+    // Client reads userProgress directly from agentState via WebSocket
+    if (
+      url.pathname.endsWith("/update-user-progress") &&
+      request.method === "POST"
+    ) {
+      try {
+        const userProgress = (await request.json()) as {
+          instructionsDismissed: boolean;
+          lastUpdated: string;
+        };
+
+        console.log("[AppAgent] Updating user progress:", userProgress);
+
+        const updatedState: AppAgentState = {
+          ...currentState,
+          userProgress
+        };
+
+        this.setState(updatedState);
+
+        console.log("[AppAgent] Successfully updated user progress");
+        return new Response("OK");
+      } catch (error) {
+        console.error("[AppAgent] Error updating user progress:", error);
+        return new Response("Error updating user progress", { status: 500 });
+      }
+    }
+
     // Handle mode change requests
     if (url.pathname.includes("/set-mode")) {
       console.log(`[AppAgent] Detected set-mode request: ${url.pathname}`);
@@ -896,13 +889,10 @@ export class AppAgent extends AIChatAgent<Env> {
         const force = forceFlag === true;
         const isAfterClearHistory = clearHistoryFlag === true;
 
-        if (
-          !newMode ||
-          !["onboarding", "integration", "plan", "act"].includes(newMode)
-        ) {
+        if (!newMode || !["plan", "act"].includes(newMode)) {
           return Response.json(
             {
-              error: "Invalid mode specified",
+              error: "Invalid mode specified. Valid modes are: plan, act",
               success: false
             },
             { status: 400 }

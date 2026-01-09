@@ -8,7 +8,7 @@ export function useAgentState(
     name: string;
     query?: Record<string, string>;
   } | null,
-  initialMode: AgentMode = "onboarding"
+  initialMode: AgentMode = "act"
 ) {
   const [agentState, setAgentState] = useState<AppAgentState | null>(null);
   const [agentMode, setAgentMode] = useState<AgentMode>(initialMode);

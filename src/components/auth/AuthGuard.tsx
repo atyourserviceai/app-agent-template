@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { LandingPage } from "../LandingPage";
 
 interface AuthGuardProps {
   children: ReactNode;
 }
 
+/**
+ * AuthGuard - Always renders children, shows auth errors as toast
+ * The landing page and unauthenticated UI is handled by AppContent
+ */
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { authMethod, login, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Check for auth errors in URL and localStorage
@@ -49,7 +52,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, []);
 
-  // Show loading spinner while checking authentication. Render the same on SSR and CSR
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -61,16 +64,20 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  if (!authMethod) {
-    // Floating login widget overlay; stronger blurred backdrop and scrollable if needed
-    return (
-      <div className="fixed inset-0 z-50 overflow-y-auto p-4 md:p-6 bg-white/40 dark:bg-black/40 supports-[backdrop-filter]:backdrop-blur-[8px]">
-        <div className="w-full max-w-2xl mx-auto my-8 md:my-12">
-          <LandingPage onSignIn={login} authError={authError} />
+  // Always render children - anonymous profile dropdown handles sign-in prompt
+  // Show auth error notification if present
+  return (
+    <>
+      {authError && (
+        <div className="fixed bottom-4 left-4 z-[60]">
+          <div className="bg-red-50 dark:bg-red-900/50 backdrop-blur-sm rounded-lg shadow-xl border border-red-200 dark:border-red-700 p-4 max-w-sm">
+            <p className="text-red-600 dark:text-red-400 text-sm">
+              {authError}
+            </p>
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+      )}
+      {children}
+    </>
+  );
 }

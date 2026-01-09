@@ -6,9 +6,10 @@
   "private": true,
   "scripts": {
     "dev": "react-router dev --port 5273",
-    "build": "react-router build",
+    "clean": "rm -rf build .wrangler",
+    "build": "pnpm run clean && react-router build",
     "preview": "vite preview --port 5273",
-    "deploy": "react-router build",
+    "deploy": "pnpm run build",
     "deploy:staging": "pnpm run deploy && wrangler deploy --env staging",
     "deploy:production": "pnpm run deploy && wrangler deploy --env production",
     "kill-ports": "lsof -ti:5273 | xargs -r kill -9 && lsof -ti:9329 | xargs -r kill -9 && echo 'Killed processes on ports 5273 and 9329' || echo 'No processes found on ports 5273 and 9329'",
@@ -29,7 +30,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.1.4",
     "@cloudflare/puppeteer": "^1.0.3",
-    "@cloudflare/vite-plugin": "1.17.1",
+    "@cloudflare/vite-plugin": "1.19.0",
     "@cloudflare/vitest-pool-workers": "^0.8.63",
     "@cloudflare/workers-types": "^4.20250813.0",
     "@react-router/dev": "^7.11.0",
@@ -47,7 +48,7 @@
     "vite": "^7.1.2",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "3.2.4",
-    "wrangler": "^4.29.1"
+    "wrangler": "^4.56.0"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.2",
@@ -70,6 +71,7 @@
     "composio-core": "^0.5.39",
     "jsdom": "^26.1.0",
     "marked": "^16.1.2",
+    "pixi.js": "^8.14.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",

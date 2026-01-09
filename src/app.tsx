@@ -1,9 +1,8 @@
 import type { UIMessage } from "ai";
 import { isToolUIPart, getToolName } from "ai";
 import type { ExtendedUIMessage } from "@/shared";
-import { useAgentChat } from "agents/ai-react";
+import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActionButtons } from "@/components/action-buttons/ActionButtons";
 import { Avatar } from "@/components/avatar/Avatar";
 // Component imports
 import { Card } from "@/components/card/Card";
@@ -14,21 +13,19 @@ import { ErrorMessage } from "@/components/chat/ErrorMessage";
 import { LoadingIndicator } from "@/components/chat/LoadingIndicator";
 import { MissingResponseIndicator } from "@/components/chat/MissingResponseIndicator";
 import { PresentationContainer } from "@/components/chat/PresentationContainer";
+import { AIChatPromo } from "@/components/chat/AIChatPromo";
 import { MemoizedMarkdown } from "@/components/memoized-markdown";
 import { ToolInvocationCard } from "@/components/tool-invocation-card/ToolInvocationCard";
 import type { ToolTypes } from "./agent/tools/types";
 import { AuthGuard } from "./components/auth/AuthGuard";
-import { UserProfile } from "./components/auth/UserProfile";
-import { Moon, Sun } from "@phosphor-icons/react";
-import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
+import { LandingPage } from "./components/LandingPage";
 // Auth components
 import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
-import { useThemePreference } from "./hooks/useThemePreference";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { useCurrentProjectAuth, useProjectAuth } from "./hooks/useAgentAuth";
 import { ProjectProvider, useProject } from "./contexts/ProjectContext";
-import { ProjectSelector } from "./components/project/ProjectSelector";
 import { useAgentState } from "./hooks/useAgentState";
+import { useThemePreference } from "./hooks/useThemePreference";
 import { useErrorHandling } from "./hooks/useErrorHandling";
 import type { AgentMode } from "./agent/AppAgent";
 import { useMessageEditing } from "./hooks/useMessageEditing";
@@ -46,120 +43,7 @@ interface AgentData {
 // List of tools that require human confirmation for the generic template
 const toolsRequiringConfirmation: (keyof ToolTypes)[] = [
   "getWeatherInformation"
-  // Do not add suggestActions here as we want it to display without confirmation
 ];
-
-// Add this new component to show suggested actions above the chat input
-function SuggestedActions({
-  messages,
-  addToolResult,
-  reload: _reload
-}: {
-  messages: UIMessage[];
-  addToolResult: (args: { toolCallId: string; result: string }) => void;
-  reload: () => void;
-}) {
-  // SAFETY: Ensure messages is an array before processing
-  const safeMessages = Array.isArray(messages) ? messages : [];
-
-  // Find the latest message with suggestActions
-  const lastAssistantMessage = [...safeMessages]
-    .reverse()
-    .find((msg) => msg.role === "assistant");
-
-  if (!lastAssistantMessage) return null;
-
-  // Find the suggestActions tool part (v6: type is tool-suggestActions)
-  const suggestActionsPart = lastAssistantMessage.parts?.find(
-    (part) => isToolUIPart(part) && getToolName(part) === "suggestActions"
-  );
-
-  if (!suggestActionsPart || !isToolUIPart(suggestActionsPart)) return null;
-
-  // In v6, properties are directly on the part (not in toolInvocation)
-  const toolPart = suggestActionsPart;
-
-  // Get the actions based on the state - they could be in input or output
-  let actions: Array<{
-    label: string;
-    value: string;
-    primary?: boolean;
-    isOther?: boolean;
-  }> = [];
-
-  if (toolPart.state === "input-available") {
-    // Handle input-available state (v6 equivalent of "call") - get actions from input
-    const input = toolPart.input as
-      | {
-          actions?: Array<{
-            label: string;
-            value: string;
-            primary?: boolean;
-            isOther?: boolean;
-          }>;
-        }
-      | undefined;
-    actions = input?.actions || [];
-  } else if (toolPart.state === "output-available" && toolPart.output) {
-    // Handle output-available state (v6 equivalent of "result") - get actions from output
-    const output = toolPart.output;
-    if (typeof output === "string") {
-      try {
-        const parsedResult = JSON.parse(output);
-        if (parsedResult.actions) {
-          actions = parsedResult.actions;
-        }
-      } catch (e) {
-        console.error("Failed to parse suggestActions result", e);
-      }
-    } else if (output && typeof output === "object" && "actions" in output) {
-      actions = (
-        output as {
-          actions: Array<{
-            label: string;
-            value: string;
-            primary?: boolean;
-            isOther?: boolean;
-          }>;
-        }
-      ).actions;
-    }
-  }
-
-  if (actions.length === 0) return null;
-
-  // Added margin-bottom to ensure space between buttons and input
-  return (
-    <div className="w-full mb-16 mt-2 px-2 flex justify-end">
-      <ActionButtons
-        actions={actions}
-        onActionClick={(value, isOther) => {
-          // Complete the tool call only if it's still in input-available state
-          if (toolPart.state === "input-available") {
-            addToolResult({
-              result: JSON.stringify({
-                actions,
-                message: "User selected an action",
-                selectedAction: value,
-                success: true
-              }),
-              toolCallId: toolPart.toolCallId
-            });
-          }
-
-          // Then dispatch the event for the app to handle
-          const event = new CustomEvent("action-button-clicked", {
-            detail: {
-              isOther: isOther,
-              text: value
-            }
-          });
-          window.dispatchEvent(event);
-        }}
-      />
-    </div>
-  );
-}
 
 // Multi-instance Chat - manages multiple project tabs
 function Chat() {
@@ -218,7 +102,7 @@ function ProjectTabWithAgent({
 }) {
   const { agent, agentMode, changeAgentMode } = useAgentState(
     agentConfig,
-    "onboarding"
+    "act"
   );
 
   return (
@@ -321,6 +205,32 @@ function ProjectTabContent({
   // Thinking tokens state
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingTokens, setThinkingTokens] = useState<string>("");
+  // Track instructions state for AI Chat button positioning
+  const [instructionsVisible, setInstructionsVisible] = useState(true);
+
+  // Sync instructions state from localStorage on mount
+  useEffect(() => {
+    const instructionsDismissed =
+      localStorage.getItem("instructions_dismissed") === "true";
+    setInstructionsVisible(!instructionsDismissed);
+  }, []);
+
+  // Listen for instructions state changes from PresentationPanel
+  useEffect(() => {
+    const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
+      setInstructionsVisible(event.detail.isVisible);
+    };
+    window.addEventListener(
+      "simulation-instructions",
+      handleInstructions as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "simulation-instructions",
+        handleInstructions as EventListener
+      );
+    };
+  }, []);
 
   // Add auth context for token expiration checks
   const auth = useAuth();
@@ -343,13 +253,15 @@ function ProjectTabContent({
   const chatResult = useAgentChat({
     agent: agent || undefined, // Pass undefined if agent is null to prevent WebSocket connection
     onError: (error) => {
+      // AI SDK v6 pattern: onError is for logging/side effects only
+      // Error message addition to chat is handled via useEffect watching the error state
       console.error("Error while streaming:", error);
       console.log(
-        "[ERROR HANDLER] Error details:",
+        "[onError] Error details (message will be added via useEffect):",
         JSON.stringify(error, null, 2)
       );
 
-      // Check if this is a tool validation error
+      // Special case: Tool validation errors get synthetic tool call messages
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const isToolValidationError =
@@ -358,7 +270,7 @@ function ProjectTabContent({
 
       if (isToolValidationError) {
         console.log(
-          "[ERROR HANDLER] Tool validation error detected, creating synthetic tool call"
+          "[onError] Tool validation error detected, creating synthetic tool call"
         );
 
         // Extract tool name from error message
@@ -369,6 +281,10 @@ function ProjectTabContent({
 
         // Create a synthetic assistant message with failed tool call (v6 format)
         const toolCallId = `error-${Date.now()}`;
+        const stableMessages =
+          agentMessages.length > 0
+            ? [...agentMessages]
+            : [...lastKnownMessagesRef.current];
         const syntheticMessage = {
           id: crypto.randomUUID(),
           role: "assistant" as const,
@@ -394,155 +310,13 @@ function ProjectTabContent({
           ]
         };
 
-        // Set this synthetic message instead of the error message (cast for type compatibility)
-        setMessages([...agentMessages, syntheticMessage] as UIMessage[]);
-        return; // Exit early to avoid the normal error handling
+        // Set this synthetic message instead of the error message
+        setMessages([...stableMessages, syntheticMessage] as UIMessage[]);
+        return; // Skip normal error handling - this is a special case
       }
 
-      // Use values from the editing hook for error handling (normal error flow)
-      console.log(
-        `[Error] Error handler triggered, current messages length: ${agentMessages.length}, currentEditIndex: ${currentEditIndex}`
-      );
-      console.log(
-        `[Error] Original values - length: ${originalMessagesLengthRef.current}, editIndex: ${originalEditIndexRef.current}`
-      );
-
-      // Create a new assistant message with the error (normal error flow)
-      const formattedErrorMessage = formatErrorForMessage(error);
-
-      // Initialize with current messages, falling back to last known good messages
-      // This prevents losing all messages when an error occurs and agentMessages is empty
-      let currentMessages =
-        agentMessages.length > 0
-          ? [...agentMessages]
-          : [...lastKnownMessagesRef.current];
-
-      // If we have an original edit index from a recent edit
-      if (
-        originalEditIndexRef.current !== null &&
-        editedMessageContentRef.current
-      ) {
-        console.log(
-          `[Error] Using original edit context, index: ${originalEditIndexRef.current}`
-        );
-        console.log(
-          `[Error] Using stored edited content: "${editedMessageContentRef.current.substring(0, 30)}..."`
-        );
-
-        // We had an edit in progress - truncate to before the edit using ORIGINAL values
-        const originalLength = currentMessages.length;
-        const editIndex = originalEditIndexRef.current;
-
-        currentMessages =
-          editIndex > 0 ? agentMessages.slice(0, editIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Add the stored edited message (rather than whatever might be in the input)
-        const editedMessageText = editedMessageContentRef.current;
-        console.log(
-          `[Error] Adding edited message: "${editedMessageText.substring(0, 30)}..."`
-        );
-        currentMessages.push({
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          parts: [
-            {
-              type: "text" as const,
-              text: editedMessageText
-            }
-          ]
-        } as UIMessage);
-
-        // Reset original refs
-        originalEditIndexRef.current = null;
-        originalMessagesLengthRef.current = 0;
-        editedMessageContentRef.current = "";
-      } else if (currentEditIndex !== null) {
-        // Fallback to current edit index (for retry operations)
-        console.log(
-          `[Error] Using current edit context, index: ${currentEditIndex}`
-        );
-
-        // We're in the middle of editing - truncate to before the edit
-        const originalLength = currentMessages.length;
-        currentMessages =
-          currentEditIndex > 0 ? agentMessages.slice(0, currentEditIndex) : [];
-
-        console.log(
-          `[Error] Truncated from ${originalLength} to ${currentMessages.length} messages`
-        );
-
-        // Also add the message being edited (from input)
-        const editedMessageText = agentInput.trim();
-        if (editedMessageText) {
-          console.log(
-            `[Error] Adding edited message from input: "${editedMessageText.substring(0, 30)}..."`
-          );
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: editedMessageText
-              }
-            ]
-          } as UIMessage);
-        }
-
-        // Reset editing state
-        setCurrentEditIndex(null);
-      } else {
-        // For regular messages, make sure the user message is included
-        const lastUserInput = agentInput.trim();
-        const lastMessageIsUser =
-          currentMessages.length > 0 &&
-          currentMessages[currentMessages.length - 1].role === "user";
-
-        if (lastUserInput && !lastMessageIsUser) {
-          console.log(
-            `[Error] Adding user message: "${lastUserInput.substring(0, 30)}..."`
-          );
-          // Add the user message that caused the error
-          currentMessages.push({
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            parts: [
-              {
-                type: "text" as const,
-                text: lastUserInput
-              }
-            ]
-          } as UIMessage);
-        }
-      }
-
-      // Create a new error message with required format (v6 uses parts only)
-      const newErrorMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        parts: [
-          {
-            type: "text" as const,
-            text: formattedErrorMessage
-          }
-        ]
-      } as UIMessage;
-
-      console.log(
-        `[Error] Setting ${currentMessages.length + 1} messages (${currentMessages.length} + error message)`
-      );
-
-      // Add the error message to the messages
-      setMessages([...currentMessages, newErrorMessage]);
-
-      // Reset retry state
-      setIsRetrying(false);
-
-      // Clear any refs
+      // Normal errors are handled by the useEffect watching chatError state
+      // Clear editing refs so the useEffect can handle cleanly
       originalEditIndexRef.current = null;
       originalMessagesLengthRef.current = 0;
       editedMessageContentRef.current = "";
@@ -558,6 +332,7 @@ function ProjectTabContent({
     regenerate: () => void;
     status: string;
     stop: () => void;
+    error: Error | undefined;
   };
 
   // Destructure with renamed properties
@@ -569,7 +344,8 @@ function ProjectTabContent({
     data: agentData,
     setMessages,
     regenerate: reload,
-    stop
+    stop,
+    error: chatError
   } = chatResult;
 
   // Local state for input since AI SDK v6 doesn't manage it
@@ -613,25 +389,18 @@ function ProjectTabContent({
   // The backend now guarantees arrays, but this is a safety measure
   const agentMessages = Array.isArray(agentMessagesRaw) ? agentMessagesRaw : [];
 
-  // Update last known messages whenever we have valid messages
-  // Only update when not loading (to avoid capturing mid-stream states)
-  useEffect(() => {
-    if (agentMessages.length > 0 && !isLoading) {
-      lastKnownMessagesRef.current = [...agentMessages];
-    }
-  }, [agentMessages, isLoading]);
-
   // Use the message editing hook to manage message editing and retry logic
+  // Declared early so setIsRetrying is available for error handling useEffect
   const {
     editingMessageId,
     editingValue,
-    currentEditIndex,
+    currentEditIndex: _currentEditIndex,
     isRetrying,
     originalMessagesLengthRef,
     originalEditIndexRef,
     editedMessageContentRef,
     setEditingValue,
-    setCurrentEditIndex,
+    setCurrentEditIndex: _setCurrentEditIndex,
     setIsRetrying,
     startEditing,
     cancelEditing,
@@ -639,6 +408,97 @@ function ProjectTabContent({
     handleRetry,
     handleRetryLastUserMessage
   } = useMessageEditing(agentMessages, setMessages, agentInput, reload);
+
+  // Update last known messages whenever we have valid messages
+  // Only update if we have more messages than before (prevents losing messages during error states)
+  useEffect(() => {
+    if (
+      agentMessages.length > 0 &&
+      agentMessages.length >= lastKnownMessagesRef.current.length
+    ) {
+      lastKnownMessagesRef.current = [...agentMessages];
+    }
+  }, [agentMessages]);
+
+  // Ref to track the last processed error to avoid duplicate error messages
+  const lastProcessedErrorRef = useRef<string | null>(null);
+
+  // AI SDK v6 pattern: React to error state changes via useEffect
+  // This is more stable than modifying messages in onError callback
+  useEffect(() => {
+    if (!chatError) {
+      // Reset processed error when error is cleared
+      lastProcessedErrorRef.current = null;
+      return;
+    }
+
+    // Skip if we've already processed this error (comparing message only since timestamp changes)
+    if (
+      lastProcessedErrorRef.current &&
+      chatError.message === lastProcessedErrorRef.current
+    ) {
+      return;
+    }
+
+    // Mark this error as processed
+    lastProcessedErrorRef.current = chatError.message;
+
+    console.log(
+      "[Error Effect] Processing error via useEffect:",
+      chatError.message
+    );
+
+    // Get stable messages from ref (onError may have caused agentMessages to be empty/stale)
+    const rawMessages =
+      agentMessages.length > 0
+        ? [...agentMessages]
+        : [...lastKnownMessagesRef.current];
+
+    // Filter out empty assistant messages that the SDK creates during errors
+    // These are messages with empty parts arrays that serve no purpose
+    const stableMessages = rawMessages.filter((msg) => {
+      if (msg.role !== "assistant") return true;
+      // Keep assistant messages that have content
+      return msg.parts && msg.parts.length > 0;
+    });
+
+    // Check if there's already an error message (uses __ERROR__ format)
+    const hasExistingError = stableMessages.some((msg) => isErrorMessage(msg));
+    if (hasExistingError) {
+      console.log("[Error Effect] Error message already exists, skipping");
+      return;
+    }
+
+    // Format the error message
+    const formattedErrorMessage = formatErrorForMessage(chatError);
+
+    // Create a new error message with required format (v6 uses parts only)
+    const newErrorMessage = {
+      id: crypto.randomUUID(),
+      role: "assistant" as const,
+      parts: [
+        {
+          type: "text" as const,
+          text: formattedErrorMessage
+        }
+      ]
+    } as UIMessage;
+
+    console.log(
+      `[Error Effect] Adding error message to ${stableMessages.length} messages`
+    );
+    setMessages([...stableMessages, newErrorMessage]);
+
+    // Reset retry state
+    setIsRetrying(false);
+  }, [
+    chatError,
+    formatErrorForMessage,
+    setMessages,
+    agentMessages,
+    isErrorMessage,
+    setIsRetrying
+  ]);
 
   // Listen for thinking tokens from agent data stream
   useEffect(() => {
@@ -787,87 +647,6 @@ function ProjectTabContent({
     setMessages
   ]);
 
-  // Handle action button clicks from the suggestActions tool
-  useEffect(() => {
-    function handleActionButtonClick(event: CustomEvent) {
-      if (event.detail && event.detail.text !== undefined) {
-        const selectedText = event.detail.text;
-        const isOther = event.detail.isOther === true;
-
-        // If the user selects the "Other" option, just focus the input field
-        if (isOther) {
-          // Focus the input field for custom entry
-          setTimeout(() => {
-            // Find the textarea element directly (more reliable than using ref)
-            const textareas = document.querySelectorAll("textarea");
-            if (textareas.length > 0) {
-              const textarea = textareas[0];
-              textarea.focus();
-              // Optional: Add a slight delay to ensure focus works after UI updates
-              setTimeout(() => {
-                textarea.focus();
-              }, 100);
-            }
-          }, 50);
-          return;
-        }
-
-        // For non-Other options, directly add a user message with the selected text
-        if (selectedText) {
-          // Check token expiration before proceeding
-          if (auth?.checkTokenExpiration()) {
-            return; // Token expired, user will be redirected to login
-          }
-
-          // Set the input value first (needed for compatibility with input validation)
-          setInput(selectedText);
-
-          // Then create a synthetic form submit event
-          setTimeout(() => {
-            // Create a new user message
-            const newMessage = {
-              content: selectedText,
-              createdAt: new Date(),
-              id: crypto.randomUUID(),
-              parts: [
-                {
-                  text: selectedText,
-                  type: "text" as const
-                }
-              ],
-              role: "user" as const
-            };
-
-            // Add the message to the chat
-            setMessages([...agentMessages, newMessage]);
-
-            // Clear the input field
-            setInput("");
-
-            // Trigger the agent to respond with token check
-            setTimeout(() => {
-              reloadWithTokenCheck();
-            }, 50);
-          }, 10);
-        }
-      }
-    }
-
-    // Add event listener
-    window.addEventListener(
-      "action-button-clicked",
-      handleActionButtonClick as EventListener
-    );
-
-    // Cleanup
-    return () => {
-      window.removeEventListener(
-        "action-button-clicked",
-        handleActionButtonClick as EventListener
-      );
-    };
-  }, [setMessages, agentMessages, setInput, auth, reloadWithTokenCheck]);
-
   // Reset textarea height when input is empty
   useEffect(() => {
     if (agentInput === "" && textareaRef.current) {
@@ -959,8 +738,22 @@ function ProjectTabContent({
       return <EmptyChat />;
     }
 
+    // Filter out empty assistant messages (SDK creates these during errors)
+    // Keep the last message even if empty (might be in-progress)
+    const filteredMessages = agentMessages.filter((msg, idx) => {
+      if (msg.role !== "assistant") return true;
+      // Always keep the last message (might be in-progress/streaming)
+      if (idx === agentMessages.length - 1) return true;
+      // Filter out older empty assistant messages
+      return msg.parts && msg.parts.length > 0;
+    });
+
+    if (filteredMessages.length === 0) {
+      return <EmptyChat />;
+    }
+
     // Render all regular messages (cast to ExtendedUIMessage for data/createdAt access)
-    const messageElements = agentMessages.map(
+    const messageElements = filteredMessages.map(
       (message: ExtendedUIMessage, index) => {
         // Common variable setup
         const isUser = message.role === "user";
@@ -974,6 +767,11 @@ function ProjectTabContent({
 
           return (
             <div key={message.id}>
+              {showDebug && (
+                <pre className="text-sm text-muted-foreground overflow-scroll mb-2">
+                  {JSON.stringify(message, null, 2)}
+                </pre>
+              )}
               <ErrorMessage
                 errorData={errorData}
                 onRetry={() => handleRetryWithTokenCheck(index)}
@@ -1046,11 +844,6 @@ function ProjectTabContent({
                         toolsRequiringConfirmation.includes(
                           toolName as keyof ToolTypes
                         ) && part.state === "input-available";
-
-                      // Skip suggestActions since they are handled separately
-                      if (toolName === "suggestActions") {
-                        return null;
-                      }
 
                       // Create a v4-compatible toolInvocation object for ToolInvocationCard
                       // Map v6 states to v4 states and cast to expected types
@@ -1185,16 +978,6 @@ function ProjectTabContent({
       );
     }
 
-    // Add suggested actions at the end of messages
-    messageElements.push(
-      <SuggestedActions
-        key="suggested-actions"
-        messages={agentMessages}
-        addToolResult={addToolResult}
-        reload={reloadWithTokenCheck}
-      />
-    );
-
     return messageElements;
   };
 
@@ -1202,6 +985,12 @@ function ProjectTabContent({
   const handleClearHistory = () => {
     // Clear the history first
     clearHistory();
+
+    // Reset the last known messages ref so new messages can be tracked
+    lastKnownMessagesRef.current = [];
+
+    // Reset the processed error ref so new errors can be tracked
+    lastProcessedErrorRef.current = null;
 
     // Reset retrying state
     setIsRetrying(false);
@@ -1221,16 +1010,18 @@ function ProjectTabContent({
   // Floating chat and controls (background rendered at App level)
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-hidden">
-      {/* Floating chat launcher (mobile: corner button, desktop: corner button) */}
+      {/* Floating chat launcher - positioned higher on mobile only if instructions visible */}
       {activeTab !== "chat" && (
-        <div className="fixed bottom-4 right-4 z-[60]">
+        <div
+          className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}
+        >
           <button
             type="button"
-            aria-label="Open chat"
+            aria-label="Open AI Chat"
             className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
             onClick={() => setActiveTab("chat")}
           >
-            Chat
+            AI Chat
           </button>
         </div>
       )}
@@ -1301,18 +1092,103 @@ export default function App() {
 
 // App content that has access to project context
 function AppContent() {
+  const auth = useAuth();
+  // Start with false to match server, update from localStorage after hydration
+  const [hasMounted, setHasMounted] = useState(false);
+  const [landingDismissed, setLandingDismissed] = useState(false);
+  const [showAIChatPromo, setShowAIChatPromo] = useState(false);
+  // Default to true since instructions are visible by default (before user interaction)
+  const [instructionsVisible, setInstructionsVisible] = useState(true);
+
+  // Load localStorage values after hydration to avoid SSR mismatch
+  useEffect(() => {
+    setHasMounted(true);
+    const dismissed = localStorage.getItem("landing_dismissed") === "true";
+    setLandingDismissed(dismissed);
+    // Also sync instructions state from localStorage
+    const instructionsDismissed =
+      localStorage.getItem("instructions_dismissed") === "true";
+    setInstructionsVisible(!instructionsDismissed);
+  }, []);
+
+  // Listen for instructions state changes from PresentationPanel
+  useEffect(() => {
+    const handleInstructions = (event: CustomEvent<{ isVisible: boolean }>) => {
+      setInstructionsVisible(event.detail.isVisible);
+    };
+    window.addEventListener(
+      "simulation-instructions",
+      handleInstructions as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "simulation-instructions",
+        handleInstructions as EventListener
+      );
+    };
+  }, []);
+
+  const handleDismissLanding = useCallback(() => {
+    setLandingDismissed(true);
+    localStorage.setItem("landing_dismissed", "true");
+  }, []);
+
+  const handleShowLandingPage = useCallback(() => {
+    setLandingDismissed(false);
+    localStorage.removeItem("landing_dismissed");
+  }, []);
+
+  const handleSignIn = useCallback(() => {
+    auth?.login();
+  }, [auth]);
+
+  // Show landing page when not authenticated and not dismissed
+  // Before hydration (hasMounted=false), always show landing page to match SSR
+  const showLandingPage =
+    !auth?.authMethod && (!hasMounted || !landingDismissed);
+  const isAuthenticated = !!auth?.authMethod;
+
   return (
     <div className="relative w-full h-[calc(var(--vh,1vh)*100)] overflow-auto">
       {/* Background Presentation Panel - always visible */}
       <div className="absolute inset-0 z-50">
-        <BackgroundPresentationPanel />
+        <BackgroundPresentationPanel
+          onShowLandingPage={handleShowLandingPage}
+        />
       </div>
-      {/* Always-available theme toggle when unauthenticated */}
-      <RootThemeToggle />
+      {/* Landing page overlay for unauthenticated users */}
+      {showLandingPage && (
+        <LandingPage onSignIn={handleSignIn} onDismiss={handleDismissLanding} />
+      )}
+      {/* AI Chat button for unauthenticated users (when landing page is dismissed) */}
+      {/* Positioned higher on mobile only if instructions visible */}
+      {/* Only render after hydration to avoid SSR mismatch */}
+      {hasMounted &&
+        !isAuthenticated &&
+        !showLandingPage &&
+        !showAIChatPromo && (
+          <div
+            className={`fixed right-4 z-[60] ${instructionsVisible ? "bottom-20 sm:bottom-4" : "bottom-4"}`}
+          >
+            <button
+              type="button"
+              aria-label="Open AI Chat"
+              className="bg-[#F48120] text-white font-semibold py-3 px-5 rounded-full shadow-xl text-base hover:bg-[#F48120]/90 transition-colors"
+              onClick={() => setShowAIChatPromo(true)}
+            >
+              AI Chat
+            </button>
+          </div>
+        )}
+      {/* AI Chat promo panel for unauthenticated users */}
+      {hasMounted && !isAuthenticated && showAIChatPromo && (
+        <AIChatPromo
+          onSignIn={handleSignIn}
+          onClose={() => setShowAIChatPromo(false)}
+        />
+      )}
       {/* Auth overlay and authenticated content */}
       <AuthGuard>
-        {/* Floating profile + theme toggle container - mobile: sticky top bar, desktop: corner */}
-        <AuthenticatedTopPanel />
         <Chat />
       </AuthGuard>
     </div>
@@ -1320,33 +1196,23 @@ function AppContent() {
 }
 
 // Background presentation panel that shows with or without agent state
-function BackgroundPresentationPanel() {
+// This component always renders the same structure to avoid remounts
+function BackgroundPresentationPanel({
+  onShowLandingPage
+}: {
+  onShowLandingPage?: () => void;
+}) {
   const auth = useAuth();
+  const isAuthenticated = !!auth?.authMethod;
 
-  // If not authenticated, show presentation panel without agent state
-  if (!auth?.authMethod) {
-    return (
-      <PresentationContainer
-        activeTab="presentation"
-        agentMode={"onboarding" as const}
-        agentState={null}
-        showDebug={false}
-        variant="full"
-      />
-    );
-  }
-
-  // If authenticated, show presentation panel with agent state
-  return <AuthenticatedPresentationPanel />;
-}
-
-// Component that renders the presentation panel with agent state when authenticated
-function AuthenticatedPresentationPanel() {
-  // Get authenticated agent configuration for current project
+  // Always call hooks unconditionally
   const agentConfig = useCurrentProjectAuth();
 
-  // Use the agent state hook
-  const { agentState, agentMode } = useAgentState(agentConfig, "onboarding");
+  // Only connect to agent if authenticated
+  const { agentState, agentMode } = useAgentState(
+    isAuthenticated ? agentConfig : null,
+    "act"
+  );
 
   return (
     <PresentationContainer
@@ -1355,61 +1221,8 @@ function AuthenticatedPresentationPanel() {
       agentState={agentState}
       showDebug={false}
       variant="full"
+      onShowLandingPage={onShowLandingPage}
+      agentConfig={isAuthenticated ? agentConfig : null}
     />
-  );
-}
-
-function RootThemeToggle() {
-  const auth = useAuth();
-  const { theme, toggleTheme } = useThemePreference();
-  if (auth?.authMethod) return null;
-  return (
-    <div className="fixed top-4 right-4 z-[60] pr-2 md:pr-4 flex items-center gap-2">
-      <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-    </div>
-  );
-}
-
-function AuthenticatedTopPanel() {
-  const auth = useAuth();
-  const { theme, toggleTheme } = useThemePreference();
-  const agentConfig = useCurrentProjectAuth();
-  const { agentMode } = useAgentState(agentConfig, "onboarding");
-  const [_showDebug, _setShowDebug] = useState(false);
-  const [activeTab, _setActiveTab] = useState<"chat" | "presentation">(
-    "presentation"
-  );
-
-  // Only render if authenticated
-  if (!auth?.authMethod) {
-    return null;
-  }
-
-  return (
-    <div
-      className={`sticky top-0 md:fixed md:top-4 md:right-4 md:left-auto z-[60] md:z-[80] bg-white/90 dark:bg-black/90 md:!bg-transparent backdrop-blur-sm md:!backdrop-blur-none border-b border-neutral-200 dark:border-neutral-800 md:border-none px-4 py-3 md:p-0 md:pr-4 flex items-center justify-between md:justify-start gap-2 ${activeTab === "chat" ? "md:flex hidden" : "flex"}`}
-    >
-      <div className="flex items-center gap-2">
-        <div className="order-0 md:order-0">
-          <ProjectSelector />
-        </div>
-        <button
-          type="button"
-          aria-label="Toggle theme"
-          className="rounded-full h-10 w-10 md:h-9 md:w-9 flex items-center justify-center border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 order-2 md:order-1"
-          onClick={toggleTheme}
-          title="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-        <div className="order-1 md:order-2">
-          <UserProfile />
-        </div>
-      </div>
-      {/* Mobile: show current mode */}
-      <div className="md:hidden text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">
-        {agentMode}
-      </div>
-    </div>
   );
 }

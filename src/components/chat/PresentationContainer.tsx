@@ -1,6 +1,4 @@
-import { Card } from "@/components/card/Card";
 import type { AgentMode, AppAgentState } from "../../agent/AppAgent";
-import { ModeInfoCard } from "./ModeInfoCard";
 import { PresentationPanel } from "./PresentationPanel";
 
 type PresentationContainerProps = {
@@ -9,6 +7,13 @@ type PresentationContainerProps = {
   agentState: AppAgentState | null;
   showDebug: boolean;
   variant?: "panel" | "full"; // full = full-screen background variant
+  onShowLandingPage?: () => void;
+  /** Agent config for making API calls (for authenticated users) */
+  agentConfig?: {
+    agent: string;
+    name: string;
+    query?: Record<string, string>;
+  } | null;
 };
 
 export function PresentationContainer({
@@ -16,13 +21,13 @@ export function PresentationContainer({
   agentMode,
   agentState,
   showDebug,
-  variant = "panel"
+  variant = "panel",
+  onShowLandingPage,
+  agentConfig
 }: PresentationContainerProps) {
   // Initialize a default state if agentState is null
   const defaultState: AppAgentState = {
-    isOnboardingComplete: false,
-    mode: agentMode,
-    onboardingStep: "start"
+    mode: agentMode
   };
 
   // Use the provided state or the default state
@@ -31,12 +36,14 @@ export function PresentationContainer({
   if (variant === "full") {
     return (
       <div className="h-full w-full overflow-hidden bg-white dark:bg-black">
-        <div className="h-full flex flex-col pt-16 md:pt-0">
+        <div className="h-full flex flex-col">
           <div className="flex-1 overflow-auto">
             <PresentationPanel
               agentState={safeAgentState}
               agentMode={agentMode}
               showDebug={showDebug}
+              onShowLandingPage={onShowLandingPage}
+              agentConfig={agentConfig}
             />
           </div>
         </div>
@@ -50,23 +57,13 @@ export function PresentationContainer({
         activeTab === "presentation" ? "block" : "hidden md:block"
       }`}
     >
-      <div className="h-full flex flex-col">
-        {/* Mode Info Card - Always visible as a separate card above the playbook panel */}
-        <div className="p-4">
-          <Card className="p-4 bg-neutral-100 dark:bg-neutral-900">
-            <ModeInfoCard agentMode={agentMode} />
-          </Card>
-        </div>
-
-        {/* Playbook content area */}
-        <div className="flex-1 overflow-auto">
-          <PresentationPanel
-            agentState={safeAgentState}
-            agentMode={agentMode}
-            showDebug={showDebug}
-          />
-        </div>
-      </div>
+      <PresentationPanel
+        agentState={safeAgentState}
+        agentMode={agentMode}
+        showDebug={showDebug}
+        onShowLandingPage={onShowLandingPage}
+        agentConfig={agentConfig}
+      />
     </div>
   );
 }

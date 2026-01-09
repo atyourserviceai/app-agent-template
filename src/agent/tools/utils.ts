@@ -172,13 +172,6 @@ export const toolRegistry: Record<string, ToolMetadata> = {
     icon: "search"
   },
 
-  // Messaging tools
-  suggestActions: {
-    category: ToolCategory.MESSAGING,
-    friendlyName: "Suggest Actions",
-    icon: "list-check"
-  },
-
   // Error testing tool
   testErrorTool: {
     category: ToolCategory.TESTING,

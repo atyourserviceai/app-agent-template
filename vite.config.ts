@@ -28,14 +28,46 @@ export default defineConfig({
     strictPort: true
   },
   optimizeDeps: {
-    exclude: ["workers-og"]
+    exclude: ["workers-og"],
+    // Pre-bundle common dependencies to prevent runtime discovery conflicts
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/server",
+      "clsx",
+      "tailwind-merge",
+      "@phosphor-icons/react"
+    ]
   },
   environments: {
     server: {
       optimizeDeps: {
-        // Disable SSR dependency optimization to prevent pre-bundle version conflicts
-        noDiscovery: true,
-        include: []
+        // Pre-bundle all server dependencies to prevent runtime discovery
+        // which causes version conflicts. Add new deps here if you see
+        // "optimized dependencies changed" errors during dev.
+        include: [
+          "react",
+          "react-dom",
+          "react-dom/server",
+          "react-router",
+          "@cloudflare/ai-chat",
+          "@cloudflare/ai-chat/react",
+          "@ai-sdk/anthropic",
+          "@ai-sdk/openai",
+          "@ai-sdk/react",
+          "ai",
+          "agents/react",
+          "@phosphor-icons/react",
+          "clsx",
+          "tailwind-merge",
+          "class-variance-authority",
+          "@radix-ui/react-dropdown-menu",
+          "@ricky0123/vad-web",
+          "marked",
+          "react-markdown",
+          "remark-gfm",
+          "pixi.js"
+        ]
       }
     }
   },
