@@ -453,7 +453,7 @@ export class AppAgent extends AIChatAgent<Env> {
           while (retryCount <= maxRetries) {
             try {
               const anthropic = await this.getAIProvider();
-              let model = anthropic("claude-haiku-4-5-20251001");
+              let model = anthropic("claude-haiku-5-5");
 
               // Enable simulation for testing if environment variable is set
               if ((this.env as any).SIMULATE_THINKING_TOKENS === "true") {
@@ -469,7 +469,6 @@ export class AppAgent extends AIChatAgent<Env> {
                 stopWhen: stepCountIs(10),
                 messages: modelMessages,
                 model,
-                temperature: 1,
 
                 onError: async (error: unknown) => {
                   console.error("Error while streaming:", error);
