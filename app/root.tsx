@@ -39,6 +39,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <Meta />
         <Links />
+        {/* Cookieless GA4 — no consent banner required */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-27YJ2SK7FH" />
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Analytics
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','G-27YJ2SK7FH',{client_storage:'none',anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});"
+          }}
+        />
         {/* Set theme class before hydration to avoid FOUC/mismatch */}
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Theme setup script
